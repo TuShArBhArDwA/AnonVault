@@ -1,12 +1,12 @@
 # AnonVault
 
-AnonVault is a secure personal workspace designed to organize application processes chronologically and dump creative ideas in a visual repository.
+AnonVault is a secure personal workspace designed to organize hackathon events, registration dates, project submission milestones, and dump creative ideas in a visual repository.
 
 ---
 
 ## What is AnonVault?
 
-This project is a utility built to address the common problem of forgetting things after applying for jobs, internships, grants, or projects. It helps you manage your upcoming deadlines, keep track of process statuses (like applied, interviewing, offered, or rejected), and prioritize critical tasks. 
+This project is a utility built to address the challenge of tracking hackathons, team formations, project submissions, and timelines. It helps you manage your upcoming event registrations, keep track of process statuses (like registered, building, winner, or completed), and prioritize critical milestones. 
 
 Additionally, it provides a dedicated visual workspace where you can dump creative thoughts, drafts, and side-project concepts in a searchable card board that supports tags and image uploads.
 

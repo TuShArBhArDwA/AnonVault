@@ -2,10 +2,9 @@ import React, { useState } from 'react';
 import { 
   Plus, Search, ArrowUpDown, Filter, ExternalLink, 
   Edit3, Trash2, Calendar, Link as LinkIcon, AlertTriangle, 
-  HelpCircle, Clock, ChevronDown, ChevronRight, ListCollapse, Database
+  HelpCircle, Clock, ChevronDown, ChevronRight, ListCollapse
 } from 'lucide-react';
 import { formatDate, getPriorityStyles, getStatusStyles, sortApplicationsByDeadline, groupApplicationsByMonth } from '../utils/helpers';
-import { isConfigured } from '../services/supabase';
 
 export default function TimelineView({ 
   applications, 
@@ -141,8 +140,8 @@ export default function TimelineView({
       {/* View Header / Navigation */}
       <header className="px-8 py-5 border-b border-slate-900 bg-slate-950 flex items-center justify-between shrink-0">
         <div>
-          <h2 className="text-xl font-bold text-white tracking-wide">Application Timeline</h2>
-          <p className="text-xs text-slate-500">Track and sort application processes chronologically</p>
+          <h2 className="text-xl font-bold text-white tracking-wide">Hackathon Timeline</h2>
+          <p className="text-xs text-slate-500">Track and sort hackathons and project submissions chronologically</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -151,7 +150,7 @@ export default function TimelineView({
             className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-600/10 hover:shadow-indigo-600/20 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer"
           >
             <Plus size={15} />
-            New Application
+            New Hackathon
           </button>
         </div>
       </header>
@@ -165,10 +164,10 @@ export default function TimelineView({
             </span>
             <input
               type="text"
-              placeholder="Search applications..."
+              placeholder="Search hackathons..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-xs text-white bg-slate-900/40 border border-slate-900 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 placeholder:text-slate-500 transition-all"
+              className="w-full pl-9 pr-4 py-2 text-xs text-white bg-slate-900/40 border border-slate-900 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 placeholder:text-slate-500 transition-all font-medium"
             />
           </div>
         </div>
@@ -201,10 +200,10 @@ export default function TimelineView({
             >
               <option value="all">All Statuses</option>
               <option value="pending">Pending</option>
-              <option value="applied">Applied</option>
-              <option value="interviewing">Interviewing</option>
-              <option value="offered">Offered</option>
-              <option value="rejected">Rejected</option>
+              <option value="applied">Registered</option>
+              <option value="interviewing">Building</option>
+              <option value="offered">Winner</option>
+              <option value="rejected">Completed</option>
             </select>
           </div>
 
@@ -232,83 +231,83 @@ export default function TimelineView({
 
       {/* Timeline Content Area */}
       <div className="flex-1 overflow-y-auto px-8 py-6">
-          {loading ? (
-            <div className="h-48 flex items-center justify-center text-slate-400 text-xs gap-2">
-              <span className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></span>
-              Synchronizing timeline...
-            </div>
-          ) : filteredApps.length === 0 ? (
-            <div className="h-64 flex flex-col items-center justify-center text-center p-6 border border-dashed border-slate-900 rounded-2xl max-w-md mx-auto my-12">
-              <Calendar size={32} className="text-slate-600 mb-3" />
-              <h3 className="text-sm font-semibold text-slate-350">No applications matching criteria</h3>
-              <p className="text-[11px] text-slate-500 mt-1 max-w-xs leading-normal">
-                {searchTerm || selectedPriority !== 'all' || selectedStatus !== 'all' 
-                  ? 'Try relaxing your filters or query to find existing items.' 
-                  : 'Start tracking by creating your first entry.'}
-              </p>
-              {!searchTerm && selectedPriority === 'all' && selectedStatus === 'all' && (
-                <button
-                  onClick={handleOpenAdd}
-                  className="mt-4 px-4 py-2 text-xs font-semibold text-indigo-400 hover:text-white bg-indigo-500/10 hover:bg-indigo-600/20 border border-indigo-500/25 rounded-xl transition-all"
-                >
-                  Create Application
-                </button>
-              )}
-            </div>
-          ) : groupByMonthMode ? (
-            /* ================= MONTH GROUPED VIEW ================= */
-            <div className="space-y-8 relative pl-4 border-l border-slate-900/60 ml-2">
-              {Object.keys(groupedApps).map((monthYear) => {
-                const isExpanded = expandedMonths[monthYear] !== false;
-                const monthApps = groupedApps[monthYear];
+        {loading ? (
+          <div className="h-48 flex items-center justify-center text-slate-400 text-xs gap-2">
+            <span className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></span>
+            Synchronizing timeline...
+          </div>
+        ) : filteredApps.length === 0 ? (
+          <div className="h-64 flex flex-col items-center justify-center text-center p-6 border border-dashed border-slate-900 rounded-2xl max-w-md mx-auto my-12">
+            <Calendar size={32} className="text-slate-600 mb-3" />
+            <h3 className="text-sm font-semibold text-slate-350">No hackathons matching criteria</h3>
+            <p className="text-[11px] text-slate-500 mt-1 max-w-xs leading-normal">
+              {searchTerm || selectedPriority !== 'all' || selectedStatus !== 'all' 
+                ? 'Try relaxing your filters or query to find existing items.' 
+                : 'Start tracking by creating your first entry.'}
+            </p>
+            {!searchTerm && selectedPriority === 'all' && selectedStatus === 'all' && (
+              <button
+                onClick={handleOpenAdd}
+                className="mt-4 px-4 py-2 text-xs font-semibold text-indigo-400 hover:text-white bg-indigo-500/10 hover:bg-indigo-600/20 border border-indigo-500/25 rounded-xl transition-all"
+              >
+                Create Hackathon
+              </button>
+            )}
+          </div>
+        ) : groupByMonthMode ? (
+          /* ================= MONTH GROUPED VIEW ================= */
+          <div className="space-y-8 relative pl-4 border-l border-slate-900/60 ml-2">
+            {Object.keys(groupedApps).map((monthYear) => {
+              const isExpanded = expandedMonths[monthYear] !== false;
+              const monthApps = groupedApps[monthYear];
 
-                return (
-                  <div key={monthYear} className="space-y-4 relative">
-                    
-                    {/* Month Node Badge */}
-                    <div className="absolute -left-[25px] top-1.5 w-4 h-4 bg-slate-950 border-2 border-indigo-500/50 rounded-full flex items-center justify-center shadow-lg">
-                      <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
-                    </div>
-
-                    <button 
-                      onClick={() => toggleMonth(monthYear)}
-                      className="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-white focus:outline-none transition-colors"
-                    >
-                      {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                      <span>{monthYear}</span>
-                      <span className="px-1.5 py-0.5 text-[10px] bg-slate-900 text-slate-500 rounded-full font-medium">{monthApps.length}</span>
-                    </button>
-
-                    {isExpanded && (
-                      <div className="space-y-4 grid grid-cols-1 xl:grid-cols-2 gap-4">
-                        {monthApps.map((app) => (
-                          <AppCard 
-                            key={app.id} 
-                            app={app} 
-                            onEdit={handleOpenEdit} 
-                            onDelete={handleDeleteClick} 
-                          />
-                        ))}
-                      </div>
-                    )}
+              return (
+                <div key={monthYear} className="space-y-4 relative">
+                  
+                  {/* Month Node Badge */}
+                  <div className="absolute -left-[25px] top-1.5 w-4 h-4 bg-slate-950 border-2 border-indigo-500/50 rounded-full flex items-center justify-center shadow-lg">
+                    <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
                   </div>
-                );
-              })}
-            </div>
-          ) : (
-            /* ================= LINEAR SORTED VIEW ================= */
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-              {sortedApps.map((app) => (
-                <AppCard 
-                  key={app.id} 
-                  app={app} 
-                  onEdit={handleOpenEdit} 
-                  onDelete={handleDeleteClick} 
-                />
-              ))}
-            </div>
-          )}
-        </div>
+
+                  <button 
+                    onClick={() => toggleMonth(monthYear)}
+                    className="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-white focus:outline-none transition-colors"
+                  >
+                    {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    <span>{monthYear}</span>
+                    <span className="px-1.5 py-0.5 text-[10px] bg-slate-900 text-slate-500 rounded-full font-medium">{monthApps.length}</span>
+                  </button>
+
+                  {isExpanded && (
+                    <div className="space-y-4 grid grid-cols-1 xl:grid-cols-2 gap-4">
+                      {monthApps.map((app) => (
+                        <HackathonCard 
+                          key={app.id} 
+                          app={app} 
+                          onEdit={handleOpenEdit} 
+                          onDelete={handleDeleteClick} 
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          /* ================= LINEAR SORTED VIEW ================= */
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            {sortedApps.map((app) => (
+              <HackathonCard 
+                key={app.id} 
+                app={app} 
+                onEdit={handleOpenEdit} 
+                onDelete={handleDeleteClick} 
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* ================= EDIT / ADD DRAWER FORM ================= */}
       {isFormOpen && (
@@ -319,7 +318,7 @@ export default function TimelineView({
             <div className="p-6 border-b border-slate-900 flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-white">
-                  {editingApp ? 'Modify Application' : 'Create Application'}
+                  {editingApp ? 'Modify Hackathon' : 'Register Hackathon'}
                 </h3>
                 <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-0.5">Timeline Tracker</p>
               </div>
@@ -337,12 +336,12 @@ export default function TimelineView({
               {/* Name */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-350 flex items-center gap-1.5">
-                  Company / Project Name <span className="text-rose-500">*</span>
+                  Hackathon / Project Name <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Google DeepMind"
+                  placeholder="e.g. HackMIT or BuildSpace"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   className="w-full px-3.5 py-2.5 text-xs text-white bg-slate-900/60 border border-slate-900 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 placeholder:text-slate-650 transition-all font-medium"
@@ -352,12 +351,12 @@ export default function TimelineView({
               {/* Link */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-350 flex items-center gap-1.5">
-                  <LinkIcon size={12} className="text-slate-550" />
-                  Application / Job Link
+                  <LinkIcon size={12} className="text-slate-555" />
+                  Hackathon / Event Link
                 </label>
                 <input
                   type="url"
-                  placeholder="https://careers.google.com/jobs/..."
+                  placeholder="https://hackmit.org or devpost.com/..."
                   value={formLink}
                   onChange={(e) => setFormLink(e.target.value)}
                   className="w-full px-3.5 py-2.5 text-xs text-white bg-slate-900/60 border border-slate-900 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 placeholder:text-slate-650 transition-all font-medium"
@@ -367,7 +366,7 @@ export default function TimelineView({
               {/* Deadline */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-350 flex items-center gap-1.5">
-                  <Clock size={12} className="text-slate-550" />
+                  <Clock size={12} className="text-slate-555" />
                   Deadline Date & Time <span className="text-rose-500">*</span>
                 </label>
                 <input
@@ -398,17 +397,17 @@ export default function TimelineView({
 
                 {/* Status Selection */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-350">Process Status</label>
+                  <label className="text-xs font-semibold text-slate-350">Submission Status</label>
                   <select
                     value={formStatus}
                     onChange={(e) => setFormStatus(e.target.value)}
                     className="w-full px-3.5 py-2.5 text-xs text-white bg-slate-900/60 border border-slate-900 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
                   >
                     <option value="pending">Pending</option>
-                    <option value="applied">Applied</option>
-                    <option value="interviewing">Interviewing</option>
-                    <option value="offered">Offered</option>
-                    <option value="rejected">Rejected</option>
+                    <option value="applied">Registered</option>
+                    <option value="interviewing">Building</option>
+                    <option value="offered">Winner</option>
+                    <option value="rejected">Completed</option>
                   </select>
                 </div>
 
@@ -419,7 +418,7 @@ export default function TimelineView({
                 <label className="text-xs font-semibold text-slate-350">Progress Notes / Details</label>
                 <textarea
                   rows={6}
-                  placeholder="Notes, requirements, interview prep materials..."
+                  placeholder="Project ideas, team formation details, submission requirements, preparation notes..."
                   value={formNotes}
                   onChange={(e) => setFormNotes(e.target.value)}
                   className="w-full px-3.5 py-2.5 text-xs text-white bg-slate-900/60 border border-slate-900 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 placeholder:text-slate-650 transition-all font-medium resize-none leading-relaxed"
@@ -439,7 +438,7 @@ export default function TimelineView({
                   type="submit"
                   className="flex-1 py-3 px-4 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-600/10 transition-all cursor-pointer"
                 >
-                  {editingApp ? 'Save Changes' : 'Create Entry'}
+                  {editingApp ? 'Save Changes' : 'Add Hackathon'}
                 </button>
               </div>
 
@@ -452,15 +451,15 @@ export default function TimelineView({
       {deleteConfirmId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-xs">
           <div className="w-full max-w-sm p-6 rounded-2xl glass-panel shadow-2xl border border-slate-800/80 space-y-4">
-            <div className="flex items-center gap-3 text-rose-450">
+            <div className="flex items-center gap-3 text-rose-455">
               <div className="p-2 bg-rose-500/10 rounded-xl border border-rose-500/20">
                 <AlertTriangle size={20} />
               </div>
-              <h3 className="text-sm font-bold text-white">Delete Application Tracker</h3>
+              <h3 className="text-sm font-bold text-white">Delete Hackathon Record</h3>
             </div>
             
             <p className="text-xs text-slate-450 leading-relaxed">
-              Are you sure you want to delete this entry? This action is permanent and cannot be undone on Supabase.
+              Are you sure you want to delete this hackathon record? This action is permanent and cannot be undone on Supabase.
             </p>
 
             <div className="flex items-center gap-3">
@@ -468,13 +467,13 @@ export default function TimelineView({
                 onClick={() => setDeleteConfirmId(null)}
                 className="flex-1 py-2 px-3 text-xs font-bold text-slate-450 hover:text-white bg-slate-900 hover:bg-slate-800/80 border border-slate-850 rounded-xl transition-all cursor-pointer"
               >
-                Keep Entry
+                Keep Record
               </button>
               <button
                 onClick={handleConfirmDelete}
                 className="flex-1 py-2 px-3 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 active:bg-rose-700 rounded-xl shadow-lg shadow-rose-600/10 transition-all cursor-pointer"
               >
-                Delete Entry
+                Delete Record
               </button>
             </div>
           </div>
@@ -485,8 +484,8 @@ export default function TimelineView({
   );
 }
 
-/* ================= COMPONENT: APPLICATION CARD ================= */
-function AppCard({ app, onEdit, onDelete }) {
+/* ================= COMPONENT: HACKATHON CARD ================= */
+function HackathonCard({ app, onEdit, onDelete }) {
   const priority = getPriorityStyles(app.priority);
   const status = getStatusStyles(app.status);
 
@@ -542,7 +541,7 @@ function AppCard({ app, onEdit, onDelete }) {
                 target="_blank"
                 rel="noreferrer"
                 className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-900 transition-all cursor-pointer"
-                title="Go to application link"
+                title="Go to hackathon event link"
               >
                 <ExternalLink size={13} />
               </a>
@@ -550,14 +549,14 @@ function AppCard({ app, onEdit, onDelete }) {
             <button
               onClick={() => onEdit(app)}
               className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-900 transition-all cursor-pointer"
-              title="Edit application details"
+              title="Edit hackathon details"
             >
               <Edit3 size={13} />
             </button>
             <button
               onClick={() => onDelete(app.id)}
               className="p-1 text-slate-450 hover:text-rose-400 rounded hover:bg-slate-900 transition-all cursor-pointer"
-              title="Delete application"
+              title="Delete hackathon record"
             >
               <Trash2 size={13} />
             </button>
@@ -566,7 +565,7 @@ function AppCard({ app, onEdit, onDelete }) {
 
         {/* Deadline information */}
         <div className="flex items-center gap-3 pt-1 text-[11px] border-t border-slate-900/60">
-          <span className="flex items-center gap-1 text-slate-450 font-medium">
+          <span className="flex items-center gap-1 text-slate-455 font-medium">
             <Calendar size={11} className="text-indigo-400" />
             {formatDate(app.deadline)}
           </span>
@@ -580,7 +579,7 @@ function AppCard({ app, onEdit, onDelete }) {
 
         {/* Notes summary */}
         {app.notes && (
-          <p className="text-[11px] text-slate-450 leading-relaxed pt-2 line-clamp-3 whitespace-pre-line border-t border-slate-900/30">
+          <p className="text-[11px] text-slate-455 leading-relaxed pt-2 line-clamp-3 whitespace-pre-line border-t border-slate-900/30">
             {app.notes}
           </p>
         )}

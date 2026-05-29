@@ -66,28 +66,28 @@ export const getStatusStyles = (status) => {
         bg: 'bg-blue-500/10',
         text: 'text-blue-400',
         border: 'border-blue-500/25',
-        label: 'Applied'
+        label: 'Registered'
       };
     case 'interviewing':
       return {
         bg: 'bg-purple-500/10',
         text: 'text-purple-400',
         border: 'border-purple-500/25',
-        label: 'Interviewing'
+        label: 'Building'
       };
     case 'offered':
       return {
         bg: 'bg-emerald-500/10',
         text: 'text-emerald-400',
         border: 'border-emerald-500/25',
-        label: 'Offered'
+        label: 'Winner'
       };
     case 'rejected':
       return {
-        bg: 'bg-rose-500/10',
-        text: 'text-rose-400',
-        border: 'border-rose-500/25',
-        label: 'Rejected'
+        bg: 'bg-slate-500/10',
+        text: 'text-slate-400',
+        border: 'border-slate-500/25',
+        label: 'Completed'
       };
     case 'pending':
     default:

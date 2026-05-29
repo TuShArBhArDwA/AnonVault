@@ -31,7 +31,7 @@ export default function Sidebar({ activeTab, setActiveTab, stats }) {
           >
             <div className="flex items-center gap-3">
               <CalendarRange size={18} />
-              <span className="text-sm">Timeline Tracker</span>
+              <span className="text-sm">Hackathon Timeline</span>
             </div>
             {stats.totalApplications > 0 && (
               <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${
