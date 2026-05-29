@@ -24,7 +24,8 @@ export default function TimelineView({
   const [editingApp, setEditingApp] = useState(null);
   const [formName, setFormName] = useState('');
   const [formLink, setFormLink] = useState('');
-  const [formDeadline, setFormDeadline] = useState('');
+  const [formDate, setFormDate] = useState('');
+  const [formTime, setFormTime] = useState('');
   const [formPriority, setFormPriority] = useState('medium');
   const [formStatus, setFormStatus] = useState('pending');
   const [formNotes, setFormNotes] = useState('');
@@ -45,10 +46,13 @@ export default function TimelineView({
     // Default deadline to tomorrow at 12:00 PM
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(12, 0, 0, 0);
-    const tzOffset = tomorrow.getTimezoneOffset() * 60000; // offset in milliseconds
-    const localISOTime = (new Date(tomorrow - tzOffset)).toISOString().slice(0, 16);
-    setFormDeadline(localISOTime);
+    
+    const year = tomorrow.getFullYear();
+    const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+    const day = String(tomorrow.getDate()).padStart(2, '0');
+    
+    setFormDate(`${year}-${month}-${day}`);
+    setFormTime('12:00');
     setFormPriority('medium');
     setFormStatus('pending');
     setFormNotes('');
@@ -65,14 +69,20 @@ export default function TimelineView({
     setFormName(app.name);
     setFormLink(app.link || '');
     
-    // Format timestampz for datetime-local input
+    // Extract local date and time from timestampz
     if (app.deadline) {
       const dateObj = new Date(app.deadline);
-      const tzOffset = dateObj.getTimezoneOffset() * 60000;
-      const formatted = (new Date(dateObj - tzOffset)).toISOString().slice(0, 16);
-      setFormDeadline(formatted);
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      const hours = String(dateObj.getHours()).padStart(2, '0');
+      const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+
+      setFormDate(`${year}-${month}-${day}`);
+      setFormTime(`${hours}:${minutes}`);
     } else {
-      setFormDeadline('');
+      setFormDate('');
+      setFormTime('');
     }
     
     setFormPriority(app.priority || 'medium');
@@ -83,12 +93,14 @@ export default function TimelineView({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formName.trim() || !formDeadline) return;
+    if (!formName.trim() || !formDate || !formTime) return;
 
+    // Combine local date and time for ISO conversion
+    const combinedDateTimeStr = `${formDate}T${formTime}`;
     const appPayload = {
       name: formName.trim(),
       link: formLink.trim(),
-      deadline: new Date(formDeadline).toISOString(),
+      deadline: new Date(combinedDateTimeStr).toISOString(),
       priority: formPriority,
       status: formStatus,
       notes: formNotes.trim(),
@@ -374,19 +386,39 @@ export default function TimelineView({
                 />
               </div>
 
-              {/* Deadline */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-350 flex items-center gap-1.5">
-                  <Clock size={12} className="text-slate-555" />
-                  Deadline Date & Time <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="datetime-local"
-                  required
-                  value={formDeadline}
-                  onChange={(e) => setFormDeadline(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs text-white bg-slate-900/60 border border-slate-900 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all font-medium"
-                />
+              {/* Date & Time Grid */}
+              <div className="grid grid-cols-2 gap-4">
+                
+                {/* Deadline Date */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-350 flex items-center gap-1.5">
+                    <Calendar size={12} className="text-indigo-400" />
+                    Deadline Date <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={formDate}
+                    onChange={(e) => setFormDate(e.target.value)}
+                    className="w-full px-3.5 py-2.5 text-xs text-white bg-slate-900/60 border border-slate-900 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all font-medium"
+                  />
+                </div>
+
+                {/* Deadline Time */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-350 flex items-center gap-1.5">
+                    <Clock size={12} className="text-indigo-400" />
+                    Deadline Time <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="time"
+                    required
+                    value={formTime}
+                    onChange={(e) => setFormTime(e.target.value)}
+                    className="w-full px-3.5 py-2.5 text-xs text-white bg-slate-900/60 border border-slate-900 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all font-medium"
+                  />
+                </div>
+
               </div>
 
               {/* Grid: Priority & Status */}
