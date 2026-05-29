@@ -343,7 +343,6 @@ export default function TimelineView({
                 <h3 className="text-base font-bold text-white">
                   {editingApp ? 'Modify Hackathon' : 'Register Hackathon'}
                 </h3>
-                <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-0.5">Timeline Tracker</p>
               </div>
               <button 
                 onClick={() => setIsFormOpen(false)}
