@@ -13,7 +13,7 @@ The application is structured into modular React components. Below is the specif
 | **`App.jsx`** | *None (Root)* | State Manager | Houses the primary states (`applications`, `ideas`, `loading`, `isAuthorized`), performs initial fetching, and coordinates handlers. |
 | **`LockScreen.jsx`** | `onAuthorize` | Security Layer | Displays the passcode keypad, intercepts keyboard entry, compares inputs against the env PIN, and runs `onAuthorize` upon success. |
 | **`Sidebar.jsx`** | `activeTab`, `setActiveTab`, `stats` | Navigation | Renders the brand logo, aggregates statistics (high priority alerts, logged items), and lets users switch workspace views. |
-| **`TimelineView.jsx`** | `applications`, `onAdd`, `onUpdate`, `onDelete`, `loading` | Application Timeline | Displays applications sorted by deadline. Includes filters, sort toggles, search bars, and the create/edit form drawers. |
+| **`TimelineView.jsx`** | `applications`, `onAdd`, `onUpdate`, `onDelete`, `loading` | Application Timeline | Displays applications sorted by deadline. Includes filters, sort toggles, search bars, and the create/edit form modals. |
 | **`IdeaVaultView.jsx`** | `ideas`, `onAdd`, `onUpdate`, `onDelete`, `loading` | Category Vault | Renders ideas in a masonry grid. Integrates with the Supabase file uploader to save image attachments. |
 
 ---

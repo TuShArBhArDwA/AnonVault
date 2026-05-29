@@ -33,6 +33,9 @@ export default function IdeaVaultView({
   // Delete Confirmation State
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
+  // Detailed View State
+  const [selectedIdeaDetails, setSelectedIdeaDetails] = useState(null);
+
   const resetForm = () => {
     setFormTitle('');
     setFormContent('');
@@ -241,6 +244,7 @@ export default function IdeaVaultView({
                     onEdit={handleOpenEdit} 
                     onDelete={handleDeleteClick} 
                     onSelectTag={setSelectedTag} 
+                    onViewDetails={setSelectedIdeaDetails}
                   />
                 </div>
               ))}
@@ -248,10 +252,16 @@ export default function IdeaVaultView({
           )}
         </div>
 
-      {/* ================= EDIT / ADD FORM DRAWER ================= */}
+      {/* ================= EDIT / ADD CENTERED MODAL ================= */}
       {isFormOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/60 backdrop-blur-sm">
-          <div className="w-full max-w-md h-full bg-slate-950 border-l border-slate-900 shadow-2xl flex flex-col justify-between overflow-hidden">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
+          onClick={() => setIsFormOpen(false)}
+        >
+          <div 
+            className="w-full max-w-lg max-h-[90vh] bg-slate-950 border border-slate-900 rounded-2xl shadow-2xl flex flex-col justify-between overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
             
             {/* Header */}
             <div className="p-6 border-b border-slate-900 flex items-center justify-between">
@@ -424,21 +434,21 @@ export default function IdeaVaultView({
       {deleteConfirmId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-xs">
           <div className="w-full max-w-sm p-6 rounded-2xl glass-panel shadow-2xl border border-slate-800/80 space-y-4">
-            <div className="flex items-center gap-3 text-rose-450">
+            <div className="flex items-center gap-3 text-rose-455">
               <div className="p-2 bg-rose-500/10 rounded-xl border border-rose-500/20">
                 <AlertTriangle size={20} />
               </div>
               <h3 className="text-sm font-bold text-white">Delete Idea Card</h3>
             </div>
             
-            <p className="text-xs text-slate-450 leading-relaxed">
+            <p className="text-xs text-slate-455 leading-relaxed">
               Are you sure you want to delete this idea card? This action is permanent and cannot be undone on Supabase.
             </p>
-
+ 
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setDeleteConfirmId(null)}
-                className="flex-1 py-2 px-3 text-xs font-bold text-slate-450 hover:text-white bg-slate-900 hover:bg-slate-805 border border-slate-850 rounded-xl transition-all cursor-pointer"
+                className="flex-1 py-2 px-3 text-xs font-bold text-slate-455 hover:text-white bg-slate-900 hover:bg-slate-800/80 border border-slate-850 rounded-xl transition-all cursor-pointer"
               >
                 Keep Card
               </button>
@@ -453,14 +463,106 @@ export default function IdeaVaultView({
         </div>
       )}
 
+      {/* ================= IDEA DETAILS CENTERED MODAL ================= */}
+      {selectedIdeaDetails && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
+          onClick={() => setSelectedIdeaDetails(null)}
+        >
+          <div 
+            className="w-full max-w-lg bg-slate-950 border border-slate-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Image header if exists */}
+            {selectedIdeaDetails.image_url && (
+              <div className="relative w-full max-h-64 overflow-hidden bg-slate-950 shrink-0">
+                <img 
+                  src={selectedIdeaDetails.image_url} 
+                  alt={selectedIdeaDetails.title} 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+
+            <div className="p-6 space-y-5 flex-1 overflow-y-auto">
+              {/* Header Title & controls */}
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-base font-bold text-white leading-snug">{selectedIdeaDetails.title}</h3>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-0.5">Idea Vault Details</p>
+                </div>
+                <button 
+                  onClick={() => setSelectedIdeaDetails(null)}
+                  className="p-1.5 text-slate-500 hover:text-white rounded-lg hover:bg-slate-900 transition-colors cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Description */}
+              {selectedIdeaDetails.content && (
+                <div className="space-y-2 border-t border-slate-900/60 pt-4">
+                  <h4 className="text-xs font-semibold text-slate-400">Description & Details</h4>
+                  <div className="p-4 bg-slate-900/30 border border-slate-900/50 rounded-xl text-xs text-slate-300 whitespace-pre-line leading-relaxed">
+                    {selectedIdeaDetails.content}
+                  </div>
+                </div>
+              )}
+
+              {/* Tags */}
+              {selectedIdeaDetails.tags && selectedIdeaDetails.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 border-t border-slate-900/60 pt-4">
+                  {selectedIdeaDetails.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="px-2.5 py-1 text-[10px] font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 rounded-md"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Footer details */}
+              <div className="flex items-center gap-1.5 text-[10px] text-slate-550 border-t border-slate-900/60 pt-4">
+                <Calendar size={11} className="text-indigo-400" />
+                <span>Logged on {formatDate(selectedIdeaDetails.created_at || new Date())}</span>
+              </div>
+            </div>
+
+            {/* Actions footer */}
+            <div className="p-6 border-t border-slate-900/80 bg-slate-950 flex gap-3 shrink-0">
+              <button
+                onClick={() => {
+                  handleOpenEdit(selectedIdeaDetails);
+                  setSelectedIdeaDetails(null);
+                }}
+                className="flex-1 py-2.5 px-4 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-all cursor-pointer shadow-lg shadow-indigo-600/10 text-center"
+              >
+                Edit Details
+              </button>
+              <button
+                onClick={() => setSelectedIdeaDetails(null)}
+                className="py-2.5 px-6 text-xs font-bold text-slate-450 hover:text-white bg-slate-900 border border-slate-900 rounded-xl transition-all cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
 
 /* ================= COMPONENT: IDEA CARD ================= */
-function IdeaCard({ idea, onEdit, onDelete, onSelectTag }) {
+function IdeaCard({ idea, onEdit, onDelete, onSelectTag, onViewDetails }) {
   return (
-    <article className="glass-card rounded-2xl overflow-hidden border border-slate-800/50 hover:border-slate-800/90 shadow-md group">
+    <article 
+      onClick={() => onViewDetails && onViewDetails(idea)}
+      className="glass-card rounded-2xl overflow-hidden border border-slate-800/50 hover:border-slate-800/90 hover:bg-slate-900/10 cursor-pointer shadow-md transition-all hover:scale-[1.005] select-none group"
+    >
       
       {/* Attached visual display */}
       {idea.image_url && (
@@ -481,17 +583,20 @@ function IdeaCard({ idea, onEdit, onDelete, onSelectTag }) {
         <div className="flex items-start justify-between gap-3">
           <h4 className="text-sm font-bold text-white leading-snug">{idea.title}</h4>
           
-          <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+          <div 
+            className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               onClick={() => onEdit(idea)}
-              className="p-1 text-slate-450 hover:text-white rounded hover:bg-slate-900 transition-all cursor-pointer"
+              className="p-1 text-slate-455 hover:text-white rounded hover:bg-slate-900 transition-all cursor-pointer"
               title="Edit idea"
             >
               <Edit3 size={12} />
             </button>
             <button
               onClick={() => onDelete(idea.id)}
-              className="p-1 text-slate-450 hover:text-rose-400 rounded hover:bg-slate-900 transition-all cursor-pointer"
+              className="p-1 text-slate-455 hover:text-rose-400 rounded hover:bg-slate-900 transition-all cursor-pointer"
               title="Delete idea card"
             >
               <Trash2 size={12} />
@@ -508,7 +613,10 @@ function IdeaCard({ idea, onEdit, onDelete, onSelectTag }) {
 
         {/* Tags lists */}
         {idea.tags && idea.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 pt-1.5 border-t border-slate-900/60">
+          <div 
+            className="flex flex-wrap gap-1.5 pt-1.5 border-t border-slate-900/60"
+            onClick={(e) => e.stopPropagation()}
+          >
             {idea.tags.map((tag) => (
               <button
                 key={tag}

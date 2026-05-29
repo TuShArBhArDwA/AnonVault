@@ -32,6 +32,9 @@ export default function TimelineView({
   // Delete Confirmation State
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
+  // Detailed View State
+  const [selectedAppDetails, setSelectedAppDetails] = useState(null);
+
   // Month collapse state (which months are expanded)
   const [expandedMonths, setExpandedMonths] = useState({});
 
@@ -286,6 +289,7 @@ export default function TimelineView({
                           app={app} 
                           onEdit={handleOpenEdit} 
                           onDelete={handleDeleteClick} 
+                          onViewDetails={setSelectedAppDetails}
                         />
                       ))}
                     </div>
@@ -303,16 +307,23 @@ export default function TimelineView({
                 app={app} 
                 onEdit={handleOpenEdit} 
                 onDelete={handleDeleteClick} 
+                onViewDetails={setSelectedAppDetails}
               />
             ))}
           </div>
         )}
       </div>
 
-      {/* ================= EDIT / ADD DRAWER FORM ================= */}
+      {/* ================= EDIT / ADD CENTERED MODAL ================= */}
       {isFormOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/60 backdrop-blur-sm">
-          <div className="w-full max-w-md h-full bg-slate-950 border-l border-slate-900 shadow-2xl flex flex-col justify-between overflow-hidden">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
+          onClick={() => setIsFormOpen(false)}
+        >
+          <div 
+            className="w-full max-w-lg max-h-[90vh] bg-slate-950 border border-slate-900 rounded-2xl shadow-2xl flex flex-col justify-between overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
             
             {/* Form Header */}
             <div className="p-6 border-b border-slate-900 flex items-center justify-between">
@@ -480,12 +491,102 @@ export default function TimelineView({
         </div>
       )}
 
+      {/* ================= HACKATHON DETAILS CENTERED MODAL ================= */}
+      {selectedAppDetails && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
+          onClick={() => setSelectedAppDetails(null)}
+        >
+          <div 
+            className="w-full max-w-lg bg-slate-950 border border-slate-900 rounded-2xl shadow-2xl p-6 space-y-6 flex flex-col max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-base font-bold text-white leading-snug">{selectedAppDetails.name}</h3>
+                <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-0.5">Hackathon Details</p>
+              </div>
+              <button 
+                onClick={() => setSelectedAppDetails(null)}
+                className="p-1.5 text-slate-500 hover:text-white rounded-lg hover:bg-slate-900 transition-colors cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Badges */}
+            <div className="flex flex-wrap gap-2 pt-1 border-t border-slate-900/60">
+              <span className={`px-2.5 py-1 text-[10px] font-bold border rounded-md ${getPriorityStyles(selectedAppDetails.priority).bg} ${getPriorityStyles(selectedAppDetails.priority).text} ${getPriorityStyles(selectedAppDetails.priority).border}`}>
+                {getPriorityStyles(selectedAppDetails.priority).label} Priority
+              </span>
+              <span className={`px-2.5 py-1 text-[10px] font-bold border rounded-md ${getStatusStyles(selectedAppDetails.status).bg} ${getStatusStyles(selectedAppDetails.status).text} ${getStatusStyles(selectedAppDetails.status).border}`}>
+                {getStatusStyles(selectedAppDetails.status).label}
+              </span>
+            </div>
+
+            {/* Info Items */}
+            <div className="space-y-4 text-xs text-slate-350">
+              {selectedAppDetails.deadline && (
+                <div className="flex items-center gap-2">
+                  <Calendar size={14} className="text-indigo-400" />
+                  <span className="text-slate-450">Deadline:</span>
+                  <span className="font-semibold text-white">{formatDate(selectedAppDetails.deadline)}</span>
+                </div>
+              )}
+              {selectedAppDetails.link && (
+                <div className="flex items-center gap-2">
+                  <LinkIcon size={14} className="text-indigo-400" />
+                  <span className="text-slate-450">Event Link:</span>
+                  <a 
+                    href={selectedAppDetails.link} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="text-indigo-450 hover:text-indigo-300 hover:underline flex items-center gap-1 font-medium break-all"
+                  >
+                    {selectedAppDetails.link}
+                    <ExternalLink size={11} />
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {/* Notes */}
+            <div className="space-y-2 border-t border-slate-900/60 pt-4">
+              <h4 className="text-xs font-semibold text-slate-400">Progress Notes & Information</h4>
+              <div className="p-4 bg-slate-900/30 border border-slate-900/50 rounded-xl max-h-60 overflow-y-auto text-xs text-slate-300 whitespace-pre-line leading-relaxed">
+                {selectedAppDetails.notes || 'No detailed notes provided for this hackathon.'}
+              </div>
+            </div>
+
+            {/* Actions Footer */}
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => {
+                  handleOpenEdit(selectedAppDetails);
+                  setSelectedAppDetails(null);
+                }}
+                className="flex-1 py-2.5 px-4 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-all cursor-pointer shadow-lg shadow-indigo-600/10 text-center"
+              >
+                Edit Details
+              </button>
+              <button
+                onClick={() => setSelectedAppDetails(null)}
+                className="py-2.5 px-6 text-xs font-bold text-slate-450 hover:text-white bg-slate-900 border border-slate-900 rounded-xl transition-all cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
 
 /* ================= COMPONENT: HACKATHON CARD ================= */
-function HackathonCard({ app, onEdit, onDelete }) {
+function HackathonCard({ app, onEdit, onDelete, onViewDetails }) {
   const priority = getPriorityStyles(app.priority);
   const status = getStatusStyles(app.status);
 
@@ -514,7 +615,10 @@ function HackathonCard({ app, onEdit, onDelete }) {
   const remaining = getTimeRemaining(app.deadline);
 
   return (
-    <article className={`glass-card p-5 rounded-2xl flex flex-col justify-between relative border border-slate-800/50 hover:border-slate-800/90 shadow-md ${priority.glow}`}>
+    <article 
+      onClick={() => onViewDetails && onViewDetails(app)}
+      className={`glass-card p-5 rounded-2xl flex flex-col justify-between relative border border-slate-800/50 hover:border-slate-800/90 hover:bg-slate-900/10 cursor-pointer shadow-md transition-all hover:scale-[1.005] select-none ${priority.glow}`}
+    >
       
       {/* Top Section */}
       <div className="space-y-3">
@@ -534,7 +638,10 @@ function HackathonCard({ app, onEdit, onDelete }) {
           </div>
 
           {/* Quick Action Trigger Keys */}
-          <div className="flex items-center gap-1.5 opacity-40 hover:opacity-100 transition-opacity">
+          <div 
+            className="flex items-center gap-1.5 opacity-40 hover:opacity-100 transition-opacity"
+            onClick={(e) => e.stopPropagation()}
+          >
             {app.link && (
               <a
                 href={app.link}
