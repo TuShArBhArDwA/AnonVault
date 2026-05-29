@@ -167,6 +167,8 @@ export const addIdea = async (idea) => {
     title: idea.title,
     content: idea.content || '',
     image_url: idea.image_url || '',
+    images: idea.images || [],
+    links: idea.links || [],
     tags: idea.tags || [],
     ...(user ? { user_id: user.id } : {})
   };
@@ -190,6 +192,8 @@ export const updateIdea = async (id, updates) => {
       title: updates.title,
       content: updates.content,
       image_url: updates.image_url,
+      images: updates.images || [],
+      links: updates.links || [],
       tags: updates.tags
     })
     .eq('id', id)
@@ -210,6 +214,113 @@ export const deleteIdea = async (id) => {
 
   if (error) throw error;
   return true;
+};
+
+// --- Tasks API ---
+
+export const fetchTasks = async () => {
+  const client = getSupabaseClient();
+  if (!client) throw new Error('Supabase not configured');
+
+  const { data, error } = await client
+    .from('tasks')
+    .select('*')
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+};
+
+export const addTaskToSupabase = async (task) => {
+  const client = getSupabaseClient();
+  if (!client) throw new Error('Supabase not configured');
+
+  const payload = {
+    title: task.title,
+    priority: task.priority || 'medium',
+    is_recurring: !!task.is_recurring,
+    recurrence: task.recurrence || 'daily',
+    recurrence_days: task.recurrence_days || [],
+    date: task.is_recurring ? null : (task.date || null),
+    subtasks: task.subtasks || [],
+    completed: false,
+  };
+
+  const { data, error } = await client
+    .from('tasks')
+    .insert([payload])
+    .select();
+
+  if (error) throw error;
+  return data[0];
+};
+
+export const updateTaskInSupabase = async (id, updates) => {
+  const client = getSupabaseClient();
+  if (!client) throw new Error('Supabase not configured');
+
+  const { data, error } = await client
+    .from('tasks')
+    .update({
+      title: updates.title,
+      priority: updates.priority,
+      is_recurring: updates.is_recurring,
+      recurrence: updates.recurrence,
+      recurrence_days: updates.recurrence_days,
+      date: updates.date,
+      subtasks: updates.subtasks || [],
+      completed: updates.completed,
+    })
+    .eq('id', id)
+    .select();
+
+  if (error) throw error;
+  return data[0];
+};
+
+export const deleteTaskFromSupabase = async (id) => {
+  const client = getSupabaseClient();
+  if (!client) throw new Error('Supabase not configured');
+
+  const { error } = await client
+    .from('tasks')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+  return true;
+};
+
+export const fetchTaskCompletions = async () => {
+  const client = getSupabaseClient();
+  if (!client) throw new Error('Supabase not configured');
+
+  const { data, error } = await client
+    .from('task_completions')
+    .select('*');
+
+  if (error) throw error;
+  return data || [];
+};
+
+export const upsertTaskCompletion = async (taskId, dateStr, completed) => {
+  const client = getSupabaseClient();
+  if (!client) throw new Error('Supabase not configured');
+
+  if (completed) {
+    const { error } = await client
+      .from('task_completions')
+      .upsert({ task_id: taskId, date: dateStr, completed: true }, { onConflict: 'task_id,date' });
+    if (error) throw error;
+  } else {
+    const { error } = await client
+      .from('task_completions')
+      .delete()
+      .eq('task_id', taskId)
+      .eq('date', dateStr);
+    if (error) throw error;
+  }
+  return completed;
 };
 
 // --- Storage Bucket Image Upload ---

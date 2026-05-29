@@ -1,642 +1,1086 @@
-import React, { useState, useRef } from 'react';
-import { 
-  Plus, Search, Tag, Image as ImageIcon, Trash2, Edit3, 
-  X, Calendar, AlertTriangle, Hash, FileImage, Link as LinkIcon, Database,
-  Lightbulb
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import {
+  Plus, Search, Tag, Trash2, Edit3, X, Calendar,
+  AlertTriangle, FileImage, Link as LinkIcon,
+  Lightbulb, Sun, Moon, Hash, ExternalLink, Image as ImageIcon,
+  Globe, ChevronDown, ChevronUp, GripVertical, Info
 } from 'lucide-react';
-import { uploadIdeaImage, isConfigured } from '../services/supabase';
+import { uploadIdeaImage } from '../services/supabase';
 import { formatDate } from '../utils/helpers';
 
-export default function IdeaVaultView({ 
-  ideas, 
-  onAdd, 
-  onUpdate, 
-  onDelete, 
-  loading
+/* ─── tiny helpers ─────────────────────────────────────── */
+function isValidUrl(str) {
+  try { new URL(str); return true; } catch { return false; }
+}
+
+/* ─── Attachment type tabs ─────────────────────────────── */
+const AttachTabs = ({ active, onChange }) => (
+  <div className="flex gap-1 p-1 bg-white/[0.03] rounded-xl border border-white/[0.06]">
+    {[
+      { id: 'images', icon: <ImageIcon size={12} />, label: 'Images' },
+      { id: 'links',  icon: <Globe     size={12} />, label: 'Links'  },
+    ].map(({ id, icon, label }) => (
+      <button
+        key={id}
+        type="button"
+        onClick={() => onChange(id)}
+        className={`flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold rounded-lg transition-all cursor-pointer flex-1 justify-center ${
+          active === id
+            ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/25'
+            : 'text-slate-500 hover:text-slate-300'
+        }`}
+      >
+        {icon}{label}
+      </button>
+    ))}
+  </div>
+);
+
+/* ─── Single image row inside form ────────────────────── */
+function ImageRow({ img, index, onRemove, onChangeUrl, onFileUpload, uploadingIndex, uploadError }) {
+  const fileRef = useRef(null);
+  const isUploading = uploadingIndex === index;
+
+  return (
+    <div className="space-y-2 p-3 bg-white/[0.025] border border-white/[0.06] rounded-xl group/imgrow">
+      {/* preview */}
+      {img.url && (
+        <div className="relative rounded-lg overflow-hidden h-28">
+          <img src={img.url} alt="preview" className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+          <button type="button" onClick={() => onRemove(index)}
+            className="absolute top-1.5 right-1.5 p-1 bg-black/60 border border-white/10 rounded-md text-slate-300 hover:text-rose-400 transition-colors cursor-pointer">
+            <X size={11} />
+          </button>
+        </div>
+      )}
+
+      {/* url input row */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <LinkIcon size={10} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+          <input
+            type="url"
+            placeholder="Paste image URL…"
+            value={img.url}
+            onChange={e => onChangeUrl(index, e.target.value)}
+            className="input-premium w-full pl-7 pr-3 py-2 text-[12px] rounded-lg"
+          />
+        </div>
+
+        {/* upload button */}
+        <input type="file" ref={fileRef} accept="image/*"
+          className="hidden" onChange={e => onFileUpload(index, e)} />
+        <button type="button" onClick={() => fileRef.current?.click()}
+          disabled={isUploading}
+          className="btn-ghost px-2.5 py-2 rounded-lg text-[11px] font-semibold cursor-pointer flex items-center gap-1.5 shrink-0">
+          {isUploading
+            ? <span className="w-3 h-3 border border-indigo-400 border-t-transparent rounded-full animate-spin" />
+            : <FileImage size={12} />}
+          {isUploading ? 'Uploading…' : 'Upload'}
+        </button>
+
+        {/* remove row */}
+        {!img.url && (
+          <button type="button" onClick={() => onRemove(index)}
+            className="p-2 text-slate-600 hover:text-rose-400 rounded-lg transition-colors cursor-pointer">
+            <X size={12} />
+          </button>
+        )}
+      </div>
+
+      {/* caption */}
+      <input
+        type="text"
+        placeholder="Caption (optional)"
+        value={img.caption}
+        onChange={e => {
+          onChangeUrl(index, img.url, e.target.value);
+        }}
+        className="input-premium w-full px-3 py-1.5 text-[11px] rounded-lg"
+      />
+
+      {uploadError && uploadingIndex === index && (
+        <p className="text-[10px] text-amber-400 flex items-center gap-1">
+          <AlertTriangle size={10} />{uploadError}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* ─── Single link row inside form ─────────────────────── */
+function LinkRow({ link, index, onRemove, onChange }) {
+  return (
+    <div className="flex items-center gap-2 p-2.5 bg-white/[0.025] border border-white/[0.06] rounded-xl">
+      <Globe size={12} className="text-indigo-400 shrink-0" />
+      <div className="flex-1 grid grid-cols-2 gap-2">
+        <input
+          type="url"
+          placeholder="https://…"
+          value={link.url}
+          onChange={e => onChange(index, { ...link, url: e.target.value })}
+          className="input-premium px-3 py-2 text-[12px] rounded-lg w-full"
+        />
+        <input
+          type="text"
+          placeholder="Label (e.g. GitHub)"
+          value={link.label}
+          onChange={e => onChange(index, { ...link, label: e.target.value })}
+          className="input-premium px-3 py-2 text-[12px] rounded-lg w-full"
+        />
+      </div>
+      <button type="button" onClick={() => onRemove(index)}
+        className="p-1.5 text-slate-600 hover:text-rose-400 rounded-lg transition-colors cursor-pointer shrink-0">
+        <X size={12} />
+      </button>
+    </div>
+  );
+}
+
+/* ─── Premium Custom Dropdown ─────────────────────────── */
+function CustomDropdown({ value, onChange, options, icon, placeholder }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const activeOption = options.find(o => o.value === value) || { label: placeholder || value };
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="select-premium pl-8 pr-10 py-2 text-[13px] rounded-xl cursor-pointer font-medium flex items-center gap-1.5 min-w-[130px] justify-between relative group/btn"
+      >
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+          {icon}
+        </span>
+        <span className="truncate pr-1">{activeOption.label}</span>
+        <ChevronDown 
+          size={12} 
+          className={`text-slate-500 transition-transform duration-200 group-hover/btn:text-slate-350 ${isOpen ? 'rotate-180 text-indigo-400' : ''}`} 
+        />
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-2 min-w-[180px] bg-slate-950/98 backdrop-blur-xl border border-white/[0.08] rounded-xl shadow-[0_12px_30px_rgba(0,0,0,0.6)] py-1.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+          {options.map((opt, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => {
+                onChange(opt.value);
+                setIsOpen(false);
+              }}
+              className={`w-full text-left px-3.5 py-2.5 text-[12.5px] transition-all flex items-center justify-between border-b border-white/[0.04] last:border-b-0 hover:bg-white/[0.04] cursor-pointer ${
+                value === opt.value 
+                  ? 'text-indigo-300 font-semibold bg-indigo-500/[0.04]' 
+                  : 'text-slate-355 hover:text-white'
+              }`}
+            >
+              <span>{opt.label}</span>
+              {value === opt.value && <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   MAIN COMPONENT
+═══════════════════════════════════════════════════════ */
+export default function IdeaVaultView({
+  ideas, onAdd, onUpdate, onDelete, loading, theme, toggleTheme, showToast
 }) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedTag, setSelectedTag] = useState('');
+  const [searchTerm, setSearchTerm]     = useState('');
+  const [selectedTag, setSelectedTag]   = useState('');
+  const [isFormOpen, setIsFormOpen]     = useState(false);
+  const [editingIdea, setEditingIdea]   = useState(null);
 
-  // Form Drawer State
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingIdea, setEditingIdea] = useState(null);
-  const [formTitle, setFormTitle] = useState('');
-  const [formContent, setFormContent] = useState('');
-  const [formImageUrl, setFormImageUrl] = useState('');
-  const [formTagsString, setFormTagsString] = useState('');
-  
-  // Image Upload States
-  const [uploadingFile, setUploadingFile] = useState(false);
-  const [uploadError, setUploadError] = useState('');
-  const fileInputRef = useRef(null);
+  /* sorting and drag state */
+  const [orderedIdeas, setOrderedIdeas] = useState([]);
+  const [sortBy, setSortBy]             = useState('custom'); // 'custom', 'newest', 'oldest'
+  const [draggedId, setDraggedId]       = useState(null);
+  const [draggedOverId, setDraggedOverId] = useState(null);
+  const [hoveredDragId, setHoveredDragId] = useState(null);
 
-  // Delete Confirmation State
-  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  /* form fields */
+  const [formTitle,       setFormTitle]       = useState('');
+  const [formContent,     setFormContent]     = useState('');
+  const [formTags,        setFormTags]        = useState([]);   // Array of strings
+  const [tagInputVal,     setTagInputVal]     = useState('');   // Active typed tag
+  const [formImages,      setFormImages]      = useState([]);   // [{url, caption}]
+  const [formLinks,       setFormLinks]       = useState([]);   // [{url, label}]
+  const [attachTab,       setAttachTab]       = useState('images');
 
-  // Detailed View State
-  const [selectedIdeaDetails, setSelectedIdeaDetails] = useState(null);
+  /* upload state */
+  const [uploadingIndex,  setUploadingIndex]  = useState(null);
+  const [uploadError,     setUploadError]     = useState('');
 
+  /* modals */
+  const [deleteConfirmId,    setDeleteConfirmId]    = useState(null);
+  const [selectedIdea,       setSelectedIdea]       = useState(null);
+
+  /* Sync database ideas with custom local order */
+  useEffect(() => {
+    if (!ideas) return;
+    
+    let savedOrder = [];
+    try {
+      const saved = localStorage.getItem('anonvault_ideas_order');
+      if (saved) savedOrder = JSON.parse(saved);
+    } catch (e) {
+      console.error('Failed to parse ideas order:', e);
+    }
+
+    const orderMap = new Map();
+    savedOrder.forEach((id, idx) => orderMap.set(id, idx));
+
+    const sorted = [...ideas].sort((a, b) => {
+      const orderA = orderMap.has(a.id) ? orderMap.get(a.id) : -1;
+      const orderB = orderMap.has(b.id) ? orderMap.get(b.id) : -1;
+
+      // Put new ideas at the top
+      if (orderA === -1 && orderB === -1) {
+        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+      }
+      if (orderA === -1) return -1;
+      if (orderB === -1) return 1;
+      return orderA - orderB;
+    });
+
+    setOrderedIdeas(sorted);
+  }, [ideas]);
+
+  /* ── helpers ── */
   const resetForm = () => {
-    setFormTitle('');
-    setFormContent('');
-    setFormImageUrl('');
-    setFormTagsString('');
-    setUploadingFile(false);
-    setUploadError('');
-    setEditingIdea(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    setFormTitle(''); setFormContent(''); 
+    setFormTags([]); setTagInputVal('');
+    setFormImages([]); setFormLinks([]);
+    setUploadingIndex(null); setUploadError('');
+    setEditingIdea(null); setAttachTab('images');
   };
 
-  const handleOpenAdd = () => {
-    resetForm();
-    setIsFormOpen(true);
-  };
+  const handleOpenAdd = () => { resetForm(); setIsFormOpen(true); };
 
   const handleOpenEdit = (idea) => {
     setEditingIdea(idea);
     setFormTitle(idea.title);
     setFormContent(idea.content || '');
-    setFormImageUrl(idea.image_url || '');
-    setFormTagsString(idea.tags ? idea.tags.join(', ') : '');
+    setFormTags(idea.tags || []);
+    setTagInputVal('');
+
+    // normalise legacy single image_url → images array
+    const imgs = idea.images && idea.images.length > 0
+      ? idea.images
+      : idea.image_url
+        ? [{ url: idea.image_url, caption: '' }]
+        : [];
+    setFormImages(imgs);
+    setFormLinks(idea.links || []);
     setIsFormOpen(true);
   };
 
-  const handleFileUpload = async (e) => {
+  /* ── image handlers ── */
+  const addImageRow    = () => setFormImages(p => [...p, { url: '', caption: '' }]);
+  const removeImageRow = (i) => setFormImages(p => p.filter((_, idx) => idx !== i));
+  const changeImageRow = (i, url, caption) =>
+    setFormImages(p => p.map((item, idx) => idx === i ? { url, caption: caption ?? item.caption } : item));
+
+  const handleFileUpload = async (index, e) => {
     const file = e.target.files[0];
     if (!file) return;
-
-    // Validate size (limit to 4MB for standard prototypes)
     if (file.size > 4 * 1024 * 1024) {
-      setUploadError('Image size exceeds 4MB limit.');
+      showToast?.('warning', 'File Too Large', 'Maximum image size is 4 MB.');
+      setUploadError('Max 4 MB');
+      return;
+    }
+    setUploadingIndex(index); setUploadError('');
+    try {
+      const publicUrl = await uploadIdeaImage(file);
+      changeImageRow(index, publicUrl, formImages[index]?.caption || '');
+      showToast?.('success', 'Image Uploaded', 'Your image is ready.');
+    } catch {
+      setUploadError('Upload failed — check your "idea-images" storage bucket.');
+      showToast?.('error', 'Upload Failed', 'Could not upload image. Check your storage bucket.');
+    } finally {
+      setUploadingIndex(null);
+    }
+  };
+
+  /* ── link handlers ── */
+  const addLinkRow    = () => setFormLinks(p => [...p, { url: '', label: '' }]);
+  const removeLinkRow = (i) => setFormLinks(p => p.filter((_, idx) => idx !== i));
+  const changeLinkRow = (i, val) => setFormLinks(p => p.map((item, idx) => idx === i ? val : item));
+
+  /* ── tag form handlers ── */
+  const addFormTag = (tagText) => {
+    const cleaned = tagText
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-zA-Z0-9]/g, '');
+    if (cleaned && !formTags.includes(cleaned)) {
+      setFormTags(prev => [...prev, cleaned]);
+    }
+    setTagInputVal('');
+  };
+
+  const removeFormTag = (tagToRemove) => {
+    setFormTags(prev => prev.filter(t => t !== tagToRemove));
+  };
+
+  const handleTagKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      if (tagInputVal.trim()) {
+        addFormTag(tagInputVal);
+      }
+    } else if (e.key === 'Backspace' && !tagInputVal && formTags.length > 0) {
+      setFormTags(prev => prev.slice(0, -1));
+    }
+  };
+
+  /* ── native drag events ── */
+  const handleDragStart = (e, id) => {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', id);
+    setDraggedId(id);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedId(null);
+    setDraggedOverId(null);
+  };
+
+  const handleDragOver = (e, id) => {
+    e.preventDefault();
+    if (draggedId && draggedId !== id) {
+      setDraggedOverId(id);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDraggedOverId(null);
+  };
+
+  const handleDrop = (e, targetId) => {
+    e.preventDefault();
+    const sourceId = e.dataTransfer.getData('text/plain') || draggedId;
+    if (!sourceId || sourceId === targetId) {
+      handleDragEnd();
       return;
     }
 
-    setUploadingFile(true);
-    setUploadError('');
+    const currentIndexes = orderedIdeas.map(item => item.id);
+    const sourceIndex = currentIndexes.indexOf(sourceId);
+    const targetIndex = currentIndexes.indexOf(targetId);
 
-    try {
-      const publicUrl = await uploadIdeaImage(file);
-      setFormImageUrl(publicUrl);
-    } catch (err) {
-      console.error('File upload failure:', err);
-      setUploadError(
-        'Failed to upload. Make sure a PUBLIC storage bucket named "idea-images" is created on your Supabase dashboard.'
-      );
-    } finally {
-      setUploadingFile(false);
+    if (sourceIndex !== -1 && targetIndex !== -1) {
+      const newOrderedIdeas = [...orderedIdeas];
+      const [removed] = newOrderedIdeas.splice(sourceIndex, 1);
+      newOrderedIdeas.splice(targetIndex, 0, removed);
+
+      const newOrderIds = newOrderedIdeas.map(item => item.id);
+      localStorage.setItem('anonvault_ideas_order', JSON.stringify(newOrderIds));
+      setOrderedIdeas(newOrderedIdeas);
     }
+    handleDragEnd();
   };
 
+  /* ── submit ── */
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formTitle.trim()) return;
+    if (!formTitle.trim()) {
+      showToast?.('error', 'Title Required', 'Please give your idea a title before saving.');
+      return;
+    }
 
-    // Parse comma-separated tags
-    const parsedTags = formTagsString
-      .split(',')
-      .map(tag => tag.trim().toLowerCase())
-      .filter(tag => tag.length > 0 && !tag.startsWith('#'))
-      .map(tag => tag.replace(/[^a-zA-Z0-9]/g, '')); // clean tags
+    let finalTags = [...formTags];
+    if (tagInputVal.trim()) {
+      const cleaned = tagInputVal.trim().toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
+      if (cleaned && !finalTags.includes(cleaned)) {
+        finalTags.push(cleaned);
+      }
+    }
 
-    const ideaPayload = {
-      title: formTitle.trim(),
-      content: formContent.trim(),
-      image_url: formImageUrl.trim(),
-      tags: parsedTags,
+    const validImages = formImages.filter(i => i.url.trim());
+    const validLinks  = formLinks.filter(l => l.url.trim());
+
+    const payload = {
+      title:     formTitle.trim(),
+      content:   formContent.trim(),
+      image_url: validImages[0]?.url || '',   // keep legacy field
+      images:    validImages,
+      links:     validLinks,
+      tags:      finalTags,
     };
 
-    if (editingIdea) {
-      await onUpdate(editingIdea.id, ideaPayload);
-    } else {
-      await onAdd(ideaPayload);
+    if (editingIdea) await onUpdate(editingIdea.id, payload);
+    else             await onAdd(payload);
+    setIsFormOpen(false); resetForm();
+  };
+
+  /* ── derived tags for filters ── */
+  const allTags = Array.from(new Set((ideas || []).flatMap(i => (i && i.tags) || [])));
+
+  const tagOptions = [
+    { value: '', label: 'All Tags' },
+    ...allTags.map(tag => ({ value: tag, label: `#${tag}` }))
+  ];
+
+  const sortOptions = [
+    { value: 'custom', label: 'Custom (Drag & Drop)' },
+    { value: 'newest', label: 'Newest First' },
+    { value: 'oldest', label: 'Oldest First' }
+  ];
+
+  // Perform filtering and sorting dynamically
+  const getProcessedIdeas = () => {
+    let list = [...orderedIdeas];
+
+    if (sortBy === 'newest') {
+      list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+    } else if (sortBy === 'oldest') {
+      list.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
     }
-    setIsFormOpen(false);
-    resetForm();
+
+    return list.filter(idea => {
+      if (!idea) return false;
+      const q = searchTerm.toLowerCase();
+      const matchesSearch =
+        (idea.title  || '').toLowerCase().includes(q) ||
+        (idea.content || '').toLowerCase().includes(q);
+      const matchesTag = !selectedTag || (idea.tags && idea.tags.includes(selectedTag));
+      return matchesSearch && matchesTag;
+    });
   };
 
-  const handleDeleteClick = (id) => {
-    setDeleteConfirmId(id);
-  };
+  const processedIdeas = getProcessedIdeas();
 
-  const handleConfirmDelete = async () => {
-    if (deleteConfirmId) {
-      await onDelete(deleteConfirmId);
-      setDeleteConfirmId(null);
-    }
-  };
+  /* FLIP layout transition animation */
+  const prevRectsRef = useRef({});
 
-  // --- Filtering Ideas ---
-  const allTags = Array.from(new Set((ideas || []).flatMap(idea => (idea && idea.tags) || [])));
+  useLayoutEffect(() => {
+    const elements = document.querySelectorAll('[data-flip-id]');
+    const newRects = {};
 
-  const filteredIdeas = (ideas || []).filter(idea => {
-    if (!idea) return false;
-    const matchesSearch = 
-      (idea.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (idea.content && idea.content.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesTag = !selectedTag || (idea.tags && idea.tags.includes(selectedTag));
+    elements.forEach(el => {
+      const id = el.getAttribute('data-flip-id');
+      newRects[id] = el.getBoundingClientRect();
+    });
 
-    return matchesSearch && matchesTag;
-  });
+    Object.keys(prevRectsRef.current).forEach(id => {
+      const first = prevRectsRef.current[id];
+      const last = newRects[id];
 
+      if (first && last) {
+        const deltaX = first.left - last.left;
+        const deltaY = first.top - last.top;
+
+        if (deltaX !== 0 || deltaY !== 0) {
+          const el = Array.from(elements).find(node => node.getAttribute('data-flip-id') === id);
+          if (el) {
+            el.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+            el.style.transition = 'none';
+            el.offsetHeight; // force reflow
+
+            requestAnimationFrame(() => {
+              el.style.transition = 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
+              el.style.transform = '';
+            });
+
+            setTimeout(() => {
+              el.style.transition = '';
+              el.style.transform = '';
+            }, 450);
+          }
+        }
+      }
+    });
+
+    prevRectsRef.current = newRects;
+  }, [processedIdeas.map(i => i.id).join(',')]);
+
+  /* ── render ── */
   return (
     <div className="flex-1 h-screen flex flex-col overflow-hidden bg-slate-950">
-      
-      {/* View Header */}
-      <header className="px-8 py-5 border-b border-slate-900 bg-slate-950 flex items-center justify-between shrink-0">
-        <div>
-          <h2 className="text-xl font-bold text-white tracking-wide font-sans">Idea Vault</h2>
-          <p className="text-xs text-slate-500">Log and catalog creative thoughts, drafts, and designs</p>
-        </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleOpenAdd}
-            className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-600/10 hover:shadow-indigo-600/20 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer"
-          >
-            <Plus size={15} />
-            Capture Idea
+      {/* Header */}
+      <header className="glass-header px-7 py-4 flex items-center justify-between shrink-0">
+        <div>
+          <h2 className="text-lg font-bold text-white tracking-tight">Idea Vault</h2>
+          <p className="text-[11px] text-slate-500 mt-0.5">{(ideas||[]).length} ideas captured</p>
+        </div>
+        <div className="flex items-center gap-2.5">
+          <button onClick={toggleTheme} className="btn-ghost p-2.5 rounded-xl cursor-pointer flex items-center justify-center"
+            title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>
+            {theme === 'dark' ? <Sun size={14} className="text-amber-400" /> : <Moon size={14} className="text-indigo-400" />}
+          </button>
+          <button onClick={handleOpenAdd} className="btn-primary flex items-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-xl cursor-pointer">
+            <Plus size={14} /> New Idea
           </button>
         </div>
       </header>
 
-      {/* Toolbar controls */}
-      <section className="px-8 py-4 border-b border-slate-900 bg-slate-950/60 flex flex-wrap gap-4 items-center justify-between shrink-0">
-        <div className="flex items-center gap-3 flex-1 min-w-[240px]">
-          <div className="relative flex-1 max-w-sm">
-            <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
-              <Search size={14} />
-            </span>
-            <input
-              type="text"
-              placeholder="Search ideas..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-xs text-white bg-slate-900/40 border border-slate-900 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 placeholder:text-slate-500 transition-all font-medium"
-            />
+      {/* Unified Toolbar Dropdowns */}
+      <div className="px-7 py-3 border-b border-white/[0.04] flex flex-wrap gap-4 items-center justify-between shrink-0 bg-slate-950/40">
+        <div className="flex flex-wrap gap-4 items-center flex-1 min-w-[280px]">
+          {/* Search bar */}
+          <div className="relative min-w-[200px] max-w-xs flex-1">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+            <input type="text" placeholder="Search ideas…" value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="input-premium w-full pl-9 pr-4 py-2 text-[13px] rounded-xl" />
           </div>
 
-          {selectedTag && (
-            <span className="flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 rounded-full">
-              Tag: #{selectedTag}
-              <button 
-                onClick={() => setSelectedTag('')}
-                className="text-slate-450 hover:text-white ml-1 font-bold cursor-pointer"
-              >
-                <X size={10} />
-              </button>
-            </span>
-          )}
+          {/* Vertical Separator */}
+          <div className="w-[1px] h-5 bg-white/[0.08] hidden md:block self-center mx-1" />
+
+          {/* Tag Filter & Sort Controls Group */}
+          <div className="flex items-center gap-4 flex-wrap">
+            {/* Filter by Tag */}
+            <div className="relative flex items-center">
+              <span className="text-[11px] font-bold text-slate-500 mr-2.5 uppercase tracking-wider hidden sm:inline-block">Filter</span>
+              <CustomDropdown
+                value={selectedTag}
+                onChange={setSelectedTag}
+                options={tagOptions}
+                icon={<Tag size={11} className="text-indigo-400/80 group-hover:text-indigo-300 transition-colors" />}
+                placeholder="All Tags"
+              />
+            </div>
+
+            {/* Thinner divider between dropdowns */}
+            <div className="w-[1px] h-4 bg-white/[0.06] hidden sm:block self-center" />
+
+            {/* Sort Menu */}
+            <div className="relative flex items-center">
+              <span className="text-[11px] font-bold text-slate-500 mr-2.5 uppercase tracking-wider hidden sm:inline-block">Sort</span>
+              <CustomDropdown
+                value={sortBy}
+                onChange={setSortBy}
+                options={sortOptions}
+                icon={<Calendar size={11} className="text-amber-400/80 group-hover:text-amber-300 transition-colors" />}
+                placeholder="Custom (Drag & Drop)"
+              />
+            </div>
+          </div>
         </div>
 
-        {/* Dynamic Tags filter pill scroll */}
-        {allTags.length > 0 && (
-          <div className="flex items-center gap-2 max-w-md overflow-x-auto pb-1 select-none">
-            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider shrink-0">Filter Tag:</span>
-            {allTags.map((tag) => (
-              <button
-                key={tag}
-                onClick={() => setSelectedTag(tag === selectedTag ? '' : tag)}
-                className={`px-2.5 py-1 text-[10px] font-semibold border rounded-lg transition-all shrink-0 cursor-pointer ${
-                  tag === selectedTag
-                    ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30'
-                    : 'bg-slate-900/40 text-slate-450 hover:text-slate-355 border-slate-900/60 hover:bg-slate-900'
-                }`}
-              >
-                #{tag}
-              </button>
-            ))}
+        {/* Selected tag indicator pill */}
+        {selectedTag && (
+          <div className="flex items-center gap-1.5">
+            <span className="flex items-center gap-1.5 tag-pill bg-indigo-500/20 border-indigo-400/30 text-indigo-300">
+              <Hash size={9} /> {selectedTag}
+              <button onClick={() => setSelectedTag('')} className="hover:text-white ml-0.5 cursor-pointer" title="Clear filter"><X size={9} /></button>
+            </span>
           </div>
         )}
-      </section>
+      </div>
 
-      {/* Main Grid View */}
-      <div className="flex-1 overflow-y-auto px-8 py-6">
-          {loading ? (
-            <div className="h-48 flex items-center justify-center text-slate-400 text-xs gap-2">
-              <span className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></span>
-              Synchronizing vault...
+      {/* Grid */}
+      <div className="flex-1 overflow-y-auto px-7 py-6">
+        {loading ? (
+          <div className="h-48 flex items-center justify-center gap-3 text-slate-500 text-sm">
+            <span className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+            Loading…
+          </div>
+        ) : processedIdeas.length === 0 ? (
+          <div className="flex flex-col items-center justify-center text-center py-20 max-w-sm mx-auto">
+            <div className="w-14 h-14 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mb-4">
+              <Lightbulb size={24} className="text-slate-600 animate-pulse" />
             </div>
-          ) : filteredIdeas.length === 0 ? (
-            <div className="h-64 flex flex-col items-center justify-center text-center p-6 border border-dashed border-slate-900 rounded-2xl max-w-md mx-auto my-12">
-              <Lightbulb size={32} className="text-slate-650 mb-3 animate-pulse" />
-              <h3 className="text-sm font-semibold text-slate-350">No ideas discovered</h3>
-              <p className="text-[11px] text-slate-500 mt-1 max-w-xs leading-normal">
-                {searchTerm || selectedTag 
-                  ? 'Try relaxing your search queries or tag selections.' 
-                  : 'Start cataloging your thoughts by adding your first idea card.'}
-              </p>
-              {!searchTerm && !selectedTag && (
-                <button
-                  onClick={handleOpenAdd}
-                  className="mt-4 px-4 py-2 text-xs font-semibold text-indigo-400 hover:text-white bg-indigo-500/10 hover:bg-indigo-600/20 border border-indigo-500/25 rounded-xl transition-all"
+            <h3 className="text-sm font-semibold text-slate-300">No ideas yet</h3>
+            <p className="text-[12px] text-slate-600 mt-1.5 leading-relaxed">
+              {searchTerm || selectedTag ? 'Try adjusting your search or tags.' : 'Capture your first creative thought.'}
+            </p>
+            {!searchTerm && !selectedTag && (
+              <button onClick={handleOpenAdd} className="btn-primary mt-5 px-5 py-2 text-[13px] font-semibold rounded-xl cursor-pointer">
+                Capture Idea
+              </button>
+            )}
+          </div>
+        ) : (
+          <div>
+            <div className="columns-1 md:columns-2 xl:columns-3 gap-5 space-y-5 [column-fill:_auto]">
+              {processedIdeas.map(idea => (
+                <div
+                  key={idea.id}
+                  data-flip-id={idea.id}
+                  draggable={sortBy === 'custom' && hoveredDragId === idea.id && !searchTerm && !selectedTag}
+                  onDragStart={e => handleDragStart(e, idea.id)}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={e => handleDragOver(e, idea.id)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={e => handleDrop(e, idea.id)}
+                  className={`break-inside-avoid transition-opacity duration-200 ${
+                    draggedId === idea.id ? 'opacity-20 scale-95 border-2 border-dashed border-indigo-500/20 rounded-2xl' : ''
+                  } ${
+                    draggedOverId === idea.id ? 'border-2 border-indigo-500 scale-[1.01] shadow-[0_0_15px_rgba(99,102,241,0.25)] rounded-2xl' : ''
+                  }`}
                 >
-                  Log Creative Idea
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="columns-1 md:columns-2 xl:columns-3 gap-6 space-y-6 [column-fill:_auto]">
-              {filteredIdeas.map((idea) => (
-                <div key={idea.id} className="break-inside-avoid">
-                  <IdeaCard 
-                    idea={idea} 
-                    onEdit={handleOpenEdit} 
-                    onDelete={handleDeleteClick} 
-                    onSelectTag={setSelectedTag} 
-                    onViewDetails={setSelectedIdeaDetails}
+                  <IdeaCard
+                    idea={idea}
+                    sortBy={sortBy}
+                    onEdit={handleOpenEdit}
+                    onDelete={id => setDeleteConfirmId(id)}
+                    onSelectTag={setSelectedTag}
+                    onViewDetails={setSelectedIdea}
+                    isFilteringOrSearching={!!(searchTerm || selectedTag)}
+                    setHoveredDragId={setHoveredDragId}
                   />
                 </div>
               ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
+      </div>
 
-      {/* ================= EDIT / ADD CENTERED MODAL ================= */}
+      {/* ═══ ADD / EDIT MODAL ═══ */}
       {isFormOpen && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
-          onClick={() => setIsFormOpen(false)}
-        >
-          <div 
-            className="w-full max-w-lg max-h-[90vh] bg-slate-950 border border-slate-900 rounded-2xl shadow-2xl flex flex-col justify-between overflow-hidden animate-in fade-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            
-            {/* Header */}
-            <div className="p-6 border-b border-slate-900 flex items-center justify-between">
+        <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setIsFormOpen(false)}>
+          <div className="modal-surface w-full max-w-xl max-h-[92vh] rounded-2xl flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+
+            {/* modal header */}
+            <div className="px-6 py-5 border-b border-white/[0.06] flex items-center justify-between shrink-0">
               <div>
-                <h3 className="text-base font-bold text-white">
-                  {editingIdea ? 'Modify Creative Idea' : 'Capture New Idea'}
-                </h3>
-                <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-0.5">Idea Vault</p>
+                <h3 className="text-[15px] font-bold text-white">{editingIdea ? 'Edit Idea' : 'New Idea'}</h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">{editingIdea ? 'Update your idea below' : 'Capture a creative thought'}</p>
               </div>
-              <button 
-                onClick={() => setIsFormOpen(false)}
-                className="p-1.5 text-slate-500 hover:text-white rounded-lg hover:bg-slate-900 transition-colors cursor-pointer"
-              >
-                Cancel
-              </button>
+              <button onClick={() => setIsFormOpen(false)} className="btn-ghost p-2 rounded-lg cursor-pointer"><X size={15} /></button>
             </div>
 
-            {/* Form Fields (Scrollable) */}
             <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
-              
+
               {/* Title */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-350">
-                  Idea Title <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. AI-driven timeline dashboard"
-                  value={formTitle}
-                  onChange={(e) => setFormTitle(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs text-white bg-slate-900/60 border border-slate-900 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 placeholder:text-slate-650 transition-all font-medium"
-                />
-              </div>
+              <FormField label="Title" required>
+                <input type="text" required placeholder="e.g. AI-driven portfolio tracker"
+                  value={formTitle} onChange={e => setFormTitle(e.target.value)}
+                  className="input-premium w-full px-3.5 py-2.5 text-[13px] rounded-xl" />
+              </FormField>
 
               {/* Description */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-350">Description & Details</label>
-                <textarea
-                  rows={8}
-                  placeholder="Elaborate on your idea, write down details, frameworks, inspirations..."
-                  value={formContent}
-                  onChange={(e) => setFormContent(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs text-white bg-slate-900/60 border border-slate-900 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 placeholder:text-slate-655 transition-all font-medium resize-none leading-relaxed"
-                />
-              </div>
+              <FormField label="Description">
+                <textarea rows={4} placeholder="Elaborate on your idea…"
+                  value={formContent} onChange={e => setFormContent(e.target.value)}
+                  className="input-premium w-full px-3.5 py-2.5 text-[13px] rounded-xl resize-none leading-relaxed" />
+              </FormField>
 
-              {/* Image Upload Area */}
-              <div className="space-y-2.5">
-                <label className="text-xs font-semibold text-slate-355 flex items-center gap-1.5">
-                  <ImageIcon size={12} className="text-slate-500" />
-                  Visual Attachment (Image)
-                </label>
+              {/* ── Attachments panel ── */}
+              <FormField label="Attachments">
+                <AttachTabs active={attachTab} onChange={setAttachTab} />
 
-                {/* Drag & Drop Upload Container */}
-                <div className="p-4 border border-dashed border-slate-900 hover:border-slate-800 rounded-xl bg-slate-900/20 text-center space-y-2.5 transition-all">
-                  <div className="w-10 h-10 bg-indigo-500/10 rounded-lg flex items-center justify-center mx-auto text-indigo-400">
-                    <FileImage size={18} />
-                  </div>
-                  <div>
-                    <span className="text-[11px] font-bold text-slate-300 block">
-                      {uploadingFile ? 'Uploading files...' : 'Upload Local Image'}
-                    </span>
-                    <span className="text-[10px] text-slate-500 block">PNG, JPG or WEBP up to 4MB</span>
-                  </div>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileUpload}
-                    accept="image/*"
-                    disabled={uploadingFile}
-                    className="hidden"
-                    id="idea-image-file-input"
-                  />
-                  <label
-                    htmlFor="idea-image-file-input"
-                    className="inline-flex py-1.5 px-3.5 text-[10px] font-semibold text-indigo-400 bg-indigo-500/10 hover:bg-indigo-600/25 border border-indigo-500/20 rounded-lg cursor-pointer transition-all"
-                  >
-                    Select File
-                  </label>
-                </div>
-
-                {/* External Image URL Alternative */}
-                <div className="space-y-1">
-                  <span className="text-[10px] text-slate-550 block text-center">--- OR ENTER EXTERNAL LINK ---</span>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
-                      <LinkIcon size={11} />
-                    </span>
-                    <input
-                      type="url"
-                      placeholder="Paste image web URL (https://...)"
-                      value={formImageUrl}
-                      onChange={(e) => setFormImageUrl(e.target.value)}
-                      className="w-full pl-8 pr-3.5 py-2 text-[11px] text-white bg-slate-900/60 border border-slate-900 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 placeholder:text-slate-650 transition-all"
-                    />
-                  </div>
-                </div>
-
-                {uploadError && (
-                  <p className="text-[10px] text-amber-400 bg-amber-500/5 p-2 rounded-lg border border-amber-500/10 flex items-start gap-1 leading-normal">
-                    <AlertTriangle size={12} className="shrink-0 mt-0.5" />
-                    {uploadError}
-                  </p>
-                )}
-
-                {/* Preview Image If Attached */}
-                {formImageUrl && (
-                  <div className="relative rounded-xl overflow-hidden border border-slate-800 bg-slate-950/40">
-                    <img 
-                      src={formImageUrl} 
-                      alt="Vault Attachment Preview" 
-                      className="max-h-48 w-full object-cover"
-                    />
+                {/* ── Images tab ── */}
+                {attachTab === 'images' && (
+                  <div className="mt-3 space-y-2">
+                    {formImages.map((img, i) => (
+                      <ImageRow
+                        key={i}
+                        img={img}
+                        index={i}
+                        onRemove={removeImageRow}
+                        onChangeUrl={changeImageRow}
+                        onFileUpload={handleFileUpload}
+                        uploadingIndex={uploadingIndex}
+                        uploadError={uploadError}
+                      />
+                    ))}
                     <button
                       type="button"
-                      onClick={() => {
-                        setFormImageUrl('');
-                        if (fileInputRef.current) fileInputRef.current.value = '';
-                      }}
-                      className="absolute top-2 right-2 p-1 bg-slate-950/80 border border-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
+                      onClick={addImageRow}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 text-[12px] font-semibold
+                                 text-indigo-400 border border-dashed border-indigo-500/25 rounded-xl
+                                 hover:border-indigo-500/50 hover:bg-indigo-500/[0.05] transition-all cursor-pointer"
                     >
-                      <X size={12} />
+                      <Plus size={13} /> Add Image
                     </button>
                   </div>
                 )}
-              </div>
 
-              {/* Tags */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-350 flex items-center gap-1.5">
-                  <Tag size={12} className="text-slate-550" />
-                  Category Tags
-                </label>
-                <input
-                  type="text"
-                  placeholder="design, startup, side-project (comma-separated)"
-                  value={formTagsString}
-                  onChange={(e) => setFormTagsString(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs text-white bg-slate-900/60 border border-slate-900 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 placeholder:text-slate-650 transition-all font-medium"
-                />
-              </div>
+                {/* ── Links tab ── */}
+                {attachTab === 'links' && (
+                  <div className="mt-3 space-y-2">
+                    {formLinks.length === 0 && (
+                      <p className="text-[11px] text-slate-600 text-center py-3">No links added yet</p>
+                    )}
+                    {formLinks.map((link, i) => (
+                      <LinkRow
+                        key={i}
+                        link={link}
+                        index={i}
+                        onRemove={removeLinkRow}
+                        onChange={changeLinkRow}
+                      />
+                    ))}
+                    <button
+                      type="button"
+                      onClick={addLinkRow}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 text-[12px] font-semibold
+                                 text-indigo-400 border border-dashed border-indigo-500/25 rounded-xl
+                                 hover:border-indigo-500/50 hover:bg-indigo-500/[0.05] transition-all cursor-pointer"
+                    >
+                      <Plus size={13} /> Add Link
+                    </button>
+                  </div>
+                )}
+              </FormField>
 
-              {/* Actions */}
-              <div className="pt-4 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsFormOpen(false)}
-                  className="flex-1 py-3 px-4 text-xs font-bold text-slate-450 hover:text-white bg-slate-900 hover:bg-slate-900/80 rounded-xl border border-slate-900 transition-all cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={uploadingFile}
-                  className={`flex-1 py-3 px-4 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-600/10 transition-all cursor-pointer ${
-                    uploadingFile && 'opacity-50 cursor-not-allowed'
-                  }`}
-                >
+              {/* Enter-to-Tag interactive chip input */}
+              <FormField label="Tags">
+                <div className="input-premium w-full px-3.5 py-2.5 text-[13px] rounded-xl flex flex-wrap gap-2 items-center min-h-[42px] focus-within:border-indigo-500/40 focus-within:ring-2 focus-within:ring-indigo-500/10 transition-all">
+                  {formTags.map((tag, idx) => (
+                    <span key={idx} className="tag-pill flex items-center gap-1 bg-indigo-500/15 border-indigo-500/25 text-indigo-300"
+                          onClick={e => e.stopPropagation()}
+                          onDragStart={e => e.stopPropagation()}>
+                      #{tag}
+                      <button
+                        type="button"
+                        onClick={() => removeFormTag(tag)}
+                        className="hover:text-white ml-0.5 cursor-pointer flex items-center justify-center rounded-full p-0.5 hover:bg-white/10"
+                      >
+                        <X size={10} />
+                      </button>
+                    </span>
+                  ))}
+                  <div className="flex-1 min-w-[120px] flex items-center gap-1.5">
+                    <Tag size={11} className="text-slate-500 shrink-0" />
+                    <input
+                      type="text"
+                      placeholder={formTags.length === 0 ? "Type tag & press Enter…" : "Add tag…"}
+                      value={tagInputVal}
+                      onChange={e => setTagInputVal(e.target.value)}
+                      onKeyDown={handleTagKeyDown}
+                      className="bg-transparent border-none outline-none focus:outline-none w-full text-[13px] text-slate-200 placeholder-slate-650"
+                    />
+                  </div>
+                </div>
+              </FormField>
+
+              {/* actions */}
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setIsFormOpen(false)}
+                  className="btn-ghost flex-1 py-2.5 text-[13px] font-semibold rounded-xl cursor-pointer">Cancel</button>
+                <button type="submit" disabled={uploadingIndex !== null}
+                  className={`btn-primary flex-1 py-2.5 text-[13px] font-semibold rounded-xl cursor-pointer ${uploadingIndex !== null ? 'opacity-50 cursor-not-allowed' : ''}`}>
                   {editingIdea ? 'Save Changes' : 'Capture Idea'}
                 </button>
               </div>
-
             </form>
           </div>
         </div>
       )}
 
-      {/* ================= DELETE CONFIRMATION DIALOG ================= */}
+      {/* ═══ DELETE CONFIRM ═══ */}
       {deleteConfirmId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-xs">
-          <div className="w-full max-w-sm p-6 rounded-2xl glass-panel shadow-2xl border border-slate-800/80 space-y-4">
-            <div className="flex items-center gap-3 text-rose-455">
-              <div className="p-2 bg-rose-500/10 rounded-xl border border-rose-500/20">
-                <AlertTriangle size={20} />
-              </div>
-              <h3 className="text-sm font-bold text-white">Delete Idea Card</h3>
-            </div>
-            
-            <p className="text-xs text-slate-455 leading-relaxed">
-              Are you sure you want to delete this idea card? This action is permanent and cannot be undone on Supabase.
-            </p>
- 
+        <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="modal-surface w-full max-w-sm rounded-2xl p-6 space-y-5">
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => setDeleteConfirmId(null)}
-                className="flex-1 py-2 px-3 text-xs font-bold text-slate-455 hover:text-white bg-slate-900 hover:bg-slate-800/80 border border-slate-850 rounded-xl transition-all cursor-pointer"
-              >
-                Keep Card
-              </button>
-              <button
-                onClick={handleConfirmDelete}
-                className="flex-1 py-2 px-3 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 active:bg-rose-700 rounded-xl shadow-lg shadow-rose-600/10 transition-all cursor-pointer"
-              >
-                Delete Card
-              </button>
+              <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
+                <Trash2 size={16} className="text-rose-400" />
+              </div>
+              <div>
+                <h3 className="text-[14px] font-bold text-white">Delete Idea</h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">This cannot be undone</p>
+              </div>
+            </div>
+            <p className="text-[13px] text-slate-400 leading-relaxed">
+              Are you sure you want to delete this idea?
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteConfirmId(null)}
+                className="btn-ghost flex-1 py-2.5 text-[13px] font-semibold rounded-xl cursor-pointer">Keep It</button>
+              <button onClick={async () => { await onDelete(deleteConfirmId); setDeleteConfirmId(null); }}
+                className="btn-danger flex-1 py-2.5 text-[13px] font-semibold rounded-xl cursor-pointer">Delete</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ================= IDEA DETAILS CENTERED MODAL ================= */}
-      {selectedIdeaDetails && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
-          onClick={() => setSelectedIdeaDetails(null)}
-        >
-          <div 
-            className="w-full max-w-lg bg-slate-950 border border-slate-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Image header if exists */}
-            {selectedIdeaDetails.image_url && (
-              <div className="relative w-full max-h-64 overflow-hidden bg-slate-950 shrink-0">
-                <img 
-                  src={selectedIdeaDetails.image_url} 
-                  alt={selectedIdeaDetails.title} 
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
-
-            <div className="p-6 space-y-5 flex-1 overflow-y-auto">
-              {/* Header Title & controls */}
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-base font-bold text-white leading-snug">{selectedIdeaDetails.title}</h3>
-                  <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-0.5">Idea Vault Details</p>
-                </div>
-                <button 
-                  onClick={() => setSelectedIdeaDetails(null)}
-                  className="p-1.5 text-slate-500 hover:text-white rounded-lg hover:bg-slate-900 transition-colors cursor-pointer"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-
-              {/* Description */}
-              {selectedIdeaDetails.content && (
-                <div className="space-y-2 border-t border-slate-900/60 pt-4">
-                  <h4 className="text-xs font-semibold text-slate-400">Description & Details</h4>
-                  <div className="p-4 bg-slate-900/30 border border-slate-900/50 rounded-xl text-xs text-slate-300 whitespace-pre-line leading-relaxed">
-                    {selectedIdeaDetails.content}
-                  </div>
-                </div>
-              )}
-
-              {/* Tags */}
-              {selectedIdeaDetails.tags && selectedIdeaDetails.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 border-t border-slate-900/60 pt-4">
-                  {selectedIdeaDetails.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-2.5 py-1 text-[10px] font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 rounded-md"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {/* Footer details */}
-              <div className="flex items-center gap-1.5 text-[10px] text-slate-550 border-t border-slate-900/60 pt-4">
-                <Calendar size={11} className="text-indigo-400" />
-                <span>Logged on {formatDate(selectedIdeaDetails.created_at || new Date())}</span>
-              </div>
-            </div>
-
-            {/* Actions footer */}
-            <div className="p-6 border-t border-slate-900/80 bg-slate-950 flex gap-3 shrink-0">
-              <button
-                onClick={() => {
-                  handleOpenEdit(selectedIdeaDetails);
-                  setSelectedIdeaDetails(null);
-                }}
-                className="flex-1 py-2.5 px-4 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-all cursor-pointer shadow-lg shadow-indigo-600/10 text-center"
-              >
-                Edit Details
-              </button>
-              <button
-                onClick={() => setSelectedIdeaDetails(null)}
-                className="py-2.5 px-6 text-xs font-bold text-slate-450 hover:text-white bg-slate-900 border border-slate-900 rounded-xl transition-all cursor-pointer"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* ═══ DETAILS MODAL ═══ */}
+      {selectedIdea && (
+        <IdeaDetailModal
+          idea={selectedIdea}
+          onClose={() => setSelectedIdea(null)}
+          onEdit={(idea) => { handleOpenEdit(idea); setSelectedIdea(null); }}
+        />
       )}
-
     </div>
   );
 }
 
-/* ================= COMPONENT: IDEA CARD ================= */
-function IdeaCard({ idea, onEdit, onDelete, onSelectTag, onViewDetails }) {
+/* ─── Form Field wrapper ──────────────────────────────── */
+function FormField({ label, required, children }) {
   return (
-    <article 
+    <div className="space-y-1.5">
+      <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+        {label}{required && <span className="text-rose-400 ml-0.5">*</span>}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+/* ─── Detail Modal ────────────────────────────────────── */
+function IdeaDetailModal({ idea, onClose, onEdit }) {
+  const images = idea.images?.length > 0
+    ? idea.images
+    : idea.image_url ? [{ url: idea.image_url, caption: '' }] : [];
+  const links  = idea.links || [];
+
+  const [imgIdx, setImgIdx] = useState(0);
+
+  return (
+    <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="modal-surface w-full max-w-lg rounded-2xl overflow-hidden flex flex-col max-h-[92vh]"
+           onClick={e => e.stopPropagation()}>
+
+        {/* image carousel */}
+        {images.length > 0 && (
+          <div className="relative bg-black shrink-0">
+            <img src={images[imgIdx].url} alt={images[imgIdx].caption || idea.title}
+              className="w-full max-h-60 object-cover" />
+            {images[imgIdx].caption && (
+              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent px-4 py-2">
+                <p className="text-[11px] text-slate-300">{images[imgIdx].caption}</p>
+              </div>
+            )}
+            {/* prev / next */}
+            {images.length > 1 && (
+              <div className="absolute inset-x-0 bottom-2 flex justify-center gap-1.5">
+                {images.map((_, i) => (
+                  <button key={i} type="button" onClick={() => setImgIdx(i)}
+                    className={`w-1.5 h-1.5 rounded-full transition-all cursor-pointer ${i === imgIdx ? 'bg-white scale-125' : 'bg-white/40'}`} />
+                ))}
+              </div>
+            )}
+            {images.length > 1 && (
+              <>
+                <button type="button" onClick={() => setImgIdx(i => (i - 1 + images.length) % images.length)}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 cursor-pointer text-xs">‹</button>
+                <button type="button" onClick={() => setImgIdx(i => (i + 1) % images.length)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 cursor-pointer text-xs">›</button>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* header */}
+        <div className="px-6 py-5 border-b border-white/[0.06] flex items-start justify-between shrink-0">
+          <div className="flex-1 pr-4">
+            <h3 className="text-[15px] font-bold text-white leading-snug">{idea.title}</h3>
+            {idea.tags && idea.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {idea.tags.map(tag => <span key={tag} className="tag-pill">#{tag}</span>)}
+              </div>
+            )}
+          </div>
+          <button onClick={onClose} className="btn-ghost p-2 rounded-lg cursor-pointer"><X size={15} /></button>
+        </div>
+
+        {/* body */}
+        <div className="p-6 space-y-5 flex-1 overflow-y-auto">
+
+          {/* description */}
+          {idea.content && (
+            <div className="space-y-2">
+              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Notes</p>
+              <div className="glass-panel rounded-xl p-4 text-[13px] text-slate-300 whitespace-pre-line leading-relaxed">
+                {idea.content}
+              </div>
+            </div>
+          )}
+
+          {/* links */}
+          {links.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                Links
+              </p>
+              <div className="space-y-1.5">
+                {links.map((link, i) => (
+                  isValidUrl(link.url) ? (
+                    <a key={i} href={link.url} target="_blank" rel="noreferrer"
+                      className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]
+                                 hover:bg-indigo-500/[0.07] hover:border-indigo-500/20 transition-all group/link">
+                      <Globe size={13} className="text-indigo-400 shrink-0" />
+                      <span className="text-[13px] text-slate-300 truncate flex-1 group-hover/link:text-indigo-300">
+                        {link.label || link.url}
+                      </span>
+                      <ExternalLink size={11} className="text-slate-600 group-hover/link:text-indigo-400 shrink-0" />
+                    </a>
+                  ) : (
+                    <div key={i} className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.04]">
+                      <Globe size={13} className="text-slate-600 shrink-0" />
+                      <span className="text-[12px] text-slate-600 truncate">{link.label || link.url || '—'}</span>
+                    </div>
+                  )
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* images grid (thumbnails) */}
+          {images.length > 1 && (
+            <div className="space-y-2">
+              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                Images · <span className="text-slate-650">{images.length}</span>
+              </p>
+              <div className="grid grid-cols-4 gap-2">
+                {images.map((img, i) => (
+                  <button key={i} type="button" onClick={() => setImgIdx(i)}
+                    className={`rounded-lg overflow-hidden aspect-square border-2 cursor-pointer transition-all ${i === imgIdx ? 'border-indigo-500' : 'border-transparent opacity-60 hover:opacity-100'}`}>
+                    <img src={img.url} alt={img.caption || `Image ${i + 1}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* footer */}
+        <div className="px-6 py-4 border-t border-white/[0.04] flex gap-3 shrink-0">
+          <button onClick={() => onEdit(idea)} className="btn-primary flex-1 py-2.5 text-[13px] font-semibold rounded-xl cursor-pointer">Edit</button>
+          <button onClick={onClose} className="btn-ghost py-2.5 px-5 text-[13px] font-semibold rounded-xl cursor-pointer">Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Idea Card ───────────────────────────────────────── */
+function IdeaCard({ idea, sortBy, onEdit, onDelete, onSelectTag, onViewDetails, isFilteringOrSearching, setHoveredDragId }) {
+  const images = idea.images?.length > 0
+    ? idea.images
+    : idea.image_url ? [{ url: idea.image_url, caption: '' }] : [];
+  const links  = idea.links || [];
+
+  const showDragHandle = sortBy === 'custom' && !isFilteringOrSearching;
+
+  return (
+    <article
       onClick={() => onViewDetails && onViewDetails(idea)}
-      className="glass-card rounded-2xl overflow-hidden border border-slate-800/50 hover:border-slate-800/90 hover:bg-slate-900/10 cursor-pointer shadow-md transition-all hover:scale-[1.005] select-none group"
+      className="glass-card rounded-2xl !overflow-visible cursor-pointer select-none group"
     >
-      
-      {/* Attached visual display */}
-      {idea.image_url && (
-        <div className="relative overflow-hidden w-full bg-slate-950 max-h-56">
-          <img 
-            src={idea.image_url} 
-            alt={idea.title} 
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-            loading="lazy"
-          />
+      {/* hero image */}
+      {images[0]?.url && (
+        <div className="relative h-40 overflow-hidden rounded-t-2xl">
+          <img src={images[0].url} alt={idea.title}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+          {images.length > 1 && (
+            <div className="absolute top-2 right-2 px-1.5 py-0.5 bg-black/60 border border-white/10 rounded-md
+                            text-[9px] font-bold text-slate-300 flex items-center gap-1">
+              <ImageIcon size={9} /> +{images.length - 1}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Card Content body */}
-      <div className="p-5 space-y-3.5">
-        
-        {/* Header Title & controls */}
-        <div className="flex items-start justify-between gap-3">
-          <h4 className="text-sm font-bold text-white leading-snug">{idea.title}</h4>
+      <div className="p-4 space-y-3">
+        {/* title + drag handle + actions */}
+        <div className="flex items-start gap-2 justify-between">
+          <div className="flex items-start gap-1.5 flex-1 min-w-0">
+            {showDragHandle && (
+              <div 
+                className="text-slate-655 hover:text-slate-400 cursor-grab active:cursor-grabbing p-1 shrink-0 -ml-1 select-none transition-colors"
+                title="Drag to reorder card"
+                onClick={e => e.stopPropagation()}
+                onDragStart={e => e.stopPropagation()}
+                onMouseEnter={() => setHoveredDragId(idea.id)}
+                onMouseLeave={() => setHoveredDragId(null)}
+              >
+                <GripVertical size={13} className="mt-0.5" />
+              </div>
+            )}
+            <h4 className="text-[13px] font-bold text-white leading-snug break-words flex-1 mt-0.5">{idea.title}</h4>
+          </div>
           
-          <div 
-            className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => onEdit(idea)}
-              className="p-1 text-slate-455 hover:text-white rounded hover:bg-slate-900 transition-all cursor-pointer"
-              title="Edit idea"
-            >
-              <Edit3 size={12} />
+          {/* Glass action container strip (hidden by default, shown on card hover) */}
+          <div className="flex items-center gap-0.5 bg-white/[0.02] border border-white/[0.07] rounded-xl p-0.5 shrink-0 select-none
+                          opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100
+                          transition-all duration-200 ease-out"
+               onClick={e => e.stopPropagation()}
+               onDragStart={e => e.stopPropagation()}>
+            {/* info tooltip */}
+            <div className="relative group/info select-none">
+              <button
+                type="button"
+                className="p-1.5 text-slate-400 hover:text-indigo-400 rounded-lg hover:bg-indigo-500/[0.08] transition-all cursor-pointer flex items-center justify-center border border-transparent hover:border-indigo-500/20"
+              >
+                <Info size={11} />
+              </button>
+              <div className="absolute right-0 bottom-full mb-2 hidden group-hover/info:block bg-slate-900 border border-white/[0.08] text-[9.5px] text-slate-350 font-semibold px-2 py-1 rounded-md shadow-xl whitespace-nowrap z-35">
+                Logged {formatDate(idea.created_at || new Date())}
+              </div>
+            </div>
+            
+            <div className="w-[1px] h-3 bg-white/[0.08] self-center" />
+            
+            <button onClick={() => onEdit(idea)}
+              className="p-1.5 text-slate-400 hover:text-indigo-400 rounded-lg hover:bg-indigo-500/[0.08] transition-all cursor-pointer flex items-center justify-center border border-transparent hover:border-indigo-500/20"
+              title="Edit idea">
+              <Edit3 size={11} />
             </button>
-            <button
-              onClick={() => onDelete(idea.id)}
-              className="p-1 text-slate-455 hover:text-rose-400 rounded hover:bg-slate-900 transition-all cursor-pointer"
-              title="Delete idea card"
-            >
-              <Trash2 size={12} />
+            
+            <button onClick={() => onDelete(idea.id)}
+              className="p-1.5 text-slate-450 hover:text-rose-450 rounded-lg hover:bg-rose-500/[0.08] transition-all cursor-pointer flex items-center justify-center border border-transparent hover:border-rose-500/20"
+              title="Delete idea">
+              <Trash2 size={11} />
             </button>
           </div>
         </div>
 
-        {/* Text descriptions */}
-        {idea.content && (
-          <p className="text-[11px] text-slate-400 leading-relaxed whitespace-pre-line">
-            {idea.content}
-          </p>
+        {/* attachments summary count badges */}
+        {images.length > 0 && (
+          <div className="flex items-center gap-3 text-[10px] text-indigo-400 font-bold uppercase tracking-wider pt-2.5 border-t border-white/[0.06]">
+            <span className="flex items-center gap-1.5">
+              <ImageIcon size={10} /> {images.length} {images.length === 1 ? 'Image' : 'Images'}
+            </span>
+          </div>
         )}
 
-        {/* Tags lists */}
-        {idea.tags && idea.tags.length > 0 && (
-          <div 
-            className="flex flex-wrap gap-1.5 pt-1.5 border-t border-slate-900/60"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {idea.tags.map((tag) => (
-              <button
-                key={tag}
-                onClick={() => onSelectTag(tag)}
-                className="px-2 py-0.5 text-[9px] font-bold text-indigo-400 hover:text-white bg-indigo-500/10 hover:bg-indigo-650 border border-indigo-500/20 rounded-md transition-all cursor-pointer"
-              >
-                #{tag}
-              </button>
+        {/* links preview strip */}
+        {links.length > 0 && (
+          <div className="flex items-center gap-1.5 flex-wrap pt-2.5 border-t border-white/[0.06]" 
+               onClick={e => e.stopPropagation()}
+               onDragStart={e => e.stopPropagation()}>
+            {links.map((link, i) => (
+              isValidUrl(link.url) ? (
+                <a key={i} href={link.url} target="_blank" rel="noreferrer"
+                  className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold rounded-lg
+                             bg-indigo-500/[0.08] border border-indigo-500/15 text-indigo-400
+                             hover:bg-indigo-500/15 hover:text-indigo-300 transition-all cursor-pointer">
+                  <Globe size={9} />
+                  {link.label || new URL(link.url).hostname.replace('www.','')}
+                  <ExternalLink size={8} className="opacity-60" />
+                </a>
+              ) : null
             ))}
           </div>
         )}
 
-        {/* Timestamp */}
-        <div className="flex items-center gap-1.5 text-[10px] text-slate-550 pt-1">
-          <Calendar size={10} className="text-slate-550" />
-          <span>Logged {formatDate(idea.created_at || new Date())}</span>
-        </div>
-
+        {/* tags */}
+        {idea.tags && idea.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 pt-2.5 border-t border-white/[0.06]"
+               onClick={e => e.stopPropagation()}
+               onDragStart={e => e.stopPropagation()}>
+            {idea.tags.map(tag => (
+              <button key={tag} onClick={() => onSelectTag(tag)} className="tag-pill cursor-pointer">#{tag}</button>
+            ))}
+          </div>
+        )}
       </div>
-
     </article>
   );
 }

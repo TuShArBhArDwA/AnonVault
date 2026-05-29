@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { 
-  Plus, Search, ArrowUpDown, Filter, ExternalLink, 
+  Plus, Search, ArrowUpDown, ExternalLink, 
   Edit3, Trash2, Calendar, Link as LinkIcon, AlertTriangle, 
-  HelpCircle, Clock, ChevronDown, ChevronRight, ListCollapse
+  Clock, ChevronDown, ChevronRight, ListCollapse,
+  Sun, Moon, X, Flame
 } from 'lucide-react';
 import { formatDate, getPriorityStyles, getStatusStyles, sortApplicationsByDeadline, groupApplicationsByMonth } from '../utils/helpers';
 
@@ -11,15 +12,17 @@ export default function TimelineView({
   onAdd, 
   onUpdate, 
   onDelete, 
-  loading
+  loading,
+  theme,
+  toggleTheme,
+  showToast
 }) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortOrder, setSortOrder] = useState('asc'); // asc, desc
-  const [groupByMonthMode, setGroupByMonthMode] = useState(true); // true = month grouped, false = linear sorted
+  const [sortOrder, setSortOrder] = useState('asc');
+  const [groupByMonthMode, setGroupByMonthMode] = useState(true);
   const [selectedPriority, setSelectedPriority] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
 
-  // Form State
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingApp, setEditingApp] = useState(null);
   const [formName, setFormName] = useState('');
@@ -30,61 +33,33 @@ export default function TimelineView({
   const [formStatus, setFormStatus] = useState('pending');
   const [formNotes, setFormNotes] = useState('');
 
-  // Delete Confirmation State
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
-
-  // Detailed View State
   const [selectedAppDetails, setSelectedAppDetails] = useState(null);
-
-  // Month collapse state (which months are expanded)
   const [expandedMonths, setExpandedMonths] = useState({});
 
-  // Reset form helper
   const resetForm = () => {
-    setFormName('');
-    setFormLink('');
-    // Default deadline to tomorrow at 12:00 PM
+    setFormName(''); setFormLink('');
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    
-    const year = tomorrow.getFullYear();
-    const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
-    const day = String(tomorrow.getDate()).padStart(2, '0');
-    
-    setFormDate(`${year}-${month}-${day}`);
+    const y = tomorrow.getFullYear();
+    const m = String(tomorrow.getMonth() + 1).padStart(2, '0');
+    const d = String(tomorrow.getDate()).padStart(2, '0');
+    setFormDate(`${y}-${m}-${d}`);
     setFormTime('12:00');
-    setFormPriority('medium');
-    setFormStatus('pending');
-    setFormNotes('');
-    setEditingApp(null);
+    setFormPriority('medium'); setFormStatus('pending');
+    setFormNotes(''); setEditingApp(null);
   };
 
-  const handleOpenAdd = () => {
-    resetForm();
-    setIsFormOpen(true);
-  };
+  const handleOpenAdd = () => { resetForm(); setIsFormOpen(true); };
 
   const handleOpenEdit = (app) => {
     setEditingApp(app);
-    setFormName(app.name);
-    setFormLink(app.link || '');
-    
-    // Extract local date and time from timestampz
+    setFormName(app.name); setFormLink(app.link || '');
     if (app.deadline) {
-      const dateObj = new Date(app.deadline);
-      const year = dateObj.getFullYear();
-      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-      const day = String(dateObj.getDate()).padStart(2, '0');
-      const hours = String(dateObj.getHours()).padStart(2, '0');
-      const minutes = String(dateObj.getMinutes()).padStart(2, '0');
-
-      setFormDate(`${year}-${month}-${day}`);
-      setFormTime(`${hours}:${minutes}`);
-    } else {
-      setFormDate('');
-      setFormTime('');
-    }
-    
+      const d = new Date(app.deadline);
+      setFormDate(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
+      setFormTime(`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`);
+    } else { setFormDate(''); setFormTime(''); }
     setFormPriority(app.priority || 'medium');
     setFormStatus(app.status || 'pending');
     setFormNotes(app.notes || '');
@@ -93,635 +68,492 @@ export default function TimelineView({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formName.trim() || !formDate || !formTime) return;
-
-    // Combine local date and time for ISO conversion
-    const combinedDateTimeStr = `${formDate}T${formTime}`;
+    if (!formName.trim()) {
+      showToast?.('error', 'Name Required', 'Please enter the hackathon or event name.');
+      return;
+    }
+    if (!formDate) {
+      showToast?.('error', 'Date Required', 'Please pick a deadline date.');
+      return;
+    }
+    if (!formTime) {
+      showToast?.('error', 'Time Required', 'Please set a deadline time.');
+      return;
+    }
     const appPayload = {
-      name: formName.trim(),
-      link: formLink.trim(),
-      deadline: new Date(combinedDateTimeStr).toISOString(),
-      priority: formPriority,
-      status: formStatus,
-      notes: formNotes.trim(),
+      name: formName.trim(), link: formLink.trim(),
+      deadline: new Date(`${formDate}T${formTime}`).toISOString(),
+      priority: formPriority, status: formStatus, notes: formNotes.trim(),
     };
-
-    if (editingApp) {
-      await onUpdate(editingApp.id, appPayload);
-    } else {
-      await onAdd(appPayload);
-    }
-    setIsFormOpen(false);
-    resetForm();
+    if (editingApp) await onUpdate(editingApp.id, appPayload);
+    else await onAdd(appPayload);
+    setIsFormOpen(false); resetForm();
   };
 
-  const handleDeleteClick = (id) => {
-    setDeleteConfirmId(id);
-  };
-
+  const handleDeleteClick = (id) => setDeleteConfirmId(id);
   const handleConfirmDelete = async () => {
-    if (deleteConfirmId) {
-      await onDelete(deleteConfirmId);
-      setDeleteConfirmId(null);
-    }
+    if (deleteConfirmId) { await onDelete(deleteConfirmId); setDeleteConfirmId(null); }
   };
 
-  const toggleMonth = (month) => {
-    setExpandedMonths(prev => ({
-      ...prev,
-      [month]: prev[month] === false ? true : false // default to true
-    }));
-  };
+  const toggleMonth = (month) =>
+    setExpandedMonths(prev => ({ ...prev, [month]: prev[month] === false ? true : false }));
 
-  // --- Filtering & Sorting Data ---
   const filteredApps = (applications || []).filter(app => {
     if (!app) return false;
-    const matchesSearch = 
-      (app.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = (app.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (app.notes && app.notes.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesPriority = selectedPriority === 'all' || app.priority === selectedPriority;
-    const matchesStatus = selectedStatus === 'all' || app.status === selectedStatus;
-
-    return matchesSearch && matchesPriority && matchesStatus;
+    return matchesSearch &&
+      (selectedPriority === 'all' || app.priority === selectedPriority) &&
+      (selectedStatus === 'all' || app.status === selectedStatus);
   });
 
   const sortedApps = sortApplicationsByDeadline(filteredApps, sortOrder);
   const groupedApps = groupApplicationsByMonth(sortedApps);
 
+  const nearestAppId = (() => {
+    const active = (applications || []).filter(a => a?.deadline && new Date(a.deadline) > new Date() && a.status !== 'rejected');
+    if (!active.length) return null;
+    return [...active].sort((a,b) => new Date(a.deadline)-new Date(b.deadline))[0].id;
+  })();
+
+  const selectClass = "px-3 py-1.5 text-xs text-slate-300 rounded-lg cursor-pointer transition-all focus:outline-none input-premium";
+
+  const TimelineNodeDot = ({ app }) => (
+    <div className={`absolute -left-[27px] top-5 w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center z-10 transition-all ${
+      app.id === nearestAppId
+        ? 'border-amber-400 bg-amber-400/20 shadow-[0_0_10px_rgba(245,158,11,0.5)]'
+        : app.priority === 'high'
+          ? 'border-rose-400 bg-rose-400/20 shadow-[0_0_10px_rgba(239,68,68,0.5)]'
+          : 'border-slate-700 bg-slate-900'
+    }`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${
+        app.id === nearestAppId ? 'bg-amber-400' :
+        app.priority === 'high' ? 'bg-rose-400' : 'bg-slate-600'
+      }`} />
+    </div>
+  );
+
   return (
     <div className="flex-1 h-screen flex flex-col overflow-hidden bg-slate-950">
-      
-      {/* View Header / Navigation */}
-      <header className="px-8 py-5 border-b border-slate-900 bg-slate-950 flex items-center justify-between shrink-0">
-        <div>
-          <h2 className="text-xl font-bold text-white tracking-wide">Hackathon Timeline</h2>
-        </div>
 
-        <div className="flex items-center gap-3">
+      {/* Header */}
+      <header className="glass-header px-7 py-4 flex items-center justify-between shrink-0">
+        <div>
+          <h2 className="text-lg font-bold text-white tracking-tight">Hackathon Timeline</h2>
+          <p className="text-[11px] text-slate-500 mt-0.5">{(applications||[]).length} events tracked</p>
+        </div>
+        <div className="flex items-center gap-2.5">
           <button
-            onClick={handleOpenAdd}
-            className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-600/10 hover:shadow-indigo-600/20 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer"
+            onClick={toggleTheme}
+            className="btn-ghost p-2.5 rounded-xl cursor-pointer flex items-center justify-center"
+            title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
           >
-            <Plus size={15} />
-            New Hackathon
+            {theme === 'dark'
+              ? <Sun size={14} className="text-amber-400" />
+              : <Moon size={14} className="text-indigo-400" />}
+          </button>
+          <button onClick={handleOpenAdd} className="btn-primary flex items-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-xl cursor-pointer">
+            <Plus size={14} />
+            Add Hackathon
           </button>
         </div>
       </header>
 
-      {/* Main Toolbar Controls */}
-      <section className="px-8 py-4 border-b border-slate-900 bg-slate-950/60 flex flex-wrap gap-4 items-center justify-between shrink-0">
-        <div className="flex items-center gap-3 flex-1 min-w-[240px]">
-          <div className="relative flex-1 max-w-sm">
-            <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
-              <Search size={14} />
-            </span>
-            <input
-              type="text"
-              placeholder="Search hackathons..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-xs text-white bg-slate-900/40 border border-slate-900 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 placeholder:text-slate-500 transition-all font-medium"
-            />
-          </div>
+      {/* Toolbar */}
+      <div className="px-7 py-3 border-b border-white/[0.04] flex flex-wrap gap-3 items-center justify-between shrink-0">
+        <div className="relative min-w-[220px] max-w-xs flex-1">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search hackathons…"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="input-premium w-full pl-9 pr-4 py-2 text-[13px] rounded-xl"
+          />
         </div>
 
-        {/* Sort & Filter Controls */}
-        <div className="flex flex-wrap items-center gap-3">
-          
-          {/* Priority Filter */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Priority:</span>
-            <select
-              value={selectedPriority}
-              onChange={(e) => setSelectedPriority(e.target.value)}
-              className="px-2.5 py-1.5 text-xs text-slate-300 bg-slate-900/60 border border-slate-900 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500/30"
-            >
-              <option value="all">All Priorities</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
-          </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <select value={selectedPriority} onChange={e => setSelectedPriority(e.target.value)} className={selectClass}>
+            <option value="all">All Priorities</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
 
-          {/* Status Filter */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Status:</span>
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="px-2.5 py-1.5 text-xs text-slate-300 bg-slate-900/60 border border-slate-900 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500/30"
-            >
-              <option value="all">All Statuses</option>
-              <option value="pending">Pending</option>
-              <option value="applied">Registered</option>
-              <option value="interviewing">Building</option>
-              <option value="offered">Winner</option>
-              <option value="rejected">Completed</option>
-            </select>
-          </div>
+          <select value={selectedStatus} onChange={e => setSelectedStatus(e.target.value)} className={selectClass}>
+            <option value="all">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="applied">Registered</option>
+            <option value="interviewing">Building</option>
+            <option value="offered">Winner</option>
+            <option value="rejected">Completed</option>
+          </select>
 
-          {/* Toggle Sorting Order */}
           <button
-            onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-300 bg-slate-900/50 hover:bg-slate-900 border border-slate-900 rounded-lg transition-colors cursor-pointer"
-            title="Toggle Deadline Sort Order"
+            onClick={() => setSortOrder(p => p === 'asc' ? 'desc' : 'asc')}
+            className="btn-ghost flex items-center gap-1.5 px-3 py-1.5 text-[12px] rounded-xl cursor-pointer"
           >
-            <ArrowUpDown size={12} className="text-slate-450" />
-            <span>{sortOrder === 'asc' ? 'Soonest First' : 'Furthest First'}</span>
+            <ArrowUpDown size={12} />
+            {sortOrder === 'asc' ? 'Soonest' : 'Furthest'}
           </button>
 
-          {/* Toggle Month Grouping */}
           <button
-            onClick={() => setGroupByMonthMode(prev => !prev)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-300 bg-slate-900/50 hover:bg-slate-900 border border-slate-900 rounded-lg transition-colors cursor-pointer"
-            title="Switch Between Grouping Methods"
+            onClick={() => setGroupByMonthMode(p => !p)}
+            className="btn-ghost flex items-center gap-1.5 px-3 py-1.5 text-[12px] rounded-xl cursor-pointer"
           >
-            <ListCollapse size={12} className="text-slate-450" />
-            <span>{groupByMonthMode ? 'Month Grouped' : 'Linear List'}</span>
+            <ListCollapse size={12} />
+            {groupByMonthMode ? 'By Month' : 'Linear'}
           </button>
         </div>
-      </section>
+      </div>
 
-      {/* Timeline Content Area */}
-      <div className="flex-1 overflow-y-auto px-8 py-6">
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-7 py-6">
         {loading ? (
-          <div className="h-48 flex items-center justify-center text-slate-400 text-xs gap-2">
-            <span className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></span>
-            Synchronizing timeline...
+          <div className="h-48 flex items-center justify-center gap-3 text-slate-500 text-sm">
+            <span className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+            Loading…
           </div>
         ) : filteredApps.length === 0 ? (
-          <div className="h-64 flex flex-col items-center justify-center text-center p-6 border border-dashed border-slate-900 rounded-2xl max-w-md mx-auto my-12">
-            <Calendar size={32} className="text-slate-600 mb-3" />
-            <h3 className="text-sm font-semibold text-slate-350">No hackathons matching criteria</h3>
-            <p className="text-[11px] text-slate-500 mt-1 max-w-xs leading-normal">
-              {searchTerm || selectedPriority !== 'all' || selectedStatus !== 'all' 
-                ? 'Try relaxing your filters or query to find existing items.' 
-                : 'Start tracking by creating your first entry.'}
+          <div className="flex flex-col items-center justify-center text-center py-20 max-w-sm mx-auto">
+            <div className="w-14 h-14 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mb-4">
+              <Calendar size={24} className="text-slate-600" />
+            </div>
+            <h3 className="text-sm font-semibold text-slate-300">No hackathons found</h3>
+            <p className="text-[12px] text-slate-600 mt-1.5 leading-relaxed">
+              {searchTerm || selectedPriority !== 'all' || selectedStatus !== 'all'
+                ? 'Try adjusting your filters.'
+                : 'Start tracking your first hackathon.'}
             </p>
             {!searchTerm && selectedPriority === 'all' && selectedStatus === 'all' && (
-              <button
-                onClick={handleOpenAdd}
-                className="mt-4 px-4 py-2 text-xs font-semibold text-indigo-400 hover:text-white bg-indigo-500/10 hover:bg-indigo-600/20 border border-indigo-500/25 rounded-xl transition-all"
-              >
-                Create Hackathon
+              <button onClick={handleOpenAdd} className="btn-primary mt-5 px-5 py-2 text-[13px] font-semibold rounded-xl cursor-pointer">
+                Add Hackathon
               </button>
             )}
           </div>
         ) : groupByMonthMode ? (
-          /* ================= MONTH GROUPED VIEW ================= */
-          <div className="space-y-8 relative pl-4 border-l border-slate-900/60 ml-2">
-            {Object.keys(groupedApps).map((monthYear) => {
-              const isExpanded = expandedMonths[monthYear] !== false;
-              const monthApps = groupedApps[monthYear];
-
-              return (
-                <div key={monthYear} className="space-y-4 relative">
-                  
-                  {/* Month Node Badge */}
-                  <div className="absolute -left-[25px] top-1.5 w-4 h-4 bg-slate-950 border-2 border-indigo-500/50 rounded-full flex items-center justify-center shadow-lg">
-                    <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
-                  </div>
-
-                  <button 
-                    onClick={() => toggleMonth(monthYear)}
-                    className="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-white focus:outline-none transition-colors"
-                  >
-                    {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                    <span>{monthYear}</span>
-                    <span className="px-1.5 py-0.5 text-[10px] bg-slate-900 text-slate-500 rounded-full font-medium">{monthApps.length}</span>
-                  </button>
-
-                  {isExpanded && (
-                    <div className="space-y-4 grid grid-cols-1 xl:grid-cols-2 gap-4">
-                      {monthApps.map((app) => (
-                        <HackathonCard 
-                          key={app.id} 
-                          app={app} 
-                          onEdit={handleOpenEdit} 
-                          onDelete={handleDeleteClick} 
-                          onViewDetails={setSelectedAppDetails}
-                        />
-                      ))}
+          <div className="relative pl-5 ml-1" style={{ borderLeft: '1px solid rgba(99,102,241,0.12)' }}>
+            <div className="space-y-10">
+              {Object.keys(groupedApps).map(monthYear => {
+                const isExpanded = expandedMonths[monthYear] !== false;
+                const monthApps = groupedApps[monthYear];
+                return (
+                  <div key={monthYear} className="relative">
+                    {/* Month marker */}
+                    <div className="absolute -left-[27px] top-1 w-4 h-4 rounded-full bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center">
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
                     </div>
-                  )}
-                </div>
-              );
-            })}
+                    <button
+                      onClick={() => toggleMonth(monthYear)}
+                      className="flex items-center gap-2 text-[13px] font-semibold text-slate-300 hover:text-white transition-colors mb-4 cursor-pointer"
+                    >
+                      {isExpanded ? <ChevronDown size={14} className="text-slate-500" /> : <ChevronRight size={14} className="text-slate-500" />}
+                      {monthYear}
+                      <span className="px-2 py-0.5 text-[10px] bg-white/[0.06] text-slate-500 rounded-full font-medium">{monthApps.length}</span>
+                    </button>
+                    {isExpanded && (
+                      <div className="relative pl-5 space-y-4" style={{ borderLeft: '1px solid rgba(255,255,255,0.05)' }}>
+                        {monthApps.map(app => (
+                          <div key={app.id} className="relative">
+                            <TimelineNodeDot app={app} />
+                            <HackathonCard app={app} isNearest={app.id===nearestAppId} onEdit={handleOpenEdit} onDelete={handleDeleteClick} onViewDetails={setSelectedAppDetails} />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         ) : (
-          /* ================= LINEAR SORTED VIEW ================= */
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            {sortedApps.map((app) => (
-              <HackathonCard 
-                key={app.id} 
-                app={app} 
-                onEdit={handleOpenEdit} 
-                onDelete={handleDeleteClick} 
-                onViewDetails={setSelectedAppDetails}
-              />
+          <div className="relative pl-5 ml-1 space-y-4" style={{ borderLeft: '1px solid rgba(99,102,241,0.12)' }}>
+            {sortedApps.map(app => (
+              <div key={app.id} className="relative">
+                <TimelineNodeDot app={app} />
+                <HackathonCard app={app} isNearest={app.id===nearestAppId} onEdit={handleOpenEdit} onDelete={handleDeleteClick} onViewDetails={setSelectedAppDetails} />
+              </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* ================= EDIT / ADD CENTERED MODAL ================= */}
+      {/* ── ADD / EDIT MODAL ── */}
       {isFormOpen && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
-          onClick={() => setIsFormOpen(false)}
-        >
-          <div 
-            className="w-full max-w-lg max-h-[90vh] bg-slate-950 border border-slate-900 rounded-2xl shadow-2xl flex flex-col justify-between overflow-hidden animate-in fade-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            
-            {/* Form Header */}
-            <div className="p-6 border-b border-slate-900 flex items-center justify-between">
+        <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setIsFormOpen(false)}>
+          <div className="modal-surface w-full max-w-lg max-h-[90vh] rounded-2xl flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="px-6 py-5 border-b border-white/[0.06] flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-white">
-                  {editingApp ? 'Modify Hackathon' : 'Register Hackathon'}
-                </h3>
+                <h3 className="text-[15px] font-bold text-white">{editingApp ? 'Edit Hackathon' : 'New Hackathon'}</h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">{editingApp ? 'Update the details below' : 'Track a new event or deadline'}</p>
               </div>
-              <button 
-                onClick={() => setIsFormOpen(false)}
-                className="p-1.5 text-slate-500 hover:text-white rounded-lg hover:bg-slate-900 transition-colors cursor-pointer"
-              >
-                Cancel
-              </button>
+              <button onClick={() => setIsFormOpen(false)} className="btn-ghost p-2 rounded-lg cursor-pointer"><X size={15} /></button>
             </div>
 
-            {/* Form Body (Scrollable) */}
             <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
-              
-              {/* Name */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-350 flex items-center gap-1.5">
-                  Hackathon / Project Name <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. HackMIT or BuildSpace"
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs text-white bg-slate-900/60 border border-slate-900 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 placeholder:text-slate-650 transition-all font-medium"
-                />
-              </div>
+              <Field label="Event Name" required>
+                <input type="text" required placeholder="e.g. HackMIT 2025" value={formName}
+                  onChange={e => setFormName(e.target.value)}
+                  className="input-premium w-full px-3.5 py-2.5 text-[13px] rounded-xl" />
+              </Field>
 
-              {/* Link */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-350 flex items-center gap-1.5">
-                  <LinkIcon size={12} className="text-slate-555" />
-                  Hackathon / Event Link
-                </label>
-                <input
-                  type="url"
-                  placeholder="https://hackmit.org or devpost.com/..."
-                  value={formLink}
-                  onChange={(e) => setFormLink(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs text-white bg-slate-900/60 border border-slate-900 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 placeholder:text-slate-650 transition-all font-medium"
-                />
-              </div>
-
-              {/* Date & Time Grid */}
-              <div className="grid grid-cols-2 gap-4">
-                
-                {/* Deadline Date */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-350 flex items-center gap-1.5">
-                    <Calendar size={12} className="text-indigo-400" />
-                    Deadline Date <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={formDate}
-                    onChange={(e) => setFormDate(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs text-white bg-slate-900/60 border border-slate-900 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all font-medium"
-                  />
+              <Field label="Event Link">
+                <div className="relative">
+                  <LinkIcon size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <input type="url" placeholder="https://…" value={formLink}
+                    onChange={e => setFormLink(e.target.value)}
+                    className="input-premium w-full pl-9 pr-3.5 py-2.5 text-[13px] rounded-xl" />
                 </div>
+              </Field>
 
-                {/* Deadline Time */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-350 flex items-center gap-1.5">
-                    <Clock size={12} className="text-indigo-400" />
-                    Deadline Time <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="time"
-                    required
-                    value={formTime}
-                    onChange={(e) => setFormTime(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs text-white bg-slate-900/60 border border-slate-900 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all font-medium"
-                  />
-                </div>
-
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Deadline Date" required>
+                  <input type="date" required value={formDate} onChange={e => setFormDate(e.target.value)}
+                    className="input-premium w-full px-3.5 py-2.5 text-[13px] rounded-xl" />
+                </Field>
+                <Field label="Deadline Time" required>
+                  <input type="time" required value={formTime} onChange={e => setFormTime(e.target.value)}
+                    className="input-premium w-full px-3.5 py-2.5 text-[13px] rounded-xl" />
+                </Field>
               </div>
 
-              {/* Grid: Priority & Status */}
               <div className="grid grid-cols-2 gap-4">
-                
-                {/* Priority Selection */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-350">Priority Scale</label>
-                  <select
-                    value={formPriority}
-                    onChange={(e) => setFormPriority(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs text-white bg-slate-900/60 border border-slate-900 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
-                  >
-                    <option value="low">Low Priority</option>
-                    <option value="medium">Medium Priority</option>
-                    <option value="high">High Priority</option>
+                <Field label="Priority">
+                  <select value={formPriority} onChange={e => setFormPriority(e.target.value)}
+                    className="input-premium w-full px-3.5 py-2.5 text-[13px] rounded-xl cursor-pointer">
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
                   </select>
-                </div>
-
-                {/* Status Selection */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-350">Submission Status</label>
-                  <select
-                    value={formStatus}
-                    onChange={(e) => setFormStatus(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs text-white bg-slate-900/60 border border-slate-900 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
-                  >
+                </Field>
+                <Field label="Status">
+                  <select value={formStatus} onChange={e => setFormStatus(e.target.value)}
+                    className="input-premium w-full px-3.5 py-2.5 text-[13px] rounded-xl cursor-pointer">
                     <option value="pending">Pending</option>
                     <option value="applied">Registered</option>
                     <option value="interviewing">Building</option>
                     <option value="offered">Winner</option>
                     <option value="rejected">Completed</option>
                   </select>
-                </div>
-
+                </Field>
               </div>
 
-              {/* Notes */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-350">Progress Notes / Details</label>
-                <textarea
-                  rows={6}
-                  placeholder="Project ideas, team formation details, submission requirements, preparation notes..."
-                  value={formNotes}
-                  onChange={(e) => setFormNotes(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs text-white bg-slate-900/60 border border-slate-900 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 placeholder:text-slate-650 transition-all font-medium resize-none leading-relaxed"
-                />
-              </div>
+              <Field label="Notes">
+                <textarea rows={5} placeholder="Project ideas, team, requirements…" value={formNotes}
+                  onChange={e => setFormNotes(e.target.value)}
+                  className="input-premium w-full px-3.5 py-2.5 text-[13px] rounded-xl resize-none leading-relaxed" />
+              </Field>
 
-              {/* Action Buttons inside Drawer */}
-              <div className="pt-4 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsFormOpen(false)}
-                  className="flex-1 py-3 px-4 text-xs font-bold text-slate-450 hover:text-white bg-slate-900 hover:bg-slate-900/80 rounded-xl border border-slate-900 transition-all cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-3 px-4 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-600/10 transition-all cursor-pointer"
-                >
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setIsFormOpen(false)} className="btn-ghost flex-1 py-2.5 text-[13px] font-semibold rounded-xl cursor-pointer">Cancel</button>
+                <button type="submit" className="btn-primary flex-1 py-2.5 text-[13px] font-semibold rounded-xl cursor-pointer">
                   {editingApp ? 'Save Changes' : 'Add Hackathon'}
                 </button>
               </div>
-
             </form>
           </div>
         </div>
       )}
 
-      {/* ================= DELETE CONFIRMATION DIALOG ================= */}
+      {/* ── DELETE CONFIRM ── */}
       {deleteConfirmId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-xs">
-          <div className="w-full max-w-sm p-6 rounded-2xl glass-panel shadow-2xl border border-slate-800/80 space-y-4">
-            <div className="flex items-center gap-3 text-rose-455">
-              <div className="p-2 bg-rose-500/10 rounded-xl border border-rose-500/20">
-                <AlertTriangle size={20} />
-              </div>
-              <h3 className="text-sm font-bold text-white">Delete Hackathon Record</h3>
-            </div>
-            
-            <p className="text-xs text-slate-450 leading-relaxed">
-              Are you sure you want to delete this hackathon record? This action is permanent and cannot be undone on Supabase.
-            </p>
-
+        <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="modal-surface w-full max-w-sm rounded-2xl p-6 space-y-5">
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => setDeleteConfirmId(null)}
-                className="flex-1 py-2 px-3 text-xs font-bold text-slate-450 hover:text-white bg-slate-900 hover:bg-slate-800/80 border border-slate-850 rounded-xl transition-all cursor-pointer"
-              >
-                Keep Record
-              </button>
-              <button
-                onClick={handleConfirmDelete}
-                className="flex-1 py-2 px-3 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 active:bg-rose-700 rounded-xl shadow-lg shadow-rose-600/10 transition-all cursor-pointer"
-              >
-                Delete Record
-              </button>
+              <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
+                <Trash2 size={16} className="text-rose-400" />
+              </div>
+              <div>
+                <h3 className="text-[14px] font-bold text-white">Delete Hackathon</h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">This cannot be undone</p>
+              </div>
+            </div>
+            <p className="text-[13px] text-slate-400 leading-relaxed">
+              Are you sure you want to delete this hackathon? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteConfirmId(null)} className="btn-ghost flex-1 py-2.5 text-[13px] font-semibold rounded-xl cursor-pointer">Keep It</button>
+              <button onClick={handleConfirmDelete} className="btn-danger flex-1 py-2.5 text-[13px] font-semibold rounded-xl cursor-pointer">Delete</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ================= HACKATHON DETAILS CENTERED MODAL ================= */}
+      {/* ── DETAILS MODAL ── */}
       {selectedAppDetails && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
-          onClick={() => setSelectedAppDetails(null)}
-        >
-          <div 
-            className="w-full max-w-lg bg-slate-950 border border-slate-900 rounded-2xl shadow-2xl p-6 space-y-6 flex flex-col max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="text-base font-bold text-white leading-snug">{selectedAppDetails.name}</h3>
-                <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-0.5">Hackathon Details</p>
-              </div>
-              <button 
-                onClick={() => setSelectedAppDetails(null)}
-                className="p-1.5 text-slate-500 hover:text-white rounded-lg hover:bg-slate-900 transition-colors cursor-pointer"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            {/* Badges */}
-            <div className="flex flex-wrap gap-2 pt-1 border-t border-slate-900/60">
-              <span className={`px-2.5 py-1 text-[10px] font-bold border rounded-md ${getPriorityStyles(selectedAppDetails.priority).bg} ${getPriorityStyles(selectedAppDetails.priority).text} ${getPriorityStyles(selectedAppDetails.priority).border}`}>
-                {getPriorityStyles(selectedAppDetails.priority).label} Priority
-              </span>
-              <span className={`px-2.5 py-1 text-[10px] font-bold border rounded-md ${getStatusStyles(selectedAppDetails.status).bg} ${getStatusStyles(selectedAppDetails.status).text} ${getStatusStyles(selectedAppDetails.status).border}`}>
-                {getStatusStyles(selectedAppDetails.status).label}
-              </span>
-            </div>
-
-            {/* Info Items */}
-            <div className="space-y-4 text-xs text-slate-350">
-              {selectedAppDetails.deadline && (
-                <div className="flex items-center gap-2">
-                  <Calendar size={14} className="text-indigo-400" />
-                  <span className="text-slate-450">Deadline:</span>
-                  <span className="font-semibold text-white">{formatDate(selectedAppDetails.deadline)}</span>
+        <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSelectedAppDetails(null)}>
+          <div className="modal-surface w-full max-w-lg rounded-2xl overflow-hidden flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+            <div className="px-6 py-5 border-b border-white/[0.06] flex items-start justify-between">
+              <div className="flex-1 pr-4">
+                <h3 className="text-[15px] font-bold text-white leading-snug">{selectedAppDetails.name}</h3>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {selectedAppDetails.id === nearestAppId && (
+                    <span className="tag-pill text-amber-300 border-amber-500/25 bg-amber-500/10">⚡ Soonest</span>
+                  )}
+                  <span className={`tag-pill ${getPriorityStyles(selectedAppDetails.priority).text}`}>
+                    {getPriorityStyles(selectedAppDetails.priority).label}
+                  </span>
+                  <span className={`tag-pill ${getStatusStyles(selectedAppDetails.status).text}`}>
+                    {getStatusStyles(selectedAppDetails.status).label}
+                  </span>
                 </div>
+              </div>
+              <button onClick={() => setSelectedAppDetails(null)} className="btn-ghost p-2 rounded-lg cursor-pointer"><X size={15} /></button>
+            </div>
+
+            <div className="p-6 space-y-4 flex-1 overflow-y-auto">
+              {selectedAppDetails.deadline && (
+                <InfoRow icon={<Calendar size={13} className="text-indigo-400" />} label="Deadline">
+                  {formatDate(selectedAppDetails.deadline)}
+                </InfoRow>
               )}
               {selectedAppDetails.link && (
-                <div className="flex items-center gap-2">
-                  <LinkIcon size={14} className="text-indigo-400" />
-                  <span className="text-slate-450">Event Link:</span>
-                  <a 
-                    href={selectedAppDetails.link} 
-                    target="_blank" 
-                    rel="noreferrer" 
-                    className="text-indigo-450 hover:text-indigo-300 hover:underline flex items-center gap-1 font-medium break-all"
-                  >
+                <InfoRow icon={<LinkIcon size={13} className="text-indigo-400" />} label="Link">
+                  <a href={selectedAppDetails.link} target="_blank" rel="noreferrer"
+                    className="text-indigo-400 hover:text-indigo-300 hover:underline flex items-center gap-1 break-all">
                     {selectedAppDetails.link}
-                    <ExternalLink size={11} />
+                    <ExternalLink size={10} />
                   </a>
-                </div>
+                </InfoRow>
               )}
-            </div>
-
-            {/* Notes */}
-            <div className="space-y-2 border-t border-slate-900/60 pt-4">
-              <h4 className="text-xs font-semibold text-slate-400">Progress Notes & Information</h4>
-              <div className="p-4 bg-slate-900/30 border border-slate-900/50 rounded-xl max-h-60 overflow-y-auto text-xs text-slate-300 whitespace-pre-line leading-relaxed">
-                {selectedAppDetails.notes || 'No detailed notes provided for this hackathon.'}
+              <div className="divider" />
+              <div className="space-y-2">
+                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Notes</p>
+                <div className="glass-panel rounded-xl p-4 text-[13px] text-slate-300 whitespace-pre-line leading-relaxed min-h-[80px]">
+                  {selectedAppDetails.notes || <span className="text-slate-600 italic">No notes added.</span>}
+                </div>
               </div>
             </div>
 
-            {/* Actions Footer */}
-            <div className="flex gap-3 pt-2">
-              <button
-                onClick={() => {
-                  handleOpenEdit(selectedAppDetails);
-                  setSelectedAppDetails(null);
-                }}
-                className="flex-1 py-2.5 px-4 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-all cursor-pointer shadow-lg shadow-indigo-600/10 text-center"
-              >
-                Edit Details
-              </button>
-              <button
-                onClick={() => setSelectedAppDetails(null)}
-                className="py-2.5 px-6 text-xs font-bold text-slate-450 hover:text-white bg-slate-900 border border-slate-900 rounded-xl transition-all cursor-pointer"
-              >
-                Close
-              </button>
+            <div className="px-6 py-4 border-t border-white/[0.04] flex gap-3">
+              <button onClick={() => { handleOpenEdit(selectedAppDetails); setSelectedAppDetails(null); }}
+                className="btn-primary flex-1 py-2.5 text-[13px] font-semibold rounded-xl cursor-pointer">Edit Details</button>
+              <button onClick={() => setSelectedAppDetails(null)}
+                className="btn-ghost py-2.5 px-5 text-[13px] font-semibold rounded-xl cursor-pointer">Close</button>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }
 
-/* ================= COMPONENT: HACKATHON CARD ================= */
-function HackathonCard({ app, onEdit, onDelete, onViewDetails }) {
+/* ── Utility sub-components ── */
+function Field({ label, required, children }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+        {label}{required && <span className="text-rose-400 ml-0.5">*</span>}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function InfoRow({ icon, label, children }) {
+  return (
+    <div className="flex items-start gap-3 text-[13px]">
+      <span className="mt-0.5">{icon}</span>
+      <span className="text-slate-500 shrink-0 w-16">{label}</span>
+      <span className="text-slate-200 font-medium flex-1">{children}</span>
+    </div>
+  );
+}
+
+/* ── HACKATHON CARD ── */
+function HackathonCard({ app, isNearest, onEdit, onDelete, onViewDetails }) {
   const priority = getPriorityStyles(app.priority);
   const status = getStatusStyles(app.status);
 
-  // Time remaining helper
   const getTimeRemaining = (deadlineStr) => {
-    const deadline = new Date(deadlineStr);
-    const now = new Date();
-    const diffTime = deadline - now;
+    const diffTime = new Date(deadlineStr) - new Date();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays < 0) {
-      return { text: `Expired ${Math.abs(diffDays)}d ago`, isUrgent: false, isExpired: true };
-    }
-    if (diffDays === 0) {
-      return { text: 'Due Today', isUrgent: true, isExpired: false };
-    }
-    if (diffDays === 1) {
-      return { text: 'Due Tomorrow', isUrgent: true, isExpired: false };
-    }
-    if (diffDays <= 4) {
-      return { text: `${diffDays} days left`, isUrgent: true, isExpired: false };
-    }
-    return { text: `${diffDays} days left`, isUrgent: false, isExpired: false };
+    if (diffDays < 0) return { text: `Expired ${Math.abs(diffDays)}d ago`, isUrgent: false, isExpired: true };
+    if (diffDays === 0) return { text: 'Due today', isUrgent: true, isExpired: false };
+    if (diffDays === 1) return { text: 'Due tomorrow', isUrgent: true, isExpired: false };
+    if (diffDays <= 4) return { text: `${diffDays}d left`, isUrgent: true, isExpired: false };
+    return { text: `${diffDays}d left`, isUrgent: false, isExpired: false };
   };
 
   const remaining = getTimeRemaining(app.deadline);
 
   return (
-    <article 
+    <article
       onClick={() => onViewDetails && onViewDetails(app)}
-      className={`glass-card p-5 rounded-2xl flex flex-col justify-between relative border border-slate-800/50 hover:border-slate-800/90 hover:bg-slate-900/10 cursor-pointer shadow-md transition-all hover:scale-[1.005] select-none ${priority.glow}`}
+      className={`glass-card rounded-2xl cursor-pointer select-none group ${
+        isNearest ? 'glow-nearest border-amber-500/30' :
+        app.priority === 'high' ? 'glow-high border-rose-500/25' : ''
+      }`}
     >
-      
-      {/* Top Section */}
-      <div className="space-y-3">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1 max-w-[70%]">
-            <h4 className="text-sm font-bold text-white truncate" title={app.name}>{app.name}</h4>
-            
-            {/* Badges row */}
-            <div className="flex flex-wrap gap-1.5 pt-0.5">
-              <span className={`px-2 py-0.5 text-[9px] font-bold border rounded-md leading-normal tracking-wide ${priority.bg} ${priority.text} ${priority.border}`}>
+      <div className="p-5">
+        {/* Title row */}
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1.5">
+              {isNearest && <span className="beacon-amber" />}
+              {app.priority === 'high' && !isNearest && <span className="beacon-red" />}
+              <h4 className="text-[14px] font-bold text-white leading-tight truncate">{app.name}</h4>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {isNearest && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-bold rounded-full
+                                 bg-amber-400/10 text-amber-300 border border-amber-400/20 animate-pulse">
+                  ⚡ Soonest
+                </span>
+              )}
+              <span className={`inline-flex px-2 py-0.5 text-[9px] font-bold rounded-full border ${priority.bg} ${priority.text} ${priority.border}`}>
                 {priority.label}
               </span>
-              <span className={`px-2 py-0.5 text-[9px] font-bold border rounded-md leading-normal tracking-wide ${status.bg} ${status.text} ${status.border}`}>
+              <span className={`inline-flex px-2 py-0.5 text-[9px] font-bold rounded-full border ${status.bg} ${status.text} ${status.border}`}>
                 {status.label}
               </span>
             </div>
           </div>
 
-          {/* Quick Action Trigger Keys */}
-          <div 
-            className="flex items-center gap-1.5 opacity-40 hover:opacity-100 transition-opacity"
-            onClick={(e) => e.stopPropagation()}
-          >
+          {/* Actions — always visible, pop on hover */}
+          <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
             {app.link && (
-              <a
-                href={app.link}
-                target="_blank"
-                rel="noreferrer"
-                className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-900 transition-all cursor-pointer"
-                title="Go to hackathon event link"
-              >
-                <ExternalLink size={13} />
+              <a href={app.link} target="_blank" rel="noreferrer"
+                 className="p-1.5 text-slate-600 hover:text-white rounded-lg hover:bg-white/[0.06] transition-all cursor-pointer"
+                 title="Open link">
+                <ExternalLink size={12} />
               </a>
             )}
-            <button
-              onClick={() => onEdit(app)}
-              className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-900 transition-all cursor-pointer"
-              title="Edit hackathon details"
-            >
-              <Edit3 size={13} />
+            <button onClick={() => onEdit(app)}
+              className="p-1.5 text-slate-600 hover:text-indigo-400 rounded-lg hover:bg-indigo-500/[0.08] transition-all cursor-pointer"
+              title="Edit">
+              <Edit3 size={12} />
             </button>
-            <button
-              onClick={() => onDelete(app.id)}
-              className="p-1 text-slate-450 hover:text-rose-400 rounded hover:bg-slate-900 transition-all cursor-pointer"
-              title="Delete hackathon record"
-            >
-              <Trash2 size={13} />
+            <button onClick={() => onDelete(app.id)}
+              className="p-1.5 text-slate-600 hover:text-rose-400 rounded-lg hover:bg-rose-500/[0.08] transition-all cursor-pointer"
+              title="Delete">
+              <Trash2 size={12} />
             </button>
           </div>
         </div>
 
-        {/* Deadline information */}
-        <div className="flex items-center gap-3 pt-1 text-[11px] border-t border-slate-900/60">
-          <span className="flex items-center gap-1 text-slate-455 font-medium">
-            <Calendar size={11} className="text-indigo-400" />
+        {/* Deadline strip */}
+        <div className="flex items-center gap-3 pt-3 border-t border-white/[0.04] text-[11px]">
+          <span className="flex items-center gap-1.5 text-slate-500">
+            <Calendar size={11} className="text-indigo-400/70" />
             {formatDate(app.deadline)}
           </span>
           <span className={`flex items-center gap-1 font-semibold ${
-            remaining.isExpired ? 'text-rose-500' : remaining.isUrgent ? 'text-amber-400 animate-pulse' : 'text-emerald-450'
+            remaining.isExpired ? 'text-slate-600' :
+            remaining.isUrgent ? 'text-amber-400' : 'text-emerald-400'
           }`}>
             <Clock size={11} />
             {remaining.text}
           </span>
         </div>
 
-        {/* Notes summary */}
+        {/* Notes preview */}
         {app.notes && (
-          <p className="text-[11px] text-slate-455 leading-relaxed pt-2 line-clamp-3 whitespace-pre-line border-t border-slate-900/30">
+          <p className="text-[11px] text-slate-500 leading-relaxed mt-3 line-clamp-2 whitespace-pre-line">
             {app.notes}
           </p>
         )}
       </div>
-
     </article>
   );
 }
