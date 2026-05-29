@@ -1,10 +1,10 @@
 # High-Level Design (HLD): AnonVault
 
-This document provides a simple, high-level overview of **AnonVault**'s architecture, data flows, and system components.
+This document provides a simple, high-level overview of AnonVault's architecture, data flows, and system components.
 
 ---
 
-## 🏛️ System Architecture Overview
+## System Architecture Overview
 
 AnonVault is a client-first, secure web application designed to track application deadlines and catalog ideas. It interfaces directly with a Supabase cloud database, meaning your data stays private and synchronizes automatically.
 
@@ -20,7 +20,7 @@ graph TD
 
 ---
 
-## 📦 Core System Components
+## Core System Components
 
 The table below explains what each block in our system does:
 
@@ -35,7 +35,7 @@ The table below explains what each block in our system does:
 
 ---
 
-## 🔄 Core Data Flows
+## Core Data Flows
 
 ### 1. Security Authorization Flow
 When a user launches or refreshes the application:
@@ -81,7 +81,7 @@ Once unlocked, the application interacts directly with your PostgreSQL database:
 
 ---
 
-## 🔒 Security Specifications
+## Security Specifications
 
 * **Environment Gating**: The decryption PIN resides strictly in your host environment (`.env`) as `VITE_APP_PIN`. No fallback strings are compiled in the source files.
 * **Database Row Level Security (RLS)**: PostgreSQL rules ensure that even if API keys are public, operations remain bound to secure table constraints.

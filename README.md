@@ -1,107 +1,63 @@
-# ChronoKeep & IdeaVault
+# AnonVault
 
-A highly-styled, modern web application designed to help you track applications (jobs, internships, grants, projects) on a visual timeline, and capture your creative thoughts and design mockups in a visual Idea Vault. Built with **React 18**, **Tailwind CSS v4**, and **Supabase**.
-
----
-
-## Key Features
-
-1. **Application Timeline Tracker**
-   - **Chronological Sorting**: See what deadlines are coming up first.
-   - **Custom Grouping**: Toggle between a month-wise accordion grouped board and a clean date-wise list.
-   - **Priority & Status Badges**: Urgent tasks stand out with subtle glowing border micro-animations.
-   - **Interactive Filters**: Search by terms, filter by priority scales, and filter by process statuses.
-   - **Full CRUD operations**: Add, edit, and delete application logs easily.
-
-2. **Creative Idea Vault**
-   - **Visual Card Deck**: Masonry grid of ideas.
-   - **Rich Media Support**: Upload local design images or paste external image web URLs.
-   - **Dynamic Tag Indexing**: Group your ideas with category tags, and click tag badges to instantly filter the deck.
-   - **Text Descriptions**: Complete support for detailed descriptions.
-
-3. **Supabase Synchronized Back-End**
-   - Stores all application and idea records in a remote PostgreSQL database on Supabase.
-   - Saves idea attachments directly to Supabase Public Storage buckets.
-   - **Dynamic Client Setup**: If you run the app without `.env` config variables, a beautiful dynamic setup modal guides you to paste credentials and persist them directly inside your browser.
+AnonVault is a secure personal workspace designed to organize application processes chronologically and dump creative ideas in a visual repository.
 
 ---
 
-## Getting Started
+## What is AnonVault?
 
-### 1. Database & Storage Configuration on Supabase
+This project is a utility built to address the common problem of forgetting things after applying for jobs, internships, grants, or projects. It helps you manage your upcoming deadlines, keep track of process statuses (like applied, interviewing, offered, or rejected), and prioritize critical tasks. 
 
-Create a new project on [Supabase](https://supabase.com).
-
-#### Step A: Database Tables
-Open the **SQL Editor** in your Supabase dashboard, create a new query, paste the following SQL, and click **Run**:
-
-```sql
--- 1. Create applications table
-create table public.applications (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid default auth.uid(),
-  name text not null,
-  link text,
-  deadline timestamp with time zone not null,
-  priority text check (priority in ('low', 'medium', 'high')) default 'medium',
-  status text check (status in ('applied', 'interviewing', 'offered', 'rejected', 'pending')) default 'pending',
-  notes text,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
-
--- 2. Create ideas table
-create table public.ideas (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid default auth.uid(),
-  title text not null,
-  content text,
-  image_url text,
-  tags text[] default '{}',
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
-
--- 3. Enable Row Level Security (RLS) for public access or quick prototyping
-alter table public.applications enable row level security;
-alter table public.ideas enable row level security;
-
-create policy "Allow all read" on public.applications for select using (true);
-create policy "Allow all insert" on public.applications for insert with check (true);
-create policy "Allow all update" on public.applications for update using (true);
-create policy "Allow all delete" on public.applications for delete using (true);
-
-create policy "Allow all read" on public.ideas for select using (true);
-create policy "Allow all insert" on public.ideas for insert with check (true);
-create policy "Allow all update" on public.ideas for update using (true);
-create policy "Allow all delete" on public.ideas for delete using (true);
-```
-
-#### Step B: Storage Bucket (For Idea Images)
-1. Go to **Storage** in the left sidebar of your Supabase dashboard.
-2. Click **New Bucket**.
-3. Set the name to exactly **`idea-images`**.
-4. Make sure to toggle **Public** to **Enabled** (so that image URLs are accessible publicly).
-5. Click **Create bucket**.
+Additionally, it provides a dedicated visual workspace where you can dump creative thoughts, drafts, and side-project concepts in a searchable card board that supports tags and image uploads.
 
 ---
 
-### 2. Running the Application Locally
+## Accessing the Dashboard
 
-#### Install Dependencies
-In your terminal, navigate to the project directory and run:
-```bash
-npm install
-```
+This workspace is locked by default behind a 4-digit entry passcode to protect personal deadlines and records. 
 
-#### Configure Environment Variables (Optional but Recommended)
-To hardcode your database connections, create a `.env.local` file in the root directory:
+If you want to access this dashboard, contact mini anon for the PIN.
+
+---
+
+## Setting Up the Project
+
+Follow these simple steps to run the application locally:
+
+### Step 1: Database and Storage Configuration
+
+This application runs on Supabase. Create a free project on Supabase and perform the following:
+1. Open the SQL Editor in your Supabase dashboard and run the database creation query found in the Low-Level Design document.
+2. Go to the Storage panel, create a new public bucket, and name it exactly `idea-images` to enable uploading visual design attachments.
+
+### Step 2: Environment Parameters
+
+Create a file named `.env` in the root of the project directory and populate it with your project credentials:
+
 ```env
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-supabase-anon-key-here
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_public_anon_api_key
+VITE_APP_PIN=your_four_digit_pin_here
 ```
-*(If you omit this, you can easily enter these credentials dynamically in the app sidebar's **Setup** button)*
 
-#### Start the Development Server
+### Step 3: Run the Application
+
+In your terminal, navigate to this project folder and execute:
 ```bash
+# Install dependencies
+npm install
+
+# Start the dev server
 npm run dev
 ```
-Open [http://localhost:5173](http://localhost:5173) in your browser to view and use the dashboard.
+Open the local address shown in your terminal (usually http://localhost:5173) in your browser.
+
+---
+
+## Documentation and License Links
+
+For a deeper look into the systems and rules of this project, you can read the documents linked below:
+
+* **[High-Level Design (HLD)](file:///d:/Personal/Taks/docs/hld.md)**: Simplified overview of the system architecture, navigation panels, and data flow.
+* **[Low-Level Design (LLD)](file:///d:/Personal/Taks/docs/lld.md)**: Detailed schema models of the database tables, component properties, API calls, and logic routines.
+* **[Project License](file:///d:/Personal/Taks/LICENSE)**: Released under the MIT License copyright of Tushar Bhardwaj.

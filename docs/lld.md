@@ -1,10 +1,10 @@
 # Low-Level Design (LLD): AnonVault
 
-This document details the low-level component configurations, database schemas, function interfaces, and logic routines of **AnonVault**.
+This document details the low-level component configurations, database schemas, function interfaces, and logic routines of AnonVault.
 
 ---
 
-## 🛠️ UI Component Layout & Props
+## UI Component Layout & Props
 
 The application is structured into modular React components. Below is the specification of properties passed between files:
 
@@ -18,7 +18,7 @@ The application is structured into modular React components. Below is the specif
 
 ---
 
-## 🗄️ Database Tables Schema
+## Database Tables Schema
 
 AnonVault maps directly to the following relational PostgreSQL schemas in Supabase:
 
@@ -50,7 +50,7 @@ AnonVault maps directly to the following relational PostgreSQL schemas in Supaba
 
 ---
 
-## 📡 API Services & Operations (`src/services/supabase.js`)
+## API Services & Operations (`src/services/supabase.js`)
 
 Our service layer maps direct asynchronous operations to Supabase endpoints:
 
@@ -74,7 +74,7 @@ Our service layer maps direct asynchronous operations to Supabase endpoints:
 
 ---
 
-## ⚙️ Logic Routine: Passcode Keypad Interceptor
+## Logic Routine: Passcode Keypad Interceptor
 
 The flow below details the character input logic inside the `LockScreen` component:
 
