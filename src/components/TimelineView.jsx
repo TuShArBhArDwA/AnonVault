@@ -156,7 +156,6 @@ export default function TimelineView({
       <header className="px-8 py-5 border-b border-slate-900 bg-slate-950 flex items-center justify-between shrink-0">
         <div>
           <h2 className="text-xl font-bold text-white tracking-wide">Hackathon Timeline</h2>
-          <p className="text-xs text-slate-500">Track and sort hackathons and project submissions chronologically</p>
         </div>
 
         <div className="flex items-center gap-3">
