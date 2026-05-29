@@ -58,6 +58,6 @@ Open the local address shown in your terminal (usually http://localhost:5173) in
 
 For a deeper look into the systems and rules of this project, you can read the documents linked below:
 
-* **[High-Level Design (HLD)](file:///d:/Personal/Taks/docs/hld.md)**: Simplified overview of the system architecture, navigation panels, and data flow.
-* **[Low-Level Design (LLD)](file:///d:/Personal/Taks/docs/lld.md)**: Detailed schema models of the database tables, component properties, API calls, and logic routines.
-* **[Project License](file:///d:/Personal/Taks/LICENSE)**: Released under the MIT License copyright of Tushar Bhardwaj.
+* **[High-Level Design (HLD)](docs/hld.md)**: Simplified overview of the system architecture, navigation panels, and data flow.
+* **[Low-Level Design (LLD)](docs/lld.md)**: Detailed schema models of the database tables, component properties, API calls, and logic routines.
+* **[Project License](LICENSE)**: Released under the MIT License copyright of Tushar Bhardwaj.
