@@ -33,11 +33,42 @@ export default function Sidebar({ activeTab, setActiveTab, stats }) {
       <div className="px-6 pt-7 pb-6">
         <div className="flex items-center gap-3.5">
           <div className="relative">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-violet-600
-                            flex items-center justify-center shadow-lg shadow-indigo-500/30">
-              <Layers size={17} className="text-white" />
+            <div className="w-9 h-9 flex items-center justify-center filter drop-shadow-[0_4px_10px_rgba(99,102,241,0.25)] hover:scale-105 transition-transform duration-300">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" className="w-full h-full">
+                <defs>
+                  <linearGradient id="sidebarLogoGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#6366f1" />
+                    <stop offset="50%" stopColor="#8b5cf6" />
+                    <stop offset="100%" stopColor="#ec4899" />
+                  </linearGradient>
+                  <filter id="sidebarLogoGlow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="1.8" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                  </filter>
+                </defs>
+
+                {/* Star of Success (Premium 4-Point Sparkle) */}
+                <path d="M38 6C38 9.5 39.5 11 43 11C39.5 11 38 12.5 38 16C38 12.5 36.5 11 33 11C36.5 11 38 9.5 38 6Z" fill="url(#sidebarLogoGrad)" filter="url(#sidebarLogoGlow)" />
+
+                {/* Premium Floating Ascent Steps */}
+                <rect x="8" y="38" width="10" height="3" rx="1.5" fill="url(#sidebarLogoGrad)" opacity={0.4} />
+                <rect x="15" y="31" width="12" height="3" rx="1.5" fill="url(#sidebarLogoGrad)" opacity={0.6} />
+                <rect x="22" y="24" width="14" height="3" rx="1.5" fill="url(#sidebarLogoGrad)" opacity={0.8} />
+                <rect x="29" y="17" width="16" height="3" rx="1.5" fill="url(#sidebarLogoGrad)" filter="url(#sidebarLogoGlow)" />
+
+                {/* Fluid, Dynamic Ascending Figure */}
+                {/* Reaching Arm toward success */}
+                <path d="M28 11.5C31.5 10.5 34.5 9 37.5 7.5" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" filter="url(#sidebarLogoGlow)" />
+                {/* Graceful fluid body in motion (stepping up) */}
+                <path d="M19 28C21 21 24 16 27.5 12" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" filter="url(#sidebarLogoGlow)" />
+                {/* Back leg pushing off */}
+                <path d="M19 28C17.5 30.5 15.5 32 14.5 32.5" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" opacity={0.8} />
+                {/* Stepping front leg */}
+                <path d="M22 21C24.5 21.5 27 22.5 28.5 23.5" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" filter="url(#sidebarLogoGlow)" />
+                {/* Head (glowing sphere of vision/ambition) */}
+                <circle cx="28" cy="8.5" r="3.5" fill="#ffffff" filter="url(#sidebarLogoGlow)" />
+              </svg>
             </div>
-            <div className="absolute -inset-0.5 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 opacity-20 blur-sm -z-10" />
           </div>
           <div>
             <h1 className="text-[15px] font-bold text-white tracking-tight leading-none">AnonVault</h1>

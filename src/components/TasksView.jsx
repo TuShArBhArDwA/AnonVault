@@ -3,7 +3,7 @@ import {
   Plus, Trash2, Edit3, X, ChevronDown,
   Check, Sun, Moon, RotateCcw,
   ChevronLeft, ChevronRight as ChevronRightIcon, Repeat2,
-  ListChecks, Sparkles, Minus, ArrowDown
+  ListChecks, Sparkles, Minus, ArrowDown, EyeOff
 } from 'lucide-react';
 import {
   getTasksForDate, addTask, updateTask, deleteTask,
@@ -68,7 +68,7 @@ function Checkbox({ checked, onChange, size = 'md' }) {
 }
 
 /* ── Task card with linktree thread ─────────────────────── */
-function TaskCard({ task, onToggle, onToggleSub, onEdit, onDelete }) {
+function TaskCard({ task, onToggle, onToggleSub, onEdit, onDelete, onCancel }) {
   const [collapsed, setCollapsed] = useState(false);
   const hasSubtasks  = task.subtasks && task.subtasks.length > 0;
   const completedSubs = hasSubtasks ? task.subtasks.filter(s => s.completed).length : 0;
@@ -147,6 +147,13 @@ function TaskCard({ task, onToggle, onToggleSub, onEdit, onDelete }) {
               )}
               {/* Edit / Delete — visible on hover */}
               <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={e => { e.stopPropagation(); onCancel(task); }}
+                  className="p-1.5 text-slate-650 hover:text-amber-400 rounded-lg hover:bg-amber-500/[0.08] transition-all cursor-pointer"
+                  title="Cancel for today"
+                >
+                  <EyeOff size={12} />
+                </button>
                 <button
                   onClick={e => { e.stopPropagation(); onEdit(task); }}
                   className="p-1.5 text-slate-600 hover:text-indigo-400 rounded-lg hover:bg-indigo-500/[0.08] transition-all cursor-pointer"
@@ -457,6 +464,36 @@ export default function TasksView({ theme, toggleTheme, showToast, onTasksChange
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [busy,         setBusy]         = useState(false);
 
+  const [cancelledMap, setCancelledMap] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('anonvault_task_cancelled') || localStorage.getItem('anonvault_task_ignored') || '{}');
+    } catch {
+      return {};
+    }
+  });
+
+  const handleCancel = useCallback(async task => {
+    const updated = { ...cancelledMap };
+    if (!updated[task.id]) updated[task.id] = {};
+    updated[task.id][selectedDate] = true;
+    setCancelledMap(updated);
+    localStorage.setItem('anonvault_task_cancelled', JSON.stringify(updated));
+    showToast?.('warning', 'Task Cancelled', `"${task.title}" cancelled for today.`);
+  }, [cancelledMap, selectedDate, showToast]);
+
+  const handleUncancel = useCallback(async taskId => {
+    const updated = { ...cancelledMap };
+    if (updated[taskId]) {
+      delete updated[taskId][selectedDate];
+      if (Object.keys(updated[taskId]).length === 0) {
+        delete updated[taskId];
+      }
+    }
+    setCancelledMap(updated);
+    localStorage.setItem('anonvault_task_cancelled', JSON.stringify(updated));
+    showToast?.('success', 'Task Restored', 'Task is visible again.');
+  }, [cancelledMap, selectedDate, showToast]);
+
   const refresh = useCallback(async () => {
     const fetched = await getTasksForDate(selectedDate);
     setTasks(fetched);
@@ -526,12 +563,15 @@ export default function TasksView({ theme, toggleTheme, showToast, onTasksChange
   const sortByPriority = arr =>
     [...arr].sort((a, b) => (PRIORITY_ORDER[a.priority] ?? 2) - (PRIORITY_ORDER[b.priority] ?? 2));
 
-  const allPending     = sortByPriority(tasks.filter(t => !t.completed));
-  const completedTasks = tasks.filter(t => t.completed);
-  const totalCount       = tasks.length;
-  const doneCount        = completedTasks.length;
-  const progress         = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
-  const isToday          = selectedDate === todayStr();
+  const activeTasks    = tasks.filter(t => !cancelledMap[t.id]?.[selectedDate]);
+  const cancelledToday = tasks.filter(t => !!cancelledMap[t.id]?.[selectedDate]);
+
+  const allPending     = sortByPriority(activeTasks.filter(t => !t.completed));
+  const completedTasks = activeTasks.filter(t => t.completed);
+  const totalCount     = activeTasks.length;
+  const doneCount      = completedTasks.length;
+  const progress       = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+  const isToday        = selectedDate === todayStr();
 
   return (
     <div className="flex-1 h-screen flex flex-col overflow-hidden bg-slate-950">
@@ -620,6 +660,7 @@ export default function TasksView({ theme, toggleTheme, showToast, onTasksChange
                     onToggle={handleToggle} onToggleSub={handleToggleSub}
                     onEdit={t => { setEditingTask(t); setIsFormOpen(true); }}
                     onDelete={setDeleteTarget}
+                    onCancel={handleCancel}
                   />
                 ))}
               </div>
@@ -634,7 +675,28 @@ export default function TasksView({ theme, toggleTheme, showToast, onTasksChange
                     onToggle={handleToggle} onToggleSub={handleToggleSub}
                     onEdit={t => { setEditingTask(t); setIsFormOpen(true); }}
                     onDelete={setDeleteTarget}
+                    onCancel={handleCancel}
                   />
+                ))}
+              </div>
+            )}
+
+            {/* Cancelled Today */}
+            {cancelledToday.length > 0 && (
+              <div className="space-y-3 opacity-40 hover:opacity-75 transition-opacity">
+                <SectionLabel label="Cancelled Today" count={cancelledToday.length} />
+                {cancelledToday.map(task => (
+                  <div key={task.id} className="flex items-center justify-between p-4 bg-white/[0.015] border border-white/[0.04] rounded-2xl">
+                    <span className="text-[13px] text-slate-500 line-through truncate font-medium">{task.title}</span>
+                    <button
+                      onClick={() => handleUncancel(task.id)}
+                      className="px-3 py-1.5 text-indigo-400 hover:text-indigo-300 border border-indigo-500/15 bg-indigo-500/[0.04] hover:bg-indigo-500/[0.08] rounded-xl transition-all cursor-pointer flex items-center gap-1.5 text-[11px] font-bold"
+                      title="Restore Task"
+                    >
+                      <RotateCcw size={10} />
+                      Restore
+                    </button>
+                  </div>
                 ))}
               </div>
             )}

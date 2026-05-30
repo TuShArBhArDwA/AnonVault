@@ -3,7 +3,8 @@ import {
   Plus, Search, Tag, Trash2, Edit3, X, Calendar,
   AlertTriangle, FileImage, Link as LinkIcon,
   Lightbulb, Sun, Moon, Hash, ExternalLink, Image as ImageIcon,
-  Globe, ChevronDown, ChevronUp, GripVertical, Info
+  Globe, ChevronDown, ChevronUp, GripVertical, Info, Maximize2,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { uploadIdeaImage } from '../services/supabase';
 import { formatDate } from '../utils/helpers';
@@ -37,7 +38,7 @@ const AttachTabs = ({ active, onChange }) => (
 );
 
 /* ─── Single image row inside form ────────────────────── */
-function ImageRow({ img, index, onRemove, onChangeUrl, onFileUpload, uploadingIndex, uploadError }) {
+function ImageRow({ img, index, onRemove, onChangeUrl, onFileUpload, uploadingIndex, uploadError, isPrimary, onSetPrimary }) {
   const fileRef = useRef(null);
   const isUploading = uploadingIndex === index;
 
@@ -45,48 +46,51 @@ function ImageRow({ img, index, onRemove, onChangeUrl, onFileUpload, uploadingIn
     <div className="space-y-2 p-3 bg-white/[0.025] border border-white/[0.06] rounded-xl group/imgrow">
       {/* preview */}
       {img.url && (
-        <div className="relative rounded-lg overflow-hidden h-28">
-          <img src={img.url} alt="preview" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+        <div className="relative rounded-lg overflow-hidden h-48 bg-black/40 border border-white/[0.06] flex items-center justify-center">
+          <img src={img.url} alt="preview" className="w-full h-full object-contain" />
+          <button
+            type="button"
+            onClick={() => onSetPrimary(index)}
+            className={`absolute top-2 left-2 p-1.5 rounded-lg text-[12px] font-bold border transition-all cursor-pointer flex items-center justify-center ${
+              isPrimary
+                ? 'bg-amber-500/25 border-amber-400 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.2)]'
+                : 'bg-black/60 border-white/10 text-slate-400 hover:text-amber-300 hover:border-amber-500/30'
+            }`}
+            title={isPrimary ? 'Primary Cover' : 'Set as Cover'}
+          >
+            ★
+          </button>
           <button type="button" onClick={() => onRemove(index)}
-            className="absolute top-1.5 right-1.5 p-1 bg-black/60 border border-white/10 rounded-md text-slate-300 hover:text-rose-400 transition-colors cursor-pointer">
-            <X size={11} />
+            className="absolute top-2 right-2 p-1.5 bg-black/60 border border-white/10 rounded-lg text-slate-350 hover:text-rose-455 transition-colors cursor-pointer">
+            <X size={12} />
           </button>
         </div>
       )}
 
-      {/* url input row */}
+      {/* upload button only row */}
       <div className="flex items-center gap-2">
-        <div className="relative flex-1">
-          <LinkIcon size={10} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
-          <input
-            type="url"
-            placeholder="Paste image URL…"
-            value={img.url}
-            onChange={e => onChangeUrl(index, e.target.value)}
-            className="input-premium w-full pl-7 pr-3 py-2 text-[12px] rounded-lg"
-          />
-        </div>
-
-        {/* upload button */}
         <input type="file" ref={fileRef} accept="image/*"
           className="hidden" onChange={e => onFileUpload(index, e)} />
-        <button type="button" onClick={() => fileRef.current?.click()}
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
           disabled={isUploading}
-          className="btn-ghost px-2.5 py-2 rounded-lg text-[11px] font-semibold cursor-pointer flex items-center gap-1.5 shrink-0">
+          className="btn-ghost flex-1 py-2.5 rounded-lg text-[12px] font-semibold cursor-pointer flex items-center justify-center gap-1.5"
+        >
           {isUploading
             ? <span className="w-3 h-3 border border-indigo-400 border-t-transparent rounded-full animate-spin" />
-            : <FileImage size={12} />}
-          {isUploading ? 'Uploading…' : 'Upload'}
+            : <FileImage size={13} />}
+          {isUploading ? 'Uploading…' : 'Upload Image File'}
         </button>
 
         {/* remove row */}
-        {!img.url && (
-          <button type="button" onClick={() => onRemove(index)}
-            className="p-2 text-slate-600 hover:text-rose-400 rounded-lg transition-colors cursor-pointer">
-            <X size={12} />
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => onRemove(index)}
+          className="p-2.5 text-slate-600 hover:text-rose-455 rounded-lg transition-colors cursor-pointer bg-white/[0.03] border border-white/[0.06] hover:bg-rose-500/[0.08] hover:border-rose-500/20"
+        >
+          <X size={13} />
+        </button>
       </div>
 
       {/* caption */}
@@ -297,7 +301,9 @@ export default function IdeaVaultView({
   const addImageRow    = () => setFormImages(p => [...p, { url: '', caption: '' }]);
   const removeImageRow = (i) => setFormImages(p => p.filter((_, idx) => idx !== i));
   const changeImageRow = (i, url, caption) =>
-    setFormImages(p => p.map((item, idx) => idx === i ? { url, caption: caption ?? item.caption } : item));
+    setFormImages(p => p.map((item, idx) => idx === i ? { ...item, url, caption: caption ?? item.caption } : item));
+  const handleSetPrimary = (index) =>
+    setFormImages(p => p.map((item, idx) => ({ ...item, is_primary: idx === index })));
 
   const handleFileUpload = async (index, e) => {
     const file = e.target.files[0];
@@ -614,7 +620,7 @@ export default function IdeaVaultView({
           </div>
         ) : (
           <div>
-            <div className="columns-1 md:columns-2 xl:columns-3 gap-5 space-y-5 [column-fill:_auto]">
+            <div className="columns-1 md:columns-2 xl:columns-3 gap-5">
               {processedIdeas.map(idea => (
                 <div
                   key={idea.id}
@@ -625,7 +631,7 @@ export default function IdeaVaultView({
                   onDragOver={e => handleDragOver(e, idea.id)}
                   onDragLeave={handleDragLeave}
                   onDrop={e => handleDrop(e, idea.id)}
-                  className={`break-inside-avoid transition-opacity duration-200 ${
+                  className={`break-inside-avoid mb-5 transition-opacity duration-200 ${
                     draggedId === idea.id ? 'opacity-20 scale-95 border-2 border-dashed border-indigo-500/20 rounded-2xl' : ''
                   } ${
                     draggedOverId === idea.id ? 'border-2 border-indigo-500 scale-[1.01] shadow-[0_0_15px_rgba(99,102,241,0.25)] rounded-2xl' : ''
@@ -678,63 +684,57 @@ export default function IdeaVaultView({
                   className="input-premium w-full px-3.5 py-2.5 text-[13px] rounded-xl resize-none leading-relaxed" />
               </FormField>
 
-              {/* ── Attachments panel ── */}
-              <FormField label="Attachments">
-                <AttachTabs active={attachTab} onChange={setAttachTab} />
+              {/* Images Section */}
+              <FormField label="Images">
+                <div className="space-y-2">
+                  {formImages.map((img, i) => (
+                    <ImageRow
+                      key={i}
+                      img={img}
+                      index={i}
+                      onRemove={removeImageRow}
+                      onChangeUrl={changeImageRow}
+                      onFileUpload={handleFileUpload}
+                      uploadingIndex={uploadingIndex}
+                      uploadError={uploadError}
+                      isPrimary={img.is_primary ?? (i === 0)}
+                      onSetPrimary={handleSetPrimary}
+                    />
+                  ))}
+                  <button
+                    type="button"
+                    onClick={addImageRow}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 text-[12px] font-semibold
+                               text-indigo-400 border border-dashed border-indigo-500/25 rounded-xl
+                               hover:border-indigo-500/50 hover:bg-indigo-500/[0.05] transition-all cursor-pointer"
+                  >
+                    <Plus size={13} /> Add Image
+                  </button>
+                </div>
+              </FormField>
 
-                {/* ── Images tab ── */}
-                {attachTab === 'images' && (
-                  <div className="mt-3 space-y-2">
-                    {formImages.map((img, i) => (
-                      <ImageRow
-                        key={i}
-                        img={img}
-                        index={i}
-                        onRemove={removeImageRow}
-                        onChangeUrl={changeImageRow}
-                        onFileUpload={handleFileUpload}
-                        uploadingIndex={uploadingIndex}
-                        uploadError={uploadError}
-                      />
-                    ))}
-                    <button
-                      type="button"
-                      onClick={addImageRow}
-                      className="w-full flex items-center justify-center gap-2 py-2.5 text-[12px] font-semibold
-                                 text-indigo-400 border border-dashed border-indigo-500/25 rounded-xl
-                                 hover:border-indigo-500/50 hover:bg-indigo-500/[0.05] transition-all cursor-pointer"
-                    >
-                      <Plus size={13} /> Add Image
-                    </button>
-                  </div>
-                )}
-
-                {/* ── Links tab ── */}
-                {attachTab === 'links' && (
-                  <div className="mt-3 space-y-2">
-                    {formLinks.length === 0 && (
-                      <p className="text-[11px] text-slate-600 text-center py-3">No links added yet</p>
-                    )}
-                    {formLinks.map((link, i) => (
-                      <LinkRow
-                        key={i}
-                        link={link}
-                        index={i}
-                        onRemove={removeLinkRow}
-                        onChange={changeLinkRow}
-                      />
-                    ))}
-                    <button
-                      type="button"
-                      onClick={addLinkRow}
-                      className="w-full flex items-center justify-center gap-2 py-2.5 text-[12px] font-semibold
-                                 text-indigo-400 border border-dashed border-indigo-500/25 rounded-xl
-                                 hover:border-indigo-500/50 hover:bg-indigo-500/[0.05] transition-all cursor-pointer"
-                    >
-                      <Plus size={13} /> Add Link
-                    </button>
-                  </div>
-                )}
+              {/* Links Section */}
+              <FormField label="Links">
+                <div className="space-y-2">
+                  {formLinks.map((link, i) => (
+                    <LinkRow
+                      key={i}
+                      link={link}
+                      index={i}
+                      onRemove={removeLinkRow}
+                      onChange={changeLinkRow}
+                    />
+                  ))}
+                  <button
+                    type="button"
+                    onClick={addLinkRow}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 text-[12px] font-semibold
+                               text-indigo-400 border border-dashed border-indigo-500/25 rounded-xl
+                               hover:border-indigo-500/50 hover:bg-indigo-500/[0.05] transition-all cursor-pointer"
+                  >
+                    <Plus size={13} /> Add Link
+                  </button>
+                </div>
               </FormField>
 
               {/* Enter-to-Tag interactive chip input */}
@@ -840,6 +840,7 @@ function IdeaDetailModal({ idea, onClose, onEdit }) {
   const links  = idea.links || [];
 
   const [imgIdx, setImgIdx] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   return (
     <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -848,14 +849,20 @@ function IdeaDetailModal({ idea, onClose, onEdit }) {
 
         {/* image carousel */}
         {images.length > 0 && (
-          <div className="relative bg-black shrink-0">
+          <div className="relative bg-slate-950 shrink-0 h-64 border-b border-white/[0.04] flex items-center justify-center group/carousel">
             <img src={images[imgIdx].url} alt={images[imgIdx].caption || idea.title}
-              className="w-full max-h-60 object-cover" />
-            {images[imgIdx].caption && (
-              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent px-4 py-2">
-                <p className="text-[11px] text-slate-300">{images[imgIdx].caption}</p>
-              </div>
-            )}
+              className="w-full h-full object-contain" />
+            
+            {/* fullscreen toggle button */}
+            <button
+              type="button"
+              onClick={() => setIsFullscreen(true)}
+              className="absolute top-3 right-3 p-2 bg-black/60 border border-white/10 rounded-xl text-slate-300 hover:text-white transition-all cursor-pointer opacity-0 group-hover/carousel:opacity-100 flex items-center justify-center"
+              title="Open full screen"
+            >
+              <Maximize2 size={13} />
+            </button>
+
             {/* prev / next */}
             {images.length > 1 && (
               <div className="absolute inset-x-0 bottom-2 flex justify-center gap-1.5">
@@ -867,12 +874,32 @@ function IdeaDetailModal({ idea, onClose, onEdit }) {
             )}
             {images.length > 1 && (
               <>
-                <button type="button" onClick={() => setImgIdx(i => (i - 1 + images.length) % images.length)}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 cursor-pointer text-xs">‹</button>
-                <button type="button" onClick={() => setImgIdx(i => (i + 1) % images.length)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 cursor-pointer text-xs">›</button>
+                <button
+                  type="button"
+                  onClick={() => setImgIdx(i => (i - 1 + images.length) % images.length)}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl bg-black/60 border border-white/10 text-slate-300 hover:text-white flex items-center justify-center hover:bg-indigo-600/90 hover:border-indigo-500/30 hover:scale-105 active:scale-95 transition-all shadow-lg backdrop-blur-md cursor-pointer"
+                  title="Previous image"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImgIdx(i => (i + 1) % images.length)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl bg-black/60 border border-white/10 text-slate-300 hover:text-white flex items-center justify-center hover:bg-indigo-600/90 hover:border-indigo-500/30 hover:scale-105 active:scale-95 transition-all shadow-lg backdrop-blur-md cursor-pointer"
+                  title="Next image"
+                >
+                  <ChevronRight size={16} />
+                </button>
               </>
             )}
+          </div>
+        )}
+
+        {/* dedicated image caption bar */}
+        {images.length > 0 && images[imgIdx].caption && (
+          <div className="bg-white/[0.02] border-b border-white/[0.04] px-5 py-2.5 flex items-start gap-2 text-[12px] text-slate-350 italic">
+            <span className="text-indigo-400 font-bold tracking-wide uppercase text-[10px] not-italic mt-0.5 shrink-0">Caption:</span>
+            <span className="leading-relaxed">{images[imgIdx].caption}</span>
           </div>
         )}
 
@@ -939,7 +966,7 @@ function IdeaDetailModal({ idea, onClose, onEdit }) {
               </p>
               <div className="grid grid-cols-4 gap-2">
                 {images.map((img, i) => (
-                  <button key={i} type="button" onClick={() => setImgIdx(i)}
+                  <button key={i} type="button" onClick={e => { e.stopPropagation(); setImgIdx(i); setIsFullscreen(true); }}
                     className={`rounded-lg overflow-hidden aspect-square border-2 cursor-pointer transition-all ${i === imgIdx ? 'border-indigo-500' : 'border-transparent opacity-60 hover:opacity-100'}`}>
                     <img src={img.url} alt={img.caption || `Image ${i + 1}`} className="w-full h-full object-cover" />
                   </button>
@@ -955,6 +982,35 @@ function IdeaDetailModal({ idea, onClose, onEdit }) {
           <button onClick={onClose} className="btn-ghost py-2.5 px-5 text-[13px] font-semibold rounded-xl cursor-pointer">Close</button>
         </div>
       </div>
+
+      {/* Fullscreen Overlay */}
+      {isFullscreen && (
+        <div 
+          className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-6 animate-in fade-in duration-200" 
+          onClick={e => { e.stopPropagation(); setIsFullscreen(false); }}
+        >
+          <button 
+            onClick={e => { e.stopPropagation(); setIsFullscreen(false); }} 
+            className="absolute top-4 right-4 p-2.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl text-white transition-all cursor-pointer z-[101]"
+          >
+            <X size={18} />
+          </button>
+          <img 
+            src={images[imgIdx].url} 
+            alt="Fullscreen" 
+            className="max-w-full max-h-[82vh] object-contain rounded-lg shadow-[0_20px_50px_rgba(0,0,0,0.8)]"
+            onClick={e => e.stopPropagation()} 
+          />
+          {images[imgIdx].caption && (
+            <p 
+              className="mt-4 text-center text-sm text-slate-300 max-w-xl italic leading-relaxed bg-black/40 px-4 py-2.5 rounded-xl border border-white/5"
+              onClick={e => e.stopPropagation()}
+            >
+              {images[imgIdx].caption}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -967,6 +1023,7 @@ function IdeaCard({ idea, sortBy, onEdit, onDelete, onSelectTag, onViewDetails, 
   const links  = idea.links || [];
 
   const showDragHandle = sortBy === 'custom' && !isFilteringOrSearching;
+  const primaryImage = images.find(img => img.is_primary) || images[0];
 
   return (
     <article
@@ -974,16 +1031,10 @@ function IdeaCard({ idea, sortBy, onEdit, onDelete, onSelectTag, onViewDetails, 
       className="glass-card rounded-2xl !overflow-visible cursor-pointer select-none group"
     >
       {/* hero image */}
-      {images[0]?.url && (
-        <div className="relative h-40 overflow-hidden rounded-t-2xl">
-          <img src={images[0].url} alt={idea.title}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
-          {images.length > 1 && (
-            <div className="absolute top-2 right-2 px-1.5 py-0.5 bg-black/60 border border-white/10 rounded-md
-                            text-[9px] font-bold text-slate-300 flex items-center gap-1">
-              <ImageIcon size={9} /> +{images.length - 1}
-            </div>
-          )}
+      {primaryImage?.url && (
+        <div className="relative h-40 overflow-hidden rounded-t-2xl bg-black/25 flex items-center justify-center border-b border-white/[0.04]">
+          <img src={primaryImage.url} alt={idea.title}
+            className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-102" loading="lazy" />
         </div>
       )}
 
@@ -1020,13 +1071,13 @@ function IdeaCard({ idea, sortBy, onEdit, onDelete, onSelectTag, onViewDetails, 
               >
                 <Info size={11} />
               </button>
-              <div className="absolute right-0 bottom-full mb-2 hidden group-hover/info:block bg-slate-900 border border-white/[0.08] text-[9.5px] text-slate-350 font-semibold px-2 py-1 rounded-md shadow-xl whitespace-nowrap z-35">
+              <div className="absolute right-0 top-full mt-2 hidden group-hover/info:block bg-slate-950/98 border border-white/[0.08] text-[9.5px] text-slate-300 font-bold px-2.5 py-1.5 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.85)] whitespace-nowrap z-50 pointer-events-none w-max">
                 Logged {formatDate(idea.created_at || new Date())}
               </div>
             </div>
             
             <div className="w-[1px] h-3 bg-white/[0.08] self-center" />
-            
+
             <button onClick={() => onEdit(idea)}
               className="p-1.5 text-slate-400 hover:text-indigo-400 rounded-lg hover:bg-indigo-500/[0.08] transition-all cursor-pointer flex items-center justify-center border border-transparent hover:border-indigo-500/20"
               title="Edit idea">
@@ -1040,15 +1091,6 @@ function IdeaCard({ idea, sortBy, onEdit, onDelete, onSelectTag, onViewDetails, 
             </button>
           </div>
         </div>
-
-        {/* attachments summary count badges */}
-        {images.length > 0 && (
-          <div className="flex items-center gap-3 text-[10px] text-indigo-400 font-bold uppercase tracking-wider pt-2.5 border-t border-white/[0.06]">
-            <span className="flex items-center gap-1.5">
-              <ImageIcon size={10} /> {images.length} {images.length === 1 ? 'Image' : 'Images'}
-            </span>
-          </div>
-        )}
 
         {/* links preview strip */}
         {links.length > 0 && (
