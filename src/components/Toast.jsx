@@ -52,7 +52,7 @@ function ToastItem({ toast, onRemove }) {
       className={`
         relative flex items-start gap-3 px-4 py-3.5 rounded-2xl
         border shadow-[0_8px_32px_-8px]
-        backdrop-blur-xl
+        backdrop-blur-xl overflow-hidden
         min-w-[280px] max-w-[380px]
         cursor-default select-none
         ${ACCENT[toast.type] ?? ACCENT.info}

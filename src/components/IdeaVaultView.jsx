@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import {
   Plus, Search, Tag, Trash2, Edit3, X, Calendar,
   AlertTriangle, FileImage, Link as LinkIcon,
-  Lightbulb, Sun, Moon, Hash, ExternalLink, Image as ImageIcon,
+  Lightbulb, Lock, Hash, ExternalLink, Image as ImageIcon,
   Globe, ChevronDown, ChevronUp, GripVertical, Info, Maximize2,
   ChevronLeft, ChevronRight
 } from 'lucide-react';
@@ -206,7 +206,7 @@ function CustomDropdown({ value, onChange, options, icon, placeholder }) {
    MAIN COMPONENT
 ═══════════════════════════════════════════════════════ */
 export default function IdeaVaultView({
-  ideas, onAdd, onUpdate, onDelete, loading, theme, toggleTheme, showToast
+  ideas, onAdd, onUpdate, onDelete, loading, theme, onLock, showToast
 }) {
   const [searchTerm, setSearchTerm]     = useState('');
   const [selectedTag, setSelectedTag]   = useState('');
@@ -530,9 +530,9 @@ export default function IdeaVaultView({
           <p className="text-[11px] text-slate-500 mt-0.5">{(ideas||[]).length} ideas captured</p>
         </div>
         <div className="flex items-center gap-2.5">
-          <button onClick={toggleTheme} className="btn-ghost p-2.5 rounded-xl cursor-pointer flex items-center justify-center"
-            title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>
-            {theme === 'dark' ? <Sun size={14} className="text-amber-400" /> : <Moon size={14} className="text-indigo-400" />}
+          <button onClick={onLock} className="btn-ghost p-2.5 rounded-xl cursor-pointer flex items-center justify-center"
+            title="Lock workspace">
+            <Lock size={14} className="text-slate-400 hover:text-rose-400 transition-colors" />
           </button>
           <button onClick={handleOpenAdd} className="btn-primary flex items-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-xl cursor-pointer">
             <Plus size={14} /> New Idea
@@ -841,10 +841,16 @@ function IdeaDetailModal({ idea, onClose, onEdit }) {
 
   const [imgIdx, setImgIdx] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(onClose, 200);
+  };
 
   return (
-    <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="modal-surface w-full max-w-lg rounded-2xl overflow-hidden flex flex-col max-h-[92vh]"
+    <div className={`modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? 'closing' : ''}`} onClick={handleClose}>
+      <div className={`modal-surface w-full max-w-lg rounded-2xl overflow-hidden flex flex-col max-h-[92vh] ${isClosing ? 'closing' : ''}`}
            onClick={e => e.stopPropagation()}>
 
         {/* image carousel */}
@@ -913,7 +919,7 @@ function IdeaDetailModal({ idea, onClose, onEdit }) {
               </div>
             )}
           </div>
-          <button onClick={onClose} className="btn-ghost p-2 rounded-lg cursor-pointer"><X size={15} /></button>
+          <button onClick={handleClose} className="btn-ghost p-2 rounded-lg cursor-pointer"><X size={15} /></button>
         </div>
 
         {/* body */}
@@ -979,7 +985,7 @@ function IdeaDetailModal({ idea, onClose, onEdit }) {
         {/* footer */}
         <div className="px-6 py-4 border-t border-white/[0.04] flex gap-3 shrink-0">
           <button onClick={() => onEdit(idea)} className="btn-primary flex-1 py-2.5 text-[13px] font-semibold rounded-xl cursor-pointer">Edit</button>
-          <button onClick={onClose} className="btn-ghost py-2.5 px-5 text-[13px] font-semibold rounded-xl cursor-pointer">Close</button>
+          <button onClick={handleClose} className="btn-ghost py-2.5 px-5 text-[13px] font-semibold rounded-xl cursor-pointer">Close</button>
         </div>
       </div>
 

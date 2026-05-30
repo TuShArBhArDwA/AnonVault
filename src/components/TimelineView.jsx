@@ -3,7 +3,7 @@ import {
   Plus, Search, ArrowUpDown, ExternalLink, 
   Edit3, Trash2, Calendar, Link as LinkIcon, AlertTriangle, 
   Clock, ChevronDown, ChevronRight, ListCollapse,
-  Sun, Moon, X, Flame
+  Lock, X, Flame
 } from 'lucide-react';
 import { formatDate, getPriorityStyles, getStatusStyles, sortApplicationsByDeadline, groupApplicationsByMonth } from '../utils/helpers';
 
@@ -14,7 +14,7 @@ export default function TimelineView({
   onDelete, 
   loading,
   theme,
-  toggleTheme,
+  onLock,
   showToast
 }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -144,13 +144,11 @@ export default function TimelineView({
         </div>
         <div className="flex items-center gap-2.5">
           <button
-            onClick={toggleTheme}
+            onClick={onLock}
             className="btn-ghost p-2.5 rounded-xl cursor-pointer flex items-center justify-center"
-            title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+            title="Lock workspace"
           >
-            {theme === 'dark'
-              ? <Sun size={14} className="text-amber-400" />
-              : <Moon size={14} className="text-indigo-400" />}
+            <Lock size={14} className="text-slate-400 hover:text-rose-400 transition-colors" />
           </button>
           <button onClick={handleOpenAdd} className="btn-primary flex items-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-xl cursor-pointer">
             <Plus size={14} />
@@ -381,58 +379,12 @@ export default function TimelineView({
 
       {/* ── DETAILS MODAL ── */}
       {selectedAppDetails && (
-        <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSelectedAppDetails(null)}>
-          <div className="modal-surface w-full max-w-lg rounded-2xl overflow-hidden flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
-            <div className="px-6 py-5 border-b border-white/[0.06] flex items-start justify-between">
-              <div className="flex-1 pr-4">
-                <h3 className="text-[15px] font-bold text-white leading-snug">{selectedAppDetails.name}</h3>
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {selectedAppDetails.id === nearestAppId && (
-                    <span className="tag-pill text-amber-300 border-amber-500/25 bg-amber-500/10">⚡ Soonest</span>
-                  )}
-                  <span className={`tag-pill ${getPriorityStyles(selectedAppDetails.priority).text}`}>
-                    {getPriorityStyles(selectedAppDetails.priority).label}
-                  </span>
-                  <span className={`tag-pill ${getStatusStyles(selectedAppDetails.status).text}`}>
-                    {getStatusStyles(selectedAppDetails.status).label}
-                  </span>
-                </div>
-              </div>
-              <button onClick={() => setSelectedAppDetails(null)} className="btn-ghost p-2 rounded-lg cursor-pointer"><X size={15} /></button>
-            </div>
-
-            <div className="p-6 space-y-4 flex-1 overflow-y-auto">
-              {selectedAppDetails.deadline && (
-                <InfoRow icon={<Calendar size={13} className="text-indigo-400" />} label="Deadline">
-                  {formatDate(selectedAppDetails.deadline)}
-                </InfoRow>
-              )}
-              {selectedAppDetails.link && (
-                <InfoRow icon={<LinkIcon size={13} className="text-indigo-400" />} label="Link">
-                  <a href={selectedAppDetails.link} target="_blank" rel="noreferrer"
-                    className="text-indigo-400 hover:text-indigo-300 hover:underline flex items-center gap-1 break-all">
-                    {selectedAppDetails.link}
-                    <ExternalLink size={10} />
-                  </a>
-                </InfoRow>
-              )}
-              <div className="divider" />
-              <div className="space-y-2">
-                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Notes</p>
-                <div className="glass-panel rounded-xl p-4 text-[13px] text-slate-300 whitespace-pre-line leading-relaxed min-h-[80px]">
-                  {selectedAppDetails.notes || <span className="text-slate-600 italic">No notes added.</span>}
-                </div>
-              </div>
-            </div>
-
-            <div className="px-6 py-4 border-t border-white/[0.04] flex gap-3">
-              <button onClick={() => { handleOpenEdit(selectedAppDetails); setSelectedAppDetails(null); }}
-                className="btn-primary flex-1 py-2.5 text-[13px] font-semibold rounded-xl cursor-pointer">Edit Details</button>
-              <button onClick={() => setSelectedAppDetails(null)}
-                className="btn-ghost py-2.5 px-5 text-[13px] font-semibold rounded-xl cursor-pointer">Close</button>
-            </div>
-          </div>
-        </div>
+        <AppDetailModal 
+          app={selectedAppDetails} 
+          onClose={() => setSelectedAppDetails(null)} 
+          onEdit={handleOpenEdit} 
+          nearestAppId={nearestAppId} 
+        />
       )}
     </div>
   );
@@ -555,5 +507,70 @@ function HackathonCard({ app, isNearest, onEdit, onDelete, onViewDetails }) {
         )}
       </div>
     </article>
+  );
+}
+
+/* ── App Detail Modal with smooth transitions ──────────────── */
+function AppDetailModal({ app, onClose, onEdit, nearestAppId }) {
+  const [isClosing, setIsClosing] = useState(false);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(onClose, 200);
+  };
+
+  return (
+    <div className={`modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? 'closing' : ''}`} onClick={handleClose}>
+      <div className={`modal-surface w-full max-w-lg rounded-2xl overflow-hidden flex flex-col max-h-[90vh] ${isClosing ? 'closing' : ''}`} onClick={e => e.stopPropagation()}>
+        <div className="px-6 py-5 border-b border-white/[0.06] flex items-start justify-between">
+          <div className="flex-1 pr-4">
+            <h3 className="text-[15px] font-bold text-white leading-snug">{app.name}</h3>
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {app.id === nearestAppId && (
+                <span className="tag-pill text-amber-300 border-amber-500/25 bg-amber-500/10">⚡ Soonest</span>
+              )}
+              <span className={`tag-pill ${getPriorityStyles(app.priority).text}`}>
+                {getPriorityStyles(app.priority).label}
+              </span>
+              <span className={`tag-pill ${getStatusStyles(app.status).text}`}>
+                {getStatusStyles(app.status).label}
+              </span>
+            </div>
+          </div>
+          <button onClick={handleClose} className="btn-ghost p-2 rounded-lg cursor-pointer"><X size={15} /></button>
+        </div>
+
+        <div className="p-6 space-y-4 flex-1 overflow-y-auto">
+          {app.deadline && (
+            <InfoRow icon={<Calendar size={13} className="text-indigo-400" />} label="Deadline">
+              {formatDate(app.deadline)}
+            </InfoRow>
+          )}
+          {app.link && (
+            <InfoRow icon={<LinkIcon size={13} className="text-indigo-400" />} label="Link">
+              <a href={app.link} target="_blank" rel="noreferrer"
+                className="text-indigo-400 hover:text-indigo-300 hover:underline flex items-center gap-1 break-all">
+                {app.link}
+                <ExternalLink size={10} />
+              </a>
+            </InfoRow>
+          )}
+          <div className="divider" />
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Notes</p>
+            <div className="glass-panel rounded-xl p-4 text-[13px] text-slate-300 whitespace-pre-line leading-relaxed min-h-[80px]">
+              {app.notes || <span className="text-slate-650 italic">No notes added.</span>}
+            </div>
+          </div>
+        </div>
+
+        <div className="px-6 py-4 border-t border-white/[0.04] flex gap-3">
+          <button onClick={() => { onEdit(app); onClose(); }}
+            className="btn-primary flex-1 py-2.5 text-[13px] font-semibold rounded-xl cursor-pointer">Edit Details</button>
+          <button onClick={handleClose}
+            className="btn-ghost py-2.5 px-5 text-[13px] font-semibold rounded-xl cursor-pointer">Close</button>
+        </div>
+      </div>
+    </div>
   );
 }
