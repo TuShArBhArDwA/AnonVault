@@ -3,7 +3,7 @@ import {
   Plus, Search, ArrowUpDown, ExternalLink, 
   Edit3, Trash2, Calendar, Link as LinkIcon, AlertTriangle, 
   Clock, ChevronDown, ChevronRight, ListCollapse,
-  Lock, X, Flame, Briefcase, CheckCircle2, ShieldCheck, MapPin, Globe, Star
+  Lock, X, Flame, Briefcase, CheckCircle2, ShieldCheck, MapPin, Globe, Star, Menu
 } from 'lucide-react';
 import { formatDate, getPriorityStyles, getStatusStyles, sortApplicationsByDeadline, groupApplicationsByMonth } from '../utils/helpers';
 
@@ -75,7 +75,8 @@ export default function TimelineView({
   loading,
   theme,
   onLock,
-  showToast
+  showToast,
+  onMenuToggle
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState('asc');
@@ -219,10 +220,15 @@ export default function TimelineView({
       <div className="workspace-aurora-glow workspace-glow-2" />
 
       {/* Header */}
-      <header className="glass-header px-7 py-4 flex items-center justify-between shrink-0">
-        <div>
-          <h2 className="text-lg font-bold text-white tracking-tight">Hackathon Timeline</h2>
-          <p className="text-[11px] text-slate-500 mt-0.5">{(applications||[]).length} events tracked</p>
+      <header className="glass-header px-4 lg:px-7 py-4 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-3">
+          <button onClick={onMenuToggle} className="lg:hidden p-2 -ml-1 text-slate-400 hover:text-white rounded-lg cursor-pointer flex items-center justify-center shrink-0">
+            <Menu size={18} />
+          </button>
+          <div>
+            <h2 className="text-base lg:text-lg font-bold text-white tracking-tight">Hackathon Timeline</h2>
+            <p className="text-[10px] lg:text-[11px] text-slate-500 mt-0.5">{(applications||[]).length} events tracked</p>
+          </div>
         </div>
         <div className="flex items-center gap-2.5">
           <button

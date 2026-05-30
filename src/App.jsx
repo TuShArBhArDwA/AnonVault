@@ -686,6 +686,7 @@ function AppInner() {
   const [isAuthorized, setIsAuthorized] = useState(sessionStorage.getItem('minianon_authorized') === 'true');
   const [activeTab, setActiveTab] = useState('tasks'); // daily checklist as default
   const didSyncRef = useRef(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('anonvault_theme') || 'dark';
@@ -862,6 +863,8 @@ function AppInner() {
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
         stats={stats}
+        mobileOpen={mobileMenuOpen}
+        setMobileOpen={setMobileMenuOpen}
       />
 
       {/* Main View Container */}
@@ -895,6 +898,7 @@ function AppInner() {
                 theme={theme}
                 onLock={handleLock}
                 showToast={showToast}
+                onMenuToggle={() => setMobileMenuOpen(true)}
               />
             </div>
 
@@ -913,6 +917,7 @@ function AppInner() {
                 theme={theme}
                 onLock={handleLock}
                 showToast={showToast}
+                onMenuToggle={() => setMobileMenuOpen(true)}
               />
             </div>
 
@@ -926,6 +931,7 @@ function AppInner() {
                 showToast={showToast}
                 onTasksChange={refreshPendingTasks}
                 onLock={handleLock}
+                onMenuToggle={() => setMobileMenuOpen(true)}
               />
             </div>
           </div>

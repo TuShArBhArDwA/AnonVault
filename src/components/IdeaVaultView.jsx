@@ -4,7 +4,7 @@ import {
   AlertTriangle, FileImage, Link as LinkIcon,
   Lightbulb, Lock, Hash, ExternalLink, Image as ImageIcon,
   Globe, ChevronDown, ChevronUp, GripVertical, Info, Maximize2,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, Menu
 } from 'lucide-react';
 import { uploadIdeaImage } from '../services/supabase';
 import { formatDate } from '../utils/helpers';
@@ -206,7 +206,7 @@ function CustomDropdown({ value, onChange, options, icon, placeholder }) {
    MAIN COMPONENT
 ═══════════════════════════════════════════════════════ */
 export default function IdeaVaultView({
-  ideas, onAdd, onUpdate, onDelete, loading, theme, onLock, showToast
+  ideas, onAdd, onUpdate, onDelete, loading, theme, onLock, showToast, onMenuToggle
 }) {
   const [searchTerm, setSearchTerm]     = useState('');
   const [selectedTag, setSelectedTag]   = useState('');
@@ -214,8 +214,9 @@ export default function IdeaVaultView({
   const [editingIdea, setEditingIdea]   = useState(null);
 
   /* sorting and drag state */
+  /* sorting and drag state */
   const [orderedIdeas, setOrderedIdeas] = useState([]);
-  const [sortBy, setSortBy]             = useState('custom'); // 'custom', 'newest', 'oldest'
+  const [sortBy, setSortBy]             = useState(() => localStorage.getItem('anonvault_ideas_sortby') || 'custom'); // 'custom', 'newest', 'oldest'
   const [draggedId, setDraggedId]       = useState(null);
   const [draggedOverId, setDraggedOverId] = useState(null);
   const [hoveredDragId, setHoveredDragId] = useState(null);
@@ -237,6 +238,11 @@ export default function IdeaVaultView({
   const [deleteConfirmId,    setDeleteConfirmId]    = useState(null);
   const [selectedIdea,       setSelectedIdea]       = useState(null);
 
+  /* Persist sorting selection */
+  useEffect(() => {
+    localStorage.setItem('anonvault_ideas_sortby', sortBy);
+  }, [sortBy]);
+
   /* Sync database ideas with custom local order */
   useEffect(() => {
     if (!ideas) return;
@@ -250,11 +256,11 @@ export default function IdeaVaultView({
     }
 
     const orderMap = new Map();
-    savedOrder.forEach((id, idx) => orderMap.set(id, idx));
+    savedOrder.forEach((id, idx) => orderMap.set(String(id), idx));
 
     const sorted = [...ideas].sort((a, b) => {
-      const orderA = orderMap.has(a.id) ? orderMap.get(a.id) : -1;
-      const orderB = orderMap.has(b.id) ? orderMap.get(b.id) : -1;
+      const orderA = orderMap.has(String(a.id)) ? orderMap.get(String(a.id)) : -1;
+      const orderB = orderMap.has(String(b.id)) ? orderMap.get(String(b.id)) : -1;
 
       // Put new ideas at the top
       if (orderA === -1 && orderB === -1) {
@@ -384,14 +390,13 @@ export default function IdeaVaultView({
   const handleDrop = (e, targetId) => {
     e.preventDefault();
     const sourceId = e.dataTransfer.getData('text/plain') || draggedId;
-    if (!sourceId || sourceId === targetId) {
+    if (!sourceId || String(sourceId) === String(targetId)) {
       handleDragEnd();
       return;
     }
 
-    const currentIndexes = orderedIdeas.map(item => item.id);
-    const sourceIndex = currentIndexes.indexOf(sourceId);
-    const targetIndex = currentIndexes.indexOf(targetId);
+    const sourceIndex = orderedIdeas.findIndex(item => String(item.id) === String(sourceId));
+    const targetIndex = orderedIdeas.findIndex(item => String(item.id) === String(targetId));
 
     if (sourceIndex !== -1 && targetIndex !== -1) {
       const newOrderedIdeas = [...orderedIdeas];
@@ -526,10 +531,15 @@ export default function IdeaVaultView({
       <div className="workspace-aurora-glow workspace-glow-2" />
 
       {/* Header */}
-      <header className="glass-header px-7 py-4 flex items-center justify-between shrink-0">
-        <div>
-          <h2 className="text-lg font-bold text-white tracking-tight">Idea Vault</h2>
-          <p className="text-[11px] text-slate-500 mt-0.5">{(ideas||[]).length} ideas captured</p>
+      <header className="glass-header px-4 lg:px-7 py-4 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-3">
+          <button onClick={onMenuToggle} className="lg:hidden p-2 -ml-1 text-slate-400 hover:text-white rounded-lg cursor-pointer flex items-center justify-center shrink-0">
+            <Menu size={18} />
+          </button>
+          <div>
+            <h2 className="text-base lg:text-lg font-bold text-white tracking-tight">Idea Vault</h2>
+            <p className="text-[10px] lg:text-[11px] text-slate-500 mt-0.5">{(ideas||[]).length} ideas captured</p>
+          </div>
         </div>
         <div className="flex items-center gap-2.5">
           <button onClick={onLock} className="btn-ghost p-2.5 rounded-xl cursor-pointer flex items-center justify-center"

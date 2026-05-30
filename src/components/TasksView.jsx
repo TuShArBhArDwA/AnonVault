@@ -3,7 +3,7 @@ import {
   Plus, Trash2, Edit3, X, ChevronDown,
   Check, Sun, Moon, RotateCcw,
   ChevronLeft, ChevronRight as ChevronRightIcon, Repeat2,
-  ListChecks, Sparkles, Minus, ArrowDown, EyeOff, Lock
+  ListChecks, Sparkles, Minus, ArrowDown, EyeOff, Lock, Menu
 } from 'lucide-react';
 import {
   getTasksForDate, addTask, updateTask, deleteTask,
@@ -45,7 +45,11 @@ const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const RECUR_OPTS = [
   { value: 'daily',    label: 'Every Day'         },
   { value: 'weekdays', label: 'Weekdays (Mon–Fri)' },
-  { value: 'weekends',/* ── Checkbox ────────────────────────────────────────────── */
+  { value: 'weekends', label: 'Weekends (Sat–Sun)' },
+  { value: 'weekly',   label: 'Weekly (Custom)'   }
+];
+
+/* ── Checkbox ────────────────────────────────────────────── */
 function Checkbox({ checked, onChange, size = 'md' }) {
   const sz = size === 'sm' ? 'w-4 h-4' : 'w-5 h-5';
   return (
@@ -72,7 +76,11 @@ function Checkbox({ checked, onChange, size = 'md' }) {
           transform: checked ? 'scale(1)' : 'scale(0.6)',
         }}
       >
-        <polyline points="20 6 9 17 4 12" className="checkbox-draw-path" />
+        <polyline
+          points="20 6 9 17 4 12"
+          className="checkbox-draw-path"
+          style={{ strokeDashoffset: checked ? 0 : 20 }}
+        />
       </svg>
     </button>
   );
@@ -120,11 +128,6 @@ function TaskCard({ task, onToggle, onToggleSub, onEdit, onDelete, onCancel }) {
                         allSubsDone ? 'bg-emerald-500' : p.dot.replace('bg-', 'bg-')
                       }`}
                       style={{ width: `${(completedSubs / task.subtasks.length) * 100}%` }}
-                    />
-                  </div>
-                  <span className="text-[10px] text-slate-650 font-medium tabular-nums">
-                    {completedSubs}/{task.subtasks.length} subtasks
-                  </span>h) * 100}%` }}
                     />
                   </div>
                   <span className="text-[10px] text-slate-600 font-medium tabular-nums">
@@ -200,7 +203,7 @@ function TaskCard({ task, onToggle, onToggleSub, onEdit, onDelete, onCancel }) {
                 onChange={() => onToggleSub(task, st.id)}
                 size="sm"
               />
-              <span className={`inline-block text-[12.5px] flex-1 leading-snug strikethrough-draw transition-all ${
+              <span className={`inline-block text-[12.5px] leading-snug strikethrough-draw transition-all ${
                 st.completed ? 'strikethrough-completed text-slate-500' : 'text-slate-300'
               }`}>
                 {st.title}
@@ -472,7 +475,7 @@ function SectionLabel({ label, count, color = 'text-slate-600' }) {
 /* ══════════════════════════════════════════════════════════
    MAIN VIEW
 ══════════════════════════════════════════════════════════ */
-export default function TasksView({ theme, toggleTheme, showToast, onTasksChange, onLock }) {
+export default function TasksView({ theme, toggleTheme, showToast, onTasksChange, onLock, onMenuToggle }) {
   const [selectedDate, setSelectedDate] = useState(todayStr());
   const [tasks,        setTasks]        = useState([]);
   const [isFormOpen,   setIsFormOpen]   = useState(false);
@@ -626,11 +629,16 @@ export default function TasksView({ theme, toggleTheme, showToast, onTasksChange
       <div className="workspace-aurora-glow workspace-glow-2" />
 
       {/* Header */}
-      <header className="glass-header px-7 py-4 flex items-center justify-between shrink-0">
-         <div>
-          <h2 className="text-lg font-bold text-white tracking-tight">Daily Checklist</h2>
-          <p className="text-[11px] text-slate-500 mt-0.5">{formatDayFull(selectedDate)}</p>
-        </div>
+      <header className="glass-header px-4 lg:px-7 py-4 flex items-center justify-between shrink-0">
+         <div className="flex items-center gap-3">
+           <button onClick={onMenuToggle} className="lg:hidden p-2 -ml-1 text-slate-400 hover:text-white rounded-lg cursor-pointer flex items-center justify-center shrink-0">
+             <Menu size={18} />
+           </button>
+           <div>
+             <h2 className="text-base lg:text-lg font-bold text-white tracking-tight">Daily Checklist</h2>
+             <p className="text-[10px] lg:text-[11px] text-slate-500 mt-0.5">{formatDayFull(selectedDate)}</p>
+           </div>
+         </div>
         <div className="flex items-center gap-2.5">
           <button onClick={onLock} className="btn-ghost p-2.5 rounded-xl cursor-pointer flex items-center justify-center"
             title="Lock workspace">
