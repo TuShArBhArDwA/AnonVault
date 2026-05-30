@@ -333,6 +333,77 @@ export const upsertTaskCompletion = async (taskId, dateStr, completed) => {
   return completed;
 };
 
+// --- Project Ideas API ---
+
+export const fetchProjectIdeas = async () => {
+  const client = getSupabaseClient();
+  if (!client) throw new Error('Supabase not configured');
+
+  const { data, error } = await client
+    .from('project_ideas')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+};
+
+export const addProjectIdea = async (idea) => {
+  const client = getSupabaseClient();
+  if (!client) throw new Error('Supabase not configured');
+
+  const { data: { user } } = await client.auth.getUser().catch(() => ({ data: { user: null } }));
+  const payload = {
+    title: idea.title,
+    content: idea.content || '',
+    images: idea.images || [],
+    links: idea.links || [],
+    tags: idea.tags || [],
+    ...(user ? { user_id: user.id } : {})
+  };
+
+  const { data, error } = await client
+    .from('project_ideas')
+    .insert([payload])
+    .select();
+
+  if (error) throw error;
+  return data[0];
+};
+
+export const updateProjectIdea = async (id, updates) => {
+  const client = getSupabaseClient();
+  if (!client) throw new Error('Supabase not configured');
+
+  const { data, error } = await client
+    .from('project_ideas')
+    .update({
+      title: updates.title,
+      content: updates.content,
+      images: updates.images || [],
+      links: updates.links || [],
+      tags: updates.tags
+    })
+    .eq('id', id)
+    .select();
+
+  if (error) throw error;
+  return data[0];
+};
+
+export const deleteProjectIdea = async (id) => {
+  const client = getSupabaseClient();
+  if (!client) throw new Error('Supabase not configured');
+
+  const { error } = await client
+    .from('project_ideas')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+  return true;
+};
+
 // --- Storage Bucket Image Upload ---
 
 export const uploadIdeaImage = async (file) => {

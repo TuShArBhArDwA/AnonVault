@@ -3,6 +3,7 @@ import Sidebar from './components/Sidebar';
 import TimelineView from './components/TimelineView';
 import IdeaVaultView from './components/IdeaVaultView';
 import TasksView from './components/TasksView';
+import ProjectIdeasView from './components/ProjectIdeasView';
 import { ToastProvider, useToast } from './components/Toast';
 import { Lock, ShieldAlert, Cpu, Delete } from 'lucide-react';
 import { 
@@ -13,7 +14,11 @@ import {
   fetchIdeas,
   addIdea,
   updateIdea,
-  deleteIdea 
+  deleteIdea,
+  fetchProjectIdeas,
+  addProjectIdea,
+  updateProjectIdea,
+  deleteProjectIdea 
 } from './services/supabase';
 import { getTasksForDateSync, loadAllTasks } from './services/tasks';
 
@@ -649,29 +654,37 @@ function LockScreen({ onAuthorize }) {
           {/* Widget Header */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 8px #38bdf8' }} />
-            <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.18em', color: 'rgba(148, 163, 184, 0.55)', textTransform: 'uppercase', fontFamily: "'JetBrains Mono',monospace" }}>TODAY'S QUOTE</span>
+            <span style={{
+              fontSize: 9.5,
+              fontWeight: 700,
+              letterSpacing: '0.14em',
+              color: 'rgba(148, 163, 184, 0.65)',
+              textTransform: 'uppercase',
+              fontFamily: "'Plus Jakarta Sans', sans-serif"
+            }}>
+              TODAY'S QUOTE
+            </span>
           </div>
 
           {/* Quote Body */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minHeight: 60, justifyContent: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minHeight: 60, justifyContent: 'center' }}>
             <p style={{
               margin: 0,
-              fontSize: 11,
-              lineHeight: 1.5,
-              fontWeight: 500,
+              fontSize: 13,
+              lineHeight: 1.6,
+              fontWeight: 400,
               fontStyle: 'italic',
-              color: 'rgba(241, 245, 249, 0.95)',
-              fontFamily: "'Plus Jakarta Sans', sans-serif"
+              color: 'rgba(255, 255, 255, 0.95)',
+              fontFamily: "'Lora', Georgia, serif"
             }}>
               "{dailyQuote.text}"
             </p>
             <span style={{
-              fontSize: 9,
-              fontWeight: 700,
-              letterSpacing: '0.06em',
-              color: '#38bdf8',
-              textTransform: 'uppercase',
-              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 10.5,
+              fontWeight: 600,
+              letterSpacing: '0.04em',
+              color: 'rgba(255, 255, 255, 0.65)',
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
               alignSelf: 'flex-end',
               marginTop: 4
             }}>
@@ -1102,6 +1115,9 @@ function AppInner() {
   // Data states
   const [applications, setApplications] = useState([]);
   const [ideas, setIdeas] = useState([]);
+  const [projectIdeas, setProjectIdeas] = useState([]);
+  const [usingLocalProjectIdeas, setUsingLocalProjectIdeas] = useState(false);
+  const [projectIdeasCount, setProjectIdeasCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -1133,6 +1149,59 @@ function AppInner() {
 
       setApplications(appsData);
       setIdeas(ideasData);
+
+      // Fetch project ideas from Supabase with localStorage fallback
+      try {
+        const pIdeas = await fetchProjectIdeas();
+        setProjectIdeas(pIdeas);
+        setProjectIdeasCount(pIdeas.length);
+        setUsingLocalProjectIdeas(false);
+      } catch (err) {
+        console.warn('Error fetching project ideas from Supabase, falling back to LocalStorage:', err);
+        let stored = [];
+        try {
+          const raw = localStorage.getItem('anonvault_project_ideas');
+          stored = raw ? JSON.parse(raw) : null;
+        } catch {
+          stored = null;
+        }
+        if (!stored || stored.length === 0) {
+          stored = [
+            {
+              id: '1',
+              title: "AnonVault E2E Sync",
+              content: "Implement local-first offline synchronization for secure document vaults with encrypted cloud backup tunnels.",
+              tags: ["security", "indexeddb", "aesgcm", "supabase"],
+              images: [],
+              links: [{ url: "https://supabase.com", label: "Supabase Core" }],
+              created_at: new Date().toISOString()
+            },
+            {
+              id: '2',
+              title: "Localized AI Agent Workspace",
+              content: "A fast, privacy-focused browser extension running dynamic Llama3 completions via local Ollama services.",
+              tags: ["aiml", "webgpu", "react", "ollama"],
+              images: [],
+              links: [],
+              created_at: new Date(Date.now() - 86400000).toISOString()
+            },
+            {
+              id: '3',
+              title: "P2P Ephemeral Share Link",
+              content: "Create anonymous peer-to-peer file transfer links that establish direct WebRTC tunnels for large file shares.",
+              tags: ["webapp", "webrtc", "socketio", "vite"],
+              images: [],
+              links: [],
+              created_at: new Date(Date.now() - 172800000).toISOString()
+            }
+          ];
+          localStorage.setItem('anonvault_project_ideas', JSON.stringify(stored));
+        }
+        setProjectIdeas(stored);
+        setProjectIdeasCount(stored.length);
+        setUsingLocalProjectIdeas(true);
+      }
+
       // Refresh pending task count now that the cache is warm
       setPendingTasks(computePendingTasks());
       
@@ -1221,6 +1290,93 @@ function AppInner() {
     }
   };
 
+  // --- Project Ideas Handlers ---
+
+  const handleAddProjectIdea = async (newIdea) => {
+    if (usingLocalProjectIdeas) {
+      const added = {
+        id: Date.now().toString(),
+        ...newIdea,
+        created_at: new Date().toISOString()
+      };
+      setProjectIdeas(prev => {
+        const updated = [added, ...prev];
+        localStorage.setItem('anonvault_project_ideas', JSON.stringify(updated));
+        setProjectIdeasCount(updated.length);
+        return updated;
+      });
+      showToast('success', 'Concept Created (Local)', `"${newIdea.title}" added to local workspace.`);
+      return;
+    }
+
+    try {
+      const added = await addProjectIdea(newIdea);
+      setProjectIdeas(prev => [added, ...prev]);
+      setProjectIdeasCount(prev => prev + 1);
+      showToast('success', 'Concept Created', `"${added.title}" added to workspace.`);
+    } catch (err) {
+      console.error('Failed to add project idea:', err);
+      showToast('error', 'Capture Failed', 'Could not save concept to Supabase.');
+    }
+  };
+
+  const handleUpdateProjectIdea = async (id, updates) => {
+    if (usingLocalProjectIdeas) {
+      setProjectIdeas(prev => {
+        const updated = prev.map(item => item.id === id ? { ...item, ...updates } : item);
+        localStorage.setItem('anonvault_project_ideas', JSON.stringify(updated));
+        return updated;
+      });
+      showToast('success', 'Concept Saved (Local)', `"${updates.title}" has been updated locally.`);
+      return;
+    }
+
+    try {
+      const updated = await updateProjectIdea(id, updates);
+      setProjectIdeas(prev => prev.map(item => item.id === id ? updated : item));
+      showToast('success', 'Concept Saved', `"${updated.title}" has been updated.`);
+    } catch (err) {
+      console.error('Failed to update project idea:', err);
+      showToast('error', 'Update Failed', 'Could not save changes. Check your connection.');
+    }
+  };
+
+  const handleDeleteProjectIdea = async (id) => {
+    const target = projectIdeas.find(item => item.id === id);
+    const title = target ? target.title : 'Concept';
+
+    if (usingLocalProjectIdeas) {
+      setProjectIdeas(prev => {
+        const updated = prev.filter(item => item.id !== id);
+        localStorage.setItem('anonvault_project_ideas', JSON.stringify(updated));
+        setProjectIdeasCount(updated.length);
+        return updated;
+      });
+      showToast('warning', 'Concept Removed (Local)', `"${title}" has been deleted locally.`);
+      return;
+    }
+
+    try {
+      await deleteProjectIdea(id);
+      setProjectIdeas(prev => prev.filter(item => item.id !== id));
+      setProjectIdeasCount(prev => prev - 1);
+      showToast('warning', 'Concept Removed', `"${title}" has been deleted.`);
+    } catch (err) {
+      console.error('Failed to delete project idea:', err);
+      showToast('error', 'Delete Failed', 'Could not delete concept.');
+    }
+  };
+
+  const handleReorderProjectIdeas = (reordered) => {
+    setProjectIdeas(reordered);
+    if (usingLocalProjectIdeas) {
+      localStorage.setItem('anonvault_project_ideas', JSON.stringify(reordered));
+    } else {
+      const idOrder = reordered.map(item => item.id);
+      localStorage.setItem('anonvault_project_ideas_order', JSON.stringify(idOrder));
+    }
+  };
+
   // --- Dynamic Stats calculation ---
   const [pendingTasks, setPendingTasks] = useState(computePendingTasks);
 
@@ -1233,6 +1389,7 @@ function AppInner() {
     highPriorityCount: (applications || []).filter(app => app && app.priority === 'high' && app.status !== 'rejected').length,
     totalIdeas: (ideas || []).length,
     pendingTasks,
+    totalProjectIdeas: projectIdeasCount,
   };
 
 
@@ -1321,6 +1478,26 @@ function AppInner() {
                   showToast={showToast}
                   onTasksChange={refreshPendingTasks}
                   onLock={handleLock}
+                  onMenuToggle={() => setMobileMenuOpen(true)}
+                />
+              </div>
+
+              {/* Project Ideas Workspace */}
+              <div className={`absolute inset-0 transition-all duration-300 ease-out ${
+                activeTab === 'project-ideas'
+                  ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto'
+                  : 'opacity-0 translate-y-4 scale-[0.985] pointer-events-none'
+              }`}>
+                <ProjectIdeasView
+                  ideas={projectIdeas}
+                  onAdd={handleAddProjectIdea}
+                  onUpdate={handleUpdateProjectIdea}
+                  onDelete={handleDeleteProjectIdea}
+                  onReorder={handleReorderProjectIdeas}
+                  loading={loading}
+                  theme={theme}
+                  onLock={handleLock}
+                  showToast={showToast}
                   onMenuToggle={() => setMobileMenuOpen(true)}
                 />
               </div>

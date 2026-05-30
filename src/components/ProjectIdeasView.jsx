@@ -1,0 +1,1118 @@
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import { 
+  Plus, Search, Tag, Trash2, Edit3, X, Lightbulb, Menu, Lock, 
+  Globe, ExternalLink, Info, GripVertical, ChevronLeft, ChevronRight, 
+  Maximize2, Calendar, Image as ImageIcon, FileImage, AlertTriangle, Hash,
+  ChevronDown
+} from 'lucide-react';
+
+/* ─── tiny helpers ─────────────────────────────────────── */
+function isValidUrl(str) {
+  try { new URL(str); return true; } catch { return false; }
+}
+
+function formatDate(dateStr) {
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  } catch { return '—'; }
+}
+
+
+
+/* ─── Single image row inside form ────────────────────── */
+function ImageRow({ img, index, onRemove, onChangeUrl, onFileUpload, uploadingIndex, uploadError, isPrimary, onSetPrimary }) {
+  const fileRef = useRef(null);
+  const isUploading = uploadingIndex === index;
+
+  return (
+    <div className="space-y-2 p-3 bg-white/[0.025] border border-white/[0.06] rounded-xl group/imgrow">
+      {img.url && (
+        <div className="relative rounded-lg overflow-hidden h-48 bg-black/40 border border-white/[0.06] flex items-center justify-center">
+          <img src={img.url} alt="preview" className="w-full h-full object-contain" />
+          <button
+            type="button"
+            onClick={() => onSetPrimary(index)}
+            className={`absolute top-2 left-2 p-1.5 rounded-lg text-[12px] font-bold border transition-all cursor-pointer flex items-center justify-center ${
+              isPrimary
+                ? 'bg-amber-500/25 border-amber-400 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.2)]'
+                : 'bg-black/60 border-white/10 text-slate-400 hover:text-amber-300 hover:border-amber-500/30'
+            }`}
+            title={isPrimary ? 'Primary Cover' : 'Set as Cover'}
+          >
+            ★
+          </button>
+          <button type="button" onClick={() => onRemove(index)}
+            className="absolute top-2 right-2 p-1.5 bg-black/60 border border-white/10 rounded-lg text-slate-350 hover:text-rose-455 transition-colors cursor-pointer">
+            <X size={12} />
+          </button>
+        </div>
+      )}
+
+      <div className="flex items-center gap-2">
+        <input type="file" ref={fileRef} accept="image/*"
+          className="hidden" onChange={e => onFileUpload(index, e)} />
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          disabled={isUploading}
+          className="btn-ghost flex-1 py-2.5 rounded-lg text-[12px] font-semibold cursor-pointer flex items-center justify-center gap-1.5"
+        >
+          {isUploading
+            ? <span className="w-3 h-3 border border-indigo-400 border-t-transparent rounded-full animate-spin" />
+            : <FileImage size={13} />}
+          {isUploading ? 'Loading…' : 'Load Image File'}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onRemove(index)}
+          className="p-2.5 text-slate-600 hover:text-rose-455 rounded-lg transition-colors cursor-pointer bg-white/[0.03] border border-white/[0.06] hover:bg-rose-500/[0.08] hover:border-rose-500/20"
+        >
+          <X size={13} />
+        </button>
+      </div>
+
+      <input
+        type="text"
+        placeholder="Caption (optional)"
+        value={img.caption || ''}
+        onChange={e => {
+          onChangeUrl(index, img.url, e.target.value);
+        }}
+        className="input-premium w-full px-3 py-1.5 text-[11px] rounded-lg"
+      />
+
+      {uploadError && uploadingIndex === index && (
+        <p className="text-[10px] text-amber-400 flex items-center gap-1">
+          <AlertTriangle size={10} />{uploadError}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* ─── Single link row inside form ─────────────────────── */
+function LinkRow({ link, index, onRemove, onChange }) {
+  return (
+    <div className="flex items-center gap-2 p-2.5 bg-white/[0.025] border border-white/[0.06] rounded-xl">
+      <Globe size={12} className="text-indigo-400 shrink-0" />
+      <div className="flex-1 grid grid-cols-2 gap-2">
+        <input
+          type="url"
+          placeholder="https://…"
+          value={link.url}
+          onChange={e => onChange(index, { ...link, url: e.target.value })}
+          className="input-premium px-3 py-2 text-[12px] rounded-lg w-full"
+        />
+        <input
+          type="text"
+          placeholder="Label (e.g. GitHub)"
+          value={link.label}
+          onChange={e => onChange(index, { ...link, label: e.target.value })}
+          className="input-premium px-3 py-2 text-[12px] rounded-lg w-full"
+        />
+      </div>
+      <button type="button" onClick={() => onRemove(index)}
+        className="p-1.5 text-slate-655 hover:text-rose-400 rounded-lg transition-colors cursor-pointer shrink-0">
+        <X size={12} />
+      </button>
+    </div>
+  );
+}
+
+/* ─── Premium Custom Dropdown ─────────────────────────── */
+function CustomDropdown({ value, onChange, options, icon, placeholder }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const activeOption = options.find(o => o.value === value) || { label: placeholder || value };
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="select-premium pl-8 pr-10 py-2 text-[13px] rounded-xl cursor-pointer font-medium flex items-center gap-1.5 min-w-[130px] justify-between relative group/btn"
+      >
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+          {icon}
+        </span>
+        <span className="truncate pr-1">{activeOption.label}</span>
+        <ChevronDown 
+          size={12} 
+          className={`text-slate-500 transition-transform duration-200 group-hover/btn:text-slate-350 ${isOpen ? 'rotate-180 text-indigo-400' : ''}`} 
+        />
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-2 min-w-[180px] bg-slate-950/98 backdrop-blur-xl border border-white/[0.08] rounded-xl shadow-[0_12px_30px_rgba(0,0,0,0.6)] py-1.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+          {options.map((opt, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => {
+                onChange(opt.value);
+                setIsOpen(false);
+              }}
+              className={`w-full text-left px-3.5 py-2.5 text-[12.5px] transition-all flex items-center justify-between border-b border-white/[0.04] last:border-b-0 hover:bg-white/[0.04] cursor-pointer ${
+                value === opt.value 
+                  ? 'text-indigo-300 font-semibold bg-indigo-500/[0.04]' 
+                  : 'text-slate-355 hover:text-white'
+              }`}
+            >
+              <span>{opt.label}</span>
+              {value === opt.value && <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const DEFAULT_PROJECTS = [
+  {
+    id: '1',
+    title: "AnonVault E2E Sync",
+    content: "Implement local-first offline synchronization for secure document vaults with encrypted cloud backup tunnels.",
+    tags: ["Security", "IndexedDB", "AES-GCM", "Supabase"],
+    images: [],
+    links: [{ url: "https://supabase.com", label: "Supabase Core" }],
+    created_at: new Date().toISOString()
+  },
+  {
+    id: '2',
+    title: "Localized AI Agent Workspace",
+    content: "A fast, privacy-focused browser extension running dynamic Llama3 completions via local Ollama services.",
+    tags: ["AI/ML", "WebGPU", "React", "Ollama"],
+    images: [],
+    links: [],
+    created_at: new Date(Date.now() - 86400000).toISOString()
+  },
+  {
+    id: '3',
+    title: "P2P Ephemeral Share Link",
+    content: "Create anonymous peer-to-peer file transfer links that establish direct WebRTC tunnels for large file shares.",
+    tags: ["Web App", "WebRTC", "Socket.io", "Vite"],
+    images: [],
+    links: [],
+    created_at: new Date(Date.now() - 172800000).toISOString()
+  }
+];
+
+export default function ProjectIdeasView({
+  ideas = [], onAdd, onUpdate, onDelete, onReorder, loading, theme, onLock, showToast, onMenuToggle
+}) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedTag, setSelectedTag] = useState('');
+  const [sortBy, setSortBy] = useState(() => localStorage.getItem('anonvault_project_ideas_sortby') || 'custom');
+  
+  // Drag & drop state for custom manual ordering
+  const [orderedIdeas, setOrderedIdeas] = useState([]);
+  const [draggedId, setDraggedId] = useState(null);
+  const [draggedOverId, setDraggedOverId] = useState(null);
+  const [hoveredDragId, setHoveredDragId] = useState(null);
+
+  // Form Modal States
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingIdea, setEditingIdea] = useState(null);
+  const [formTitle, setFormTitle] = useState('');
+  const [formContent, setFormContent] = useState('');
+  const [formTags, setFormTags] = useState([]);
+  const [tagInputVal, setTagInputVal] = useState('');
+  const [formImages, setFormImages] = useState([]);
+  const [formLinks, setFormLinks] = useState([]);
+  const [uploadingIndex, setUploadingIndex] = useState(null);
+  const [uploadError, setUploadError] = useState('');
+
+  // Persist sorting selection
+  useEffect(() => {
+    localStorage.setItem('anonvault_project_ideas_sortby', sortBy);
+  }, [sortBy]);
+
+  // Sync database project ideas with custom local order
+  useEffect(() => {
+    if (!ideas) return;
+    
+    let savedOrder = [];
+    try {
+      const saved = localStorage.getItem('anonvault_project_ideas_order');
+      if (saved) savedOrder = JSON.parse(saved);
+    } catch (e) {
+      console.error('Failed to parse project ideas order:', e);
+    }
+
+    const orderMap = new Map();
+    savedOrder.forEach((id, idx) => orderMap.set(String(id), idx));
+
+    const sorted = [...ideas].sort((a, b) => {
+      const orderA = orderMap.has(String(a.id)) ? orderMap.get(String(a.id)) : -1;
+      const orderB = orderMap.has(String(b.id)) ? orderMap.get(String(b.id)) : -1;
+
+      // Put new ideas at the top
+      if (orderA === -1 && orderB === -1) {
+        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+      }
+      if (orderA === -1) return -1;
+      if (orderB === -1) return 1;
+      return orderA - orderB;
+    });
+
+    setOrderedIdeas(sorted);
+  }, [ideas]);
+
+  // Modals
+  const [selectedIdea, setSelectedIdea] = useState(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+
+  const prevRectsRef = useRef({});
+
+  // Flip Layout Animations
+  useLayoutEffect(() => {
+    const cards = document.querySelectorAll('[data-flip-id]');
+    const newRects = {};
+    cards.forEach(card => {
+      const id = card.getAttribute('data-flip-id');
+      newRects[id] = card.getBoundingClientRect();
+    });
+
+    Object.keys(newRects).forEach(id => {
+      const first = prevRectsRef.current[id];
+      const last = newRects[id];
+      if (first && last) {
+        const deltaX = first.left - last.left;
+        const deltaY = first.top - last.top;
+
+        if (deltaX !== 0 || deltaY !== 0) {
+          const el = Array.from(cards).find(node => node.getAttribute('data-flip-id') === id);
+          if (el) {
+            el.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+            el.style.transition = 'none';
+            el.offsetHeight; // force reflow
+
+            requestAnimationFrame(() => {
+              el.style.transition = 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
+              el.style.transform = '';
+            });
+
+            setTimeout(() => {
+              el.style.transition = '';
+              el.style.transform = '';
+            }, 450);
+          }
+        }
+      }
+    });
+
+    prevRectsRef.current = newRects;
+  }, [orderedIdeas, searchTerm, selectedTag, sortBy]);
+
+  // Tag extraction for sidebar filter dropdown list
+  const allTags = Array.from(new Set(ideas.flatMap(i => i.tags || []))).sort();
+  const tagOptions = [{ value: '', label: 'All Tags' }, ...allTags.map(t => ({ value: t, label: `#${t}` }))];
+
+  const sortOptions = [
+    { value: 'custom', label: 'Custom (Drag & Drop)' },
+    { value: 'newest', label: 'Newest First' },
+    { value: 'oldest', label: 'Oldest First' }
+  ];
+
+  // Drag-and-drop Reordering handlers
+  const handleDragStart = (e, id) => {
+    setDraggedId(id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEnd = () => {
+    setDraggedId(null);
+    setDraggedOverId(null);
+  };
+
+  const handleDragOver = (e, id) => {
+    e.preventDefault();
+    if (draggedId !== id && draggedOverId !== id) {
+      setDraggedOverId(id);
+    }
+  };
+
+  const handleDragLeave = (e, id) => {
+    if (draggedOverId === id) {
+      setDraggedOverId(null);
+    }
+  };
+
+  const handleDrop = (e, targetId) => {
+    e.preventDefault();
+    if (draggedId === targetId) return;
+
+    const dragIdx = orderedIdeas.findIndex(i => i.id === draggedId);
+    const dropIdx = orderedIdeas.findIndex(i => i.id === targetId);
+    if (dragIdx === -1 || dropIdx === -1) return;
+
+    const updated = [...orderedIdeas];
+    const [moved] = updated.splice(dragIdx, 1);
+    updated.splice(dropIdx, 0, moved);
+    
+    const newOrderIds = updated.map(item => item.id);
+    localStorage.setItem('anonvault_project_ideas_order', JSON.stringify(newOrderIds));
+    setOrderedIdeas(updated);
+    if (onReorder) {
+      onReorder(updated);
+    }
+  };
+
+  // Image upload simulation (base64 saving)
+  const handleFileUpload = (index, e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Please select a valid image file');
+      return;
+    }
+
+    if (file.size > 1.5 * 1024 * 1024) {
+      showToast?.('warning', 'File Too Large', 'Maximum image size is 1.5 MB to preserve local vault capacity.');
+      setUploadError('Max 1.5 MB');
+      return;
+    }
+
+    setUploadingIndex(index);
+    setUploadError('');
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result;
+      const updated = [...formImages];
+      updated[index] = { ...updated[index], url: base64 };
+      setFormImages(updated);
+      setUploadingIndex(null);
+    };
+    reader.onerror = () => {
+      setUploadError('Failed to read image file');
+      setUploadingIndex(null);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const addImageRow = () => {
+    setFormImages([...formImages, { url: '', caption: '', is_primary: false }]);
+  };
+
+  const removeImageRow = (idx) => {
+    setFormImages(formImages.filter((_, i) => i !== idx));
+  };
+
+  const changeImageRow = (idx, url, caption) => {
+    const updated = [...formImages];
+    updated[idx] = { ...updated[idx], url, caption };
+    setFormImages(updated);
+  };
+
+  const handleSetPrimary = (idx) => {
+    setFormImages(formImages.map((img, i) => ({ ...img, is_primary: i === idx })));
+  };
+
+  // Link Form Rows Handlers
+  const addLinkRow = () => {
+    setFormLinks([...formLinks, { url: '', label: '' }]);
+  };
+
+  const removeLinkRow = (idx) => {
+    setFormLinks(formLinks.filter((_, i) => i !== idx));
+  };
+
+  const changeLinkRow = (idx, link) => {
+    const updated = [...formLinks];
+    updated[idx] = link;
+    setFormLinks(updated);
+  };
+
+  // Form Tags Helper Handlers
+  const handleTagKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const cleaned = tagInputVal
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-zA-Z0-9]/g, '');
+      if (cleaned && !formTags.includes(cleaned)) {
+        setFormTags(prev => [...prev, cleaned]);
+      }
+      setTagInputVal('');
+    } else if (e.key === 'Backspace' && !tagInputVal && formTags.length > 0) {
+      setFormTags(prev => prev.slice(0, -1));
+    }
+  };
+
+  const removeFormTag = (tag) => {
+    setFormTags(formTags.filter(t => t !== tag));
+  };
+
+  // Form Open Helper Handlers
+  const handleOpenAdd = () => {
+    setEditingIdea(null);
+    setFormTitle('');
+    setFormContent('');
+    setFormTags([]);
+    setTagInputVal('');
+    setFormImages([]);
+    setFormLinks([]);
+    setIsFormOpen(true);
+  };
+
+  const handleOpenEdit = (idea) => {
+    setEditingIdea(idea);
+    setFormTitle(idea.title);
+    setFormContent(idea.content || '');
+    setFormTags(idea.tags || []);
+    setTagInputVal('');
+    setFormImages(idea.images || []);
+    setFormLinks(idea.links || []);
+    setIsFormOpen(true);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!formTitle.trim()) {
+      if (showToast) showToast('error', 'Title Required', 'Please give your concept a title before saving.');
+      return;
+    }
+
+    let finalTags = [...formTags];
+    if (tagInputVal.trim()) {
+      const cleaned = tagInputVal.trim().toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
+      if (cleaned && !finalTags.includes(cleaned)) {
+        finalTags.push(cleaned);
+      }
+    }
+
+    const validImages = formImages.filter(img => img.url);
+    const validLinks  = formLinks.filter(lnk => lnk.url);
+
+    const payload = {
+      title: formTitle.trim(),
+      content: formContent.trim(),
+      tags: finalTags,
+      images: validImages,
+      links: validLinks,
+    };
+
+    if (editingIdea) {
+      if (onUpdate) onUpdate(editingIdea.id, payload);
+    } else {
+      if (onAdd) onAdd(payload);
+    }
+    setIsFormOpen(false);
+  };
+
+  const handleDeleteConfirm = (id) => {
+    if (onDelete) onDelete(id);
+    setDeleteConfirmId(null);
+  };
+
+  // Filter & Search & Sort calculation
+  const getProcessedIdeas = () => {
+    let list = [...orderedIdeas];
+
+    if (sortBy === 'newest') {
+      list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+    } else if (sortBy === 'oldest') {
+      list.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+    }
+
+    return list.filter(idea => {
+      if (!idea) return false;
+      const q = searchTerm.toLowerCase();
+      const matchesSearch =
+        (idea.title  || '').toLowerCase().includes(q) ||
+        (idea.content || '').toLowerCase().includes(q) ||
+        (idea.tags || []).some(t => t.toLowerCase().includes(q));
+      const matchesTag = !selectedTag || (idea.tags && idea.tags.includes(selectedTag));
+      return matchesSearch && matchesTag;
+    });
+  };
+
+  const processedIdeas = getProcessedIdeas();
+
+  return (
+    <div className="flex-1 h-screen flex flex-col overflow-hidden relative" style={{ background: '#07060f' }}>
+      <div className="workspace-aurora-glow workspace-glow-1" />
+      <div className="workspace-aurora-glow workspace-glow-2" />
+
+      {/* Header */}
+      <header className="glass-header px-4 lg:px-7 py-4 flex items-center justify-between shrink-0 relative z-10">
+        <div className="flex items-center gap-3">
+          <button onClick={onMenuToggle}
+            className="lg:hidden p-2 -ml-1 text-slate-555 hover:text-white rounded-xl cursor-pointer flex items-center justify-center shrink-0 bg-white/[0.04] border border-white/[0.06] transition-all hover:bg-white/[0.07]">
+            <Menu size={16} />
+          </button>
+          <div>
+            <h2 className="text-[15px] lg:text-[17px] font-extrabold text-white tracking-tight leading-tight">
+              Project Ideas
+            </h2>
+            <p className="text-[10px] lg:text-[11px] text-slate-600 mt-0.5 font-medium">{ideas.length} concepts captured</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={onLock} className="btn-ghost p-2.5 rounded-xl cursor-pointer flex items-center justify-center"
+            title="Lock workspace">
+            <Lock size={13} className="text-slate-500 hover:text-rose-400 transition-colors" />
+          </button>
+          <button onClick={handleOpenAdd} className="btn-primary flex items-center gap-2 px-4 py-2 text-[13px] font-bold rounded-xl cursor-pointer">
+            <Plus size={14} />
+            <span className="hidden sm:inline">New Concept</span>
+            <span className="sm:hidden">Add</span>
+          </button>
+        </div>
+      </header>
+
+      {/* Unified Toolbar Dropdowns */}
+      <div className="px-4 lg:px-7 py-3 border-b border-white/[0.04] flex flex-wrap gap-3 items-center justify-between shrink-0 relative z-10"
+        style={{ background: 'rgba(7,6,15,0.6)', backdropFilter: 'blur(16px)' }}>
+        <div className="relative min-w-[220px] max-w-xs flex-1">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search concepts…"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="input-premium w-full pl-9 pr-4 py-2 text-[13px] rounded-xl"
+          />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {selectedTag && (
+            <div className="flex items-center shrink-0">
+              <span className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-xl">
+                <Hash size={9} /> {selectedTag}
+                <button onClick={() => setSelectedTag('')} className="hover:text-white ml-0.5 cursor-pointer" title="Clear filter">
+                  <X size={9} />
+                </button>
+              </span>
+            </div>
+          )}
+
+          <CustomDropdown
+            value={selectedTag}
+            onChange={setSelectedTag}
+            options={tagOptions}
+            icon={<Tag size={11} className="text-indigo-400/80" />}
+            placeholder="All Tags"
+          />
+
+          <CustomDropdown
+            value={sortBy}
+            onChange={setSortBy}
+            options={sortOptions}
+            icon={<Calendar size={11} className="text-amber-400/80" />}
+            placeholder="Custom"
+          />
+        </div>
+      </div>
+
+      {/* Grid */}
+      <div className="flex-1 overflow-y-auto px-7 py-6">
+        {processedIdeas.length === 0 ? (
+          <div className="flex flex-col items-center justify-center text-center py-20 max-w-sm mx-auto">
+            <div className="w-14 h-14 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mb-4">
+              <Lightbulb size={24} className="text-slate-600 animate-pulse" />
+            </div>
+            <h3 className="text-sm font-semibold text-slate-300">No concepts yet</h3>
+            <p className="text-[12px] text-slate-600 mt-1.5 leading-relaxed">
+              {searchTerm || selectedTag ? 'Try adjusting your search or tags.' : 'Capture your first project concept.'}
+            </p>
+            {!searchTerm && !selectedTag && (
+              <button onClick={handleOpenAdd} className="btn-primary mt-5 px-5 py-2 text-[13px] font-semibold rounded-xl cursor-pointer">
+                Create Concept
+              </button>
+            )}
+          </div>
+        ) : (
+          <div>
+            <div className="columns-1 md:columns-2 xl:columns-3 gap-5">
+              {processedIdeas.map(idea => (
+                <div
+                  key={idea.id}
+                  data-flip-id={idea.id}
+                  draggable={sortBy === 'custom' && hoveredDragId === idea.id && !searchTerm && !selectedTag}
+                  onDragStart={e => handleDragStart(e, idea.id)}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={e => handleDragOver(e, idea.id)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={e => handleDrop(e, idea.id)}
+                  className={`break-inside-avoid mb-5 transition-opacity duration-200 ${
+                    draggedId === idea.id ? 'opacity-20 scale-95 border-2 border-dashed border-indigo-500/20 rounded-2xl' : ''
+                  } ${
+                    draggedOverId === idea.id ? 'border-2 border-indigo-500 scale-[1.01] shadow-[0_0_15px_rgba(99,102,241,0.25)] rounded-2xl' : ''
+                  }`}
+                >
+                  <IdeaCard
+                    idea={idea}
+                    sortBy={sortBy}
+                    onEdit={handleOpenEdit}
+                    onDelete={id => setDeleteConfirmId(id)}
+                    onSelectTag={setSelectedTag}
+                    onViewDetails={setSelectedIdea}
+                    isFilteringOrSearching={!!(searchTerm || selectedTag)}
+                    setHoveredDragId={setHoveredDragId}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ═══ ADD / EDIT MODAL ═══ */}
+      {isFormOpen && (
+        <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setIsFormOpen(false)}>
+          <div className="modal-surface w-full max-w-xl max-h-[92vh] rounded-2xl flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+
+            {/* modal header */}
+            <div className="px-6 py-5 border-b border-white/[0.06] flex items-center justify-between shrink-0">
+              <div>
+                <h3 className="text-[15px] font-bold text-white">{editingIdea ? 'Edit Concept' : 'New Project Concept'}</h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">{editingIdea ? 'Update your project concept details below' : 'Capture a secure project concept'}</p>
+              </div>
+              <button onClick={() => setIsFormOpen(false)} className="btn-ghost p-2 rounded-lg cursor-pointer"><X size={15} /></button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
+
+              {/* Title */}
+              <FormField label="Title" required>
+                <input type="text" required placeholder="e.g. AI-driven portfolio tracker"
+                  value={formTitle} onChange={e => setFormTitle(e.target.value)}
+                  className="input-premium w-full px-3.5 py-2.5 text-[13px] rounded-xl" />
+              </FormField>
+
+              {/* Description */}
+              <FormField label="Description">
+                <textarea rows={4} placeholder="Elaborate on your project concept…"
+                  value={formContent} onChange={e => setFormContent(e.target.value)}
+                  className="input-premium w-full px-3.5 py-2.5 text-[13px] rounded-xl resize-none leading-relaxed" />
+              </FormField>
+
+              {/* Images Section */}
+              <FormField label="Images">
+                <div className="space-y-2">
+                  {formImages.map((img, i) => (
+                    <ImageRow
+                      key={i}
+                      img={img}
+                      index={i}
+                      onRemove={removeImageRow}
+                      onChangeUrl={changeImageRow}
+                      onFileUpload={handleFileUpload}
+                      uploadingIndex={uploadingIndex}
+                      uploadError={uploadError}
+                      isPrimary={img.is_primary ?? (i === 0)}
+                      onSetPrimary={handleSetPrimary}
+                    />
+                  ))}
+                  <button
+                    type="button"
+                    onClick={addImageRow}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 text-[12px] font-semibold
+                               text-indigo-400 border border-dashed border-indigo-500/25 rounded-xl
+                               hover:border-indigo-500/50 hover:bg-indigo-500/[0.05] transition-all cursor-pointer"
+                  >
+                    <Plus size={13} /> Add Image Reference
+                  </button>
+                </div>
+              </FormField>
+
+              {/* Links Section */}
+              <FormField label="Links">
+                <div className="space-y-2">
+                  {formLinks.map((link, i) => (
+                    <LinkRow
+                      key={i}
+                      link={link}
+                      index={i}
+                      onRemove={removeLinkRow}
+                      onChange={changeLinkRow}
+                    />
+                  ))}
+                  <button
+                    type="button"
+                    onClick={addLinkRow}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 text-[12px] font-semibold
+                               text-indigo-400 border border-dashed border-indigo-500/25 rounded-xl
+                               hover:border-indigo-500/50 hover:bg-indigo-500/[0.05] transition-all cursor-pointer"
+                  >
+                    <Plus size={13} /> Add Link Reference
+                  </button>
+                </div>
+              </FormField>
+
+              {/* Enter-to-Tag interactive chip input */}
+              <FormField label="Tags">
+                <div className="input-premium w-full px-3.5 py-2.5 text-[13px] rounded-xl flex flex-wrap gap-2 items-center min-h-[42px] focus-within:border-indigo-500/40 focus-within:ring-2 focus-within:ring-indigo-500/10 transition-all">
+                  {formTags.map((tag, idx) => (
+                    <span key={idx} className="tag-pill flex items-center gap-1 bg-indigo-500/15 border-indigo-500/25 text-indigo-300"
+                          onClick={e => e.stopPropagation()}
+                          onDragStart={e => e.stopPropagation()}>
+                      #{tag}
+                      <button
+                        type="button"
+                        onClick={() => removeFormTag(tag)}
+                        className="hover:text-white ml-0.5 cursor-pointer flex items-center justify-center rounded-full p-0.5 hover:bg-white/10"
+                      >
+                        <X size={10} />
+                      </button>
+                    </span>
+                  ))}
+                  <div className="flex-1 min-w-[120px] flex items-center gap-1.5">
+                    <Tag size={11} className="text-slate-500 shrink-0" />
+                    <input
+                      type="text"
+                      placeholder={formTags.length === 0 ? "Type tag & press Enter…" : "Add tag…"}
+                      value={tagInputVal}
+                      onChange={e => setTagInputVal(e.target.value)}
+                      onKeyDown={handleTagKeyDown}
+                      className="bg-transparent border-none outline-none focus:outline-none w-full text-[13px] text-slate-200 placeholder-slate-650"
+                    />
+                  </div>
+                </div>
+              </FormField>
+
+              {/* actions */}
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setIsFormOpen(false)}
+                  className="btn-ghost flex-1 py-2.5 text-[13px] font-semibold rounded-xl cursor-pointer">Cancel</button>
+                <button type="submit" disabled={uploadingIndex !== null}
+                  className={`btn-primary flex-1 py-2.5 text-[13px] font-semibold rounded-xl cursor-pointer ${uploadingIndex !== null ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                  {editingIdea ? 'Save Changes' : 'Create Concept'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ DELETE CONFIRM ═══ */}
+      {deleteConfirmId && (
+        <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="modal-surface w-full max-w-sm rounded-2xl p-6 space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
+                <Trash2 size={16} className="text-rose-400" />
+              </div>
+              <div>
+                <h3 className="text-[14px] font-bold text-white">Delete Concept</h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">This cannot be undone</p>
+              </div>
+            </div>
+            <p className="text-[13px] text-slate-400 leading-relaxed">
+              Are you sure you want to delete this project concept?
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteConfirmId(null)}
+                className="btn-ghost flex-1 py-2.5 text-[13px] font-semibold rounded-xl cursor-pointer">Keep It</button>
+              <button onClick={() => handleDeleteConfirm(deleteConfirmId)}
+                className="btn-danger flex-1 py-2.5 text-[13px] font-semibold rounded-xl cursor-pointer">Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ DETAILS MODAL ═══ */}
+      {selectedIdea && (
+        <IdeaDetailModal
+          idea={selectedIdea}
+          onClose={() => setSelectedIdea(null)}
+          onEdit={(idea) => { handleOpenEdit(idea); setSelectedIdea(null); }}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ─── Form Field wrapper ──────────────────────────────── */
+function FormField({ label, required, children }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+        {label}{required && <span className="text-rose-400 ml-0.5">*</span>}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+/* ─── Detail Modal ────────────────────────────────────── */
+function IdeaDetailModal({ idea, onClose, onEdit }) {
+  const images = idea.images || [];
+  const links  = idea.links || [];
+
+  const [imgIdx, setImgIdx] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(onClose, 200);
+  };
+
+  return (
+    <div className={`modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? 'closing' : ''}`} onClick={handleClose}>
+      <div className={`modal-surface w-full max-w-lg rounded-2xl overflow-hidden flex flex-col max-h-[92vh] ${isClosing ? 'closing' : ''}`}
+           onClick={e => e.stopPropagation()}>
+
+        {/* image carousel */}
+        {images.length > 0 && (
+          <div className="relative bg-slate-950 shrink-0 h-64 border-b border-white/[0.04] flex items-center justify-center group/carousel">
+            <img src={images[imgIdx].url} alt={images[imgIdx].caption || idea.title}
+              className="w-full h-full object-contain" />
+            
+             {images.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setImgIdx(i => (i - 1 + images.length) % images.length)}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl bg-black/60 border border-white/10 text-slate-300 hover:text-white flex items-center justify-center hover:bg-indigo-600/90 hover:border-indigo-500/30 hover:scale-105 active:scale-95 transition-all shadow-lg backdrop-blur-md cursor-pointer"
+                  title="Previous image"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImgIdx(i => (i + 1) % images.length)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl bg-black/60 border border-white/10 text-slate-350 hover:text-white flex items-center justify-center hover:bg-indigo-600/90 hover:border-indigo-500/30 hover:scale-105 active:scale-95 transition-all shadow-lg backdrop-blur-md cursor-pointer"
+                  title="Next image"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </>
+            )}
+          </div>
+        )}
+
+        {images.length > 0 && images[imgIdx].caption && (
+          <div className="bg-white/[0.02] border-b border-white/[0.04] px-5 py-2.5 flex items-start gap-2 text-[12px] text-slate-350 italic">
+            <span className="text-indigo-400 font-bold tracking-wide uppercase text-[10px] not-italic mt-0.5 shrink-0">Caption:</span>
+            <span className="leading-relaxed">{images[imgIdx].caption}</span>
+          </div>
+        )}
+
+        {/* header */}
+        <div className="px-6 py-5 border-b border-white/[0.06] flex items-start justify-between shrink-0">
+          <div className="flex-1 pr-4">
+            <h3 className="text-[15px] font-bold text-white leading-snug">{idea.title}</h3>
+            {idea.tags && idea.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {idea.tags.map(tag => <span key={tag} className="tag-pill bg-indigo-500/15 border-indigo-500/20 text-indigo-300">#{tag}</span>)}
+              </div>
+            )}
+          </div>
+          <button onClick={handleClose} className="btn-ghost p-2 rounded-lg cursor-pointer"><X size={15} /></button>
+        </div>
+
+        {/* body */}
+        <div className="p-6 space-y-5 flex-1 overflow-y-auto">
+          {idea.content && (
+            <div className="space-y-2">
+              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Concept Notes</p>
+              <div className="glass-panel rounded-xl p-4 text-[13px] text-slate-300 whitespace-pre-line leading-relaxed">
+                {idea.content}
+              </div>
+            </div>
+          )}
+
+          {links.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Links</p>
+              <div className="space-y-1.5">
+                {links.map((link, i) => (
+                  isValidUrl(link.url) ? (
+                    <a key={i} href={link.url} target="_blank" rel="noreferrer"
+                      className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]
+                                 hover:bg-indigo-500/[0.07] hover:border-indigo-500/20 transition-all group/link">
+                      <Globe size={13} className="text-indigo-400 shrink-0" />
+                      <span className="text-[13px] text-slate-300 truncate flex-1 group-hover/link:text-indigo-300">
+                        {link.label || link.url}
+                      </span>
+                      <ExternalLink size={11} className="text-slate-600 group-hover/link:text-indigo-400 shrink-0" />
+                    </a>
+                  ) : (
+                    <div key={i} className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.04]">
+                      <Globe size={13} className="text-slate-650 shrink-0" />
+                      <span className="text-[12px] text-slate-600 truncate">{link.label || link.url || '—'}</span>
+                    </div>
+                  )
+                ))}
+              </div>
+            </div>
+          )}
+
+          {images.length > 1 && (
+            <div className="space-y-2">
+              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                Images · <span className="text-slate-650">{images.length}</span>
+              </p>
+              <div className="grid grid-cols-4 gap-2">
+                {images.map((img, i) => (
+                  <button key={i} type="button" onClick={e => { e.stopPropagation(); setImgIdx(i); setIsFullscreen(true); }}
+                    className={`rounded-lg overflow-hidden aspect-square border-2 cursor-pointer transition-all ${i === imgIdx ? 'border-indigo-500' : 'border-transparent opacity-60 hover:opacity-100'}`}>
+                    <img src={img.url} alt={img.caption || `Image ${i + 1}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* footer */}
+        <div className="px-6 py-4 border-t border-white/[0.04] flex gap-3 shrink-0">
+          <button onClick={() => onEdit(idea)} className="btn-primary flex-1 py-2.5 text-[13px] font-semibold rounded-xl cursor-pointer">Edit</button>
+          <button onClick={handleClose} className="btn-ghost py-2.5 px-5 text-[13px] font-semibold rounded-xl cursor-pointer">Close</button>
+        </div>
+      </div>
+
+      {isFullscreen && (
+        <div 
+          className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-6 animate-in fade-in duration-200" 
+          onClick={e => { e.stopPropagation(); setIsFullscreen(false); }}
+        >
+          <button 
+            onClick={e => { e.stopPropagation(); setIsFullscreen(false); }} 
+            className="absolute top-4 right-4 p-2.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl text-white transition-all cursor-pointer z-[101]"
+          >
+            <X size={18} />
+          </button>
+          <img 
+            src={images[imgIdx].url} 
+            alt="Fullscreen" 
+            className="max-w-full max-h-[82vh] object-contain rounded-lg shadow-[0_20px_50px_rgba(0,0,0,0.8)]"
+            onClick={e => e.stopPropagation()} 
+          />
+          {images[imgIdx].caption && (
+            <p 
+              className="mt-4 text-center text-sm text-slate-300 max-w-xl italic leading-relaxed bg-black/40 px-4 py-2.5 rounded-xl border border-white/5"
+              onClick={e => e.stopPropagation()}
+            >
+              {images[imgIdx].caption}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Idea Card ───────────────────────────────────────── */
+function IdeaCard({ idea, sortBy, onEdit, onDelete, onSelectTag, onViewDetails, isFilteringOrSearching, setHoveredDragId }) {
+  const images = idea.images || [];
+  const links  = idea.links || [];
+
+  const showDragHandle = sortBy === 'custom' && !isFilteringOrSearching;
+  const primaryImage = images.find(img => img.is_primary) || images[0];
+
+  return (
+    <article
+      onClick={() => onViewDetails && onViewDetails(idea)}
+      className="glass-card rounded-2xl !overflow-visible cursor-pointer select-none group tactile-item"
+    >
+      {primaryImage?.url && (
+        <div className="relative h-40 overflow-hidden rounded-t-2xl bg-black/25 flex items-center justify-center border-b border-white/[0.04]">
+          <img src={primaryImage.url} alt={idea.title}
+            className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-102" loading="lazy" />
+        </div>
+      )}
+
+      <div className="p-4 space-y-3">
+        <div className="flex items-start gap-2 justify-between">
+          <div className="flex items-start gap-1.5 flex-1 min-w-0">
+            {showDragHandle && (
+              <div 
+                className="text-slate-655 hover:text-slate-400 cursor-grab active:cursor-grabbing p-1 shrink-0 -ml-1 select-none transition-colors"
+                title="Drag to reorder card"
+                onClick={e => e.stopPropagation()}
+                onDragStart={e => e.stopPropagation()}
+                onMouseEnter={() => setHoveredDragId(idea.id)}
+                onMouseLeave={() => setHoveredDragId(null)}
+              >
+                <GripVertical size={13} className="mt-0.5" />
+              </div>
+            )}
+            <h4 className="text-[13px] font-bold text-white leading-snug break-words flex-1 mt-0.5">{idea.title}</h4>
+          </div>
+          
+          <div className="flex items-center gap-0.5 bg-white/[0.02] border border-white/[0.07] rounded-xl p-0.5 shrink-0 select-none
+                          opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100
+                          transition-all duration-200 ease-out"
+               onClick={e => e.stopPropagation()}
+               onDragStart={e => e.stopPropagation()}>
+            <div className="relative group/info select-none">
+              <button
+                type="button"
+                className="p-1.5 text-slate-400 hover:text-indigo-400 rounded-lg hover:bg-indigo-500/[0.08] transition-all cursor-pointer flex items-center justify-center border border-transparent hover:border-indigo-500/20"
+              >
+                <Info size={11} />
+              </button>
+              <div className="absolute right-0 top-full mt-2 hidden group-hover/info:block bg-slate-950/98 border border-white/[0.08] text-[9.5px] text-slate-300 font-bold px-2.5 py-1.5 rounded-lg shadow-[0_10px_25px_rgba(0,0,0,0.85)] whitespace-nowrap z-50 pointer-events-none w-max">
+                Logged {formatDate(idea.created_at || new Date())}
+              </div>
+            </div>
+            
+            <div className="w-[1px] h-3 bg-white/[0.08] self-center" />
+
+            <button onClick={() => onEdit(idea)}
+              className="p-1.5 text-slate-400 hover:text-indigo-400 rounded-lg hover:bg-indigo-500/[0.08] transition-all cursor-pointer flex items-center justify-center border border-transparent hover:border-indigo-500/20"
+              title="Edit concept">
+              <Edit3 size={11} />
+            </button>
+            
+            <button onClick={() => onDelete(idea.id)}
+              className="p-1.5 text-slate-450 hover:text-rose-455 rounded-lg hover:bg-rose-500/[0.08] transition-all cursor-pointer flex items-center justify-center border border-transparent hover:border-rose-500/20"
+              title="Delete concept">
+              <Trash2 size={11} />
+            </button>
+          </div>
+        </div>
+
+        {links.length > 0 && (
+          <div className="flex items-center gap-1.5 flex-wrap pt-2.5 border-t border-white/[0.06]" 
+               onClick={e => e.stopPropagation()}
+               onDragStart={e => e.stopPropagation()}>
+            {links.map((link, i) => (
+              isValidUrl(link.url) ? (
+                <a key={i} href={link.url} target="_blank" rel="noreferrer"
+                  className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold rounded-lg
+                             bg-indigo-500/[0.08] border border-indigo-500/15 text-indigo-400
+                             hover:bg-indigo-500/15 hover:text-indigo-300 transition-all cursor-pointer">
+                  <Globe size={9} />
+                  {link.label || new URL(link.url).hostname.replace('www.','')}
+                  <ExternalLink size={8} className="opacity-60" />
+                </a>
+              ) : null
+            ))}
+          </div>
+        )}
+
+        {idea.tags && idea.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 pt-2.5 border-t border-white/[0.06]"
+               onClick={e => e.stopPropagation()}
+               onDragStart={e => e.stopPropagation()}>
+            {idea.tags.map(tag => (
+              <button key={tag} onClick={() => onSelectTag(tag)} className="tag-pill cursor-pointer bg-indigo-500/15 border-indigo-500/20 text-indigo-300">#{tag}</button>
+            ))}
+          </div>
+        )}
+      </div>
+    </article>
+  );
+}

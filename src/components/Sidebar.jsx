@@ -1,7 +1,17 @@
-import React, { useEffect, useRef } from 'react';
-import { CalendarRange, Lightbulb, TrendingUp, CheckSquare, X, Sparkles, Zap } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { CalendarRange, Lightbulb, TrendingUp, CheckSquare, X, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab, stats, mobileOpen, setMobileOpen }) {
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    return localStorage.getItem('anonvault_sidebar_collapsed') === 'true';
+  });
+
+  const toggleCollapse = () => {
+    const nextState = !isCollapsed;
+    setIsCollapsed(nextState);
+    localStorage.setItem('anonvault_sidebar_collapsed', String(nextState));
+  };
+
   const navItems = [
     {
       id: 'tasks',
@@ -27,6 +37,14 @@ export default function Sidebar({ activeTab, setActiveTab, stats, mobileOpen, se
       desc: 'Capture thoughts',
       accent: '#fbbf24',
     },
+    {
+      id: 'project-ideas',
+      label: 'Project Ideas',
+      icon: Lightbulb,
+      count: stats.totalProjectIdeas,
+      desc: 'Brainstorm concepts',
+      accent: '#818cf8',
+    },
   ];
 
   return (
@@ -40,8 +58,9 @@ export default function Sidebar({ activeTab, setActiveTab, stats, mobileOpen, se
         />
       )}
 
-      <aside className={`glass-sidebar w-[268px] h-screen flex flex-col shrink-0 select-none
-        fixed lg:static top-0 bottom-0 left-0 z-50 transition-transform duration-300
+      <aside className={`glass-sidebar h-screen flex flex-col shrink-0 select-none
+        fixed lg:static top-0 bottom-0 left-0 z-50 transition-all duration-300
+        ${isCollapsed ? 'w-[72px]' : 'w-[268px]'}
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
 
         {/* Mobile close */}
@@ -55,10 +74,10 @@ export default function Sidebar({ activeTab, setActiveTab, stats, mobileOpen, se
         </div>
 
         {/* ── Brand header ── */}
-        <div className="px-5 pt-7 pb-5">
+        <div className={`px-4 pt-7 pb-5 flex items-center justify-between relative group/brandheader shrink-0`}>
           <div className="flex items-center gap-3">
             {/* Animated logo badge */}
-            <div className="relative">
+            <div className="relative shrink-0">
               <div className="w-10 h-10 rounded-2xl flex items-center justify-center relative overflow-hidden"
                 style={{
                   background: 'linear-gradient(145deg, rgba(56,189,248,0.15) 0%, rgba(14,165,233,0.08) 100%)',
@@ -92,7 +111,7 @@ export default function Sidebar({ activeTab, setActiveTab, stats, mobileOpen, se
                   <rect x="29" y="17" width="16" height="3" rx="1.5" fill="url(#sbGrad)" filter="url(#sbGlow)" />
                   <path d="M28 11.5C31.5 10.5 34.5 9 37.5 7.5" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" filter="url(#sbGlow)" />
                   <path d="M19 28C21 21 24 16 27.5 12" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" filter="url(#sbGlow)" />
-                  <path d="M19 28C17.5 30.5 15.5 32 14.5 32.5" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" opacity={0.8} />
+                  <path d="M19 28C17.5 30.5 15.5 32 14.5 32.5" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" opacity={0.8} />
                   <path d="M22 21C24.5 21.5 27 22.5 28.5 23.5" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" filter="url(#sbGlow)" />
                   <circle cx="28" cy="8.5" r="3.5" fill="#ffffff" filter="url(#sbGlow)" />
                 </svg>
@@ -106,32 +125,49 @@ export default function Sidebar({ activeTab, setActiveTab, stats, mobileOpen, se
               />
             </div>
 
-            <div>
-              <h1 className="text-[15px] font-extrabold tracking-tight leading-none"
-                style={{
-                  background: 'linear-gradient(135deg, #fff 0%, #e0f2fe 60%, #7dd3fc 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                }}
-              >
-                AnonVault
-              </h1>
-              <p className="text-[10px] font-semibold mt-0.5 tracking-[0.2em] uppercase"
-                style={{ color: 'rgba(125,211,252,0.5)' }}>
-                Private Space
-              </p>
-            </div>
+            {!isCollapsed && (
+              <div className="transition-all duration-300 animate-in fade-in zoom-in-95 duration-200">
+                <h1 className="text-[15px] font-extrabold tracking-tight leading-none"
+                  style={{
+                    background: 'linear-gradient(135deg, #fff 0%, #e0f2fe 60%, #7dd3fc 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                  }}
+                >
+                  AnonVault
+                </h1>
+                <p className="text-[10px] font-semibold mt-0.5 tracking-[0.2em] uppercase"
+                  style={{ color: 'rgba(125,211,252,0.5)' }}>
+                  Private Space
+                </p>
+              </div>
+            )}
           </div>
+
+          {/* Toggle Button */}
+          <button
+            onClick={toggleCollapse}
+            className={`w-7 h-7 rounded-lg flex items-center justify-center bg-white/[0.04] border border-white/[0.07] hover:bg-white/[0.09] text-slate-550 hover:text-white cursor-pointer transition-all ${
+              isCollapsed 
+                ? 'absolute left-1/2 -translate-x-1/2 top-20 border-white/[0.09]' 
+                : 'hover:scale-105'
+            }`}
+            title={isCollapsed ? "Maximize Sidebar" : "Minimize Sidebar"}
+          >
+            {isCollapsed ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
+          </button>
         </div>
 
-        <div className="divider mx-4" />
+        <div className={`divider ${isCollapsed ? 'mx-2 mt-9' : 'mx-4'}`} />
 
         {/* ── Navigation ── */}
-        <div className="px-3 pt-5 flex-1 overflow-y-auto min-h-0">
-          <p className="text-[10px] font-bold text-slate-600 uppercase tracking-[0.18em] px-3 mb-3">
-            Workspace
-          </p>
+        <div className={`pt-5 flex-1 overflow-y-auto min-h-0 ${isCollapsed ? 'px-1.5' : 'px-3'}`}>
+          {!isCollapsed && (
+            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-[0.18em] px-3 mb-3 animate-in fade-in duration-200">
+              Workspace
+            </p>
+          )}
 
           <nav className="flex flex-col gap-1.5">
             {navItems.map(({ id, label, icon: Icon, count, desc, accent }) => {
@@ -140,7 +176,8 @@ export default function Sidebar({ activeTab, setActiveTab, stats, mobileOpen, se
                 <button
                   key={id}
                   onClick={() => { setActiveTab(id); setMobileOpen(false); }}
-                  className={`nav-item ${isActive ? 'active' : ''}`}
+                  className={`nav-item ${isActive ? 'active' : ''} ${isCollapsed ? 'justify-center px-0' : ''}`}
+                  title={isCollapsed ? label : ''}
                 >
                   <div className="flex items-center gap-3">
                     {/* Icon badge */}
@@ -159,17 +196,19 @@ export default function Sidebar({ activeTab, setActiveTab, stats, mobileOpen, se
                     >
                       <Icon size={14} />
                     </div>
-                    <div className="text-left">
-                      <span
-                        className="block text-[13px] font-semibold leading-snug"
-                        style={{ color: isActive ? '#bae6fd' : '#cbd5e1' }}
-                      >
-                        {label}
-                      </span>
-                      <span className="block text-[10px] text-slate-600 mt-0.5 font-medium">{desc}</span>
-                    </div>
+                    {!isCollapsed && (
+                      <div className="text-left animate-in fade-in duration-200">
+                        <span
+                          className="block text-[13px] font-semibold leading-snug"
+                          style={{ color: isActive ? '#bae6fd' : '#cbd5e1' }}
+                        >
+                          {label}
+                        </span>
+                        <span className="block text-[10px] text-slate-600 mt-0.5 font-medium">{desc}</span>
+                      </div>
+                    )}
                   </div>
-                  {count > 0 && (
+                  {!isCollapsed && count > 0 && (
                     <span
                       className="px-2 py-0.5 text-[10px] font-bold rounded-full tabular-nums shrink-0"
                       style={{
@@ -185,95 +224,110 @@ export default function Sidebar({ activeTab, setActiveTab, stats, mobileOpen, se
               );
             })}
           </nav>
-
           {/* ── Overview stats ── */}
-          <div className="mt-7">
-            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-[0.18em] px-3 mb-3">
-              Overview
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {/* Today's tasks – full width */}
-              <div className="stat-card col-span-2">
-                <div className="flex items-center gap-1.5 mb-2.5">
-                  <CheckSquare size={11} className={stats.pendingTasks > 0 ? 'text-sky-400' : 'text-emerald-500'} />
-                  <span className="text-[10px] text-slate-500 font-semibold tracking-wide">Today's Tasks</span>
-                </div>
-                <div className="flex items-end justify-between">
-                  {stats.pendingTasks > 0 ? (
-                    <>
-                      <span className="text-[28px] font-extrabold tabular-nums tracking-tight leading-none"
-                        style={{
-                          background: 'linear-gradient(135deg, #38bdf8 0%, #7dd3fc 100%)',
-                          WebkitBackgroundClip: 'text',
-                          WebkitTextFillColor: 'transparent',
-                          backgroundClip: 'text',
-                        }}
-                      >
-                        {stats.pendingTasks}
-                      </span>
-                      <span className="text-[10px] text-slate-500 font-semibold mb-0.5">remaining</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-[13px] font-bold tracking-tight text-emerald-400 flex items-center gap-1.5">
-                        <Sparkles size={13} className="animate-pulse" />
-                        All Done!
-                      </span>
-                      <span className="text-[9px] text-emerald-400 font-bold px-2 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                        ✓ Completed
-                      </span>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Hackathons */}
-              <div className="stat-card">
-                <div className="flex items-center gap-1.5 mb-2.5">
-                  <CalendarRange size={11} className={stats.totalApplications > 0 ? 'text-sky-400' : 'text-slate-600'} />
-                  <span className="text-[10px] text-slate-500 font-semibold tracking-wide">Events</span>
-                </div>
-                <span className={`text-[26px] font-extrabold tabular-nums tracking-tight leading-none ${
-                  stats.totalApplications > 0 ? 'text-sky-300' : 'text-slate-500'
+          {!isCollapsed && (
+            <div className="mt-7 animate-in fade-in duration-200">
+              <p className="text-[10px] font-bold text-slate-600 uppercase tracking-[0.18em] px-3 mb-3">
+                Overview
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {/* Today's tasks */}
+                <div className={`stat-card transition-all duration-300 group/taskcard cursor-pointer ${
+                  stats.pendingTasks > 0 ? 'stat-card-pending' : 'stat-card-completed'
                 }`}>
-                  {stats.totalApplications}
-                </span>
-              </div>
-
-              {/* Ideas */}
-              <div className="stat-card">
-                <div className="flex items-center gap-1.5 mb-2.5">
-                  <TrendingUp size={11} className="text-amber-400" />
-                  <span className="text-[10px] text-slate-500 font-semibold tracking-wide">Ideas</span>
+                  <div className="flex items-center gap-1.5 mb-2.5">
+                    <CheckSquare 
+                      size={11} 
+                      className={`${
+                        stats.pendingTasks > 0 
+                          ? 'text-sky-400 group-hover/taskcard:animate-pulse' 
+                          : 'text-emerald-400 group-hover/taskcard:scale-110 transition-transform'
+                      }`} 
+                    />
+                    <span className="text-[10px] text-slate-500 font-semibold tracking-wide select-none">Tasks</span>
+                  </div>
+                  <div className="flex items-end justify-between">
+                    {stats.pendingTasks > 0 ? (
+                      <>
+                        <span className="text-[26px] font-extrabold tabular-nums tracking-tight leading-none text-sky-300">
+                          {stats.pendingTasks}
+                        </span>
+                        <span className="text-[9px] text-slate-655 font-bold mb-0.5 select-none">rem</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-[24px] font-black tracking-tight leading-none text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.35)]">
+                          ✓
+                        </span>
+                        <span className="text-[9px] text-emerald-400 font-bold mb-0.5 select-none bg-emerald-500/10 border border-emerald-500/25 px-1.5 py-0.5 rounded-lg">
+                          All Done
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
-                <span className="text-[26px] font-extrabold tabular-nums tracking-tight leading-none text-amber-300">
-                  {stats.totalIdeas || 0}
-                </span>
+
+                {/* Hackathons */}
+                <div className="stat-card">
+                  <div className="flex items-center gap-1.5 mb-2.5">
+                    <CalendarRange size={11} className={stats.totalApplications > 0 ? 'text-sky-400' : 'text-slate-600'} />
+                    <span className="text-[10px] text-slate-500 font-semibold tracking-wide">Events</span>
+                  </div>
+                  <span className={`text-[26px] font-extrabold tabular-nums tracking-tight leading-none ${
+                    stats.totalApplications > 0 ? 'text-sky-300' : 'text-slate-500'
+                  }`}>
+                    {stats.totalApplications}
+                  </span>
+                </div>
+
+                {/* Ideas */}
+                <div className="stat-card">
+                  <div className="flex items-center gap-1.5 mb-2.5">
+                    <TrendingUp size={11} className="text-amber-400" />
+                    <span className="text-[10px] text-slate-500 font-semibold tracking-wide">Ideas</span>
+                  </div>
+                  <span className="text-[26px] font-extrabold tabular-nums tracking-tight leading-none text-amber-300">
+                    {stats.totalIdeas || 0}
+                  </span>
+                </div>
+
+                {/* Project Ideas */}
+                <div className="stat-card">
+                  <div className="flex items-center gap-1.5 mb-2.5">
+                    <Lightbulb size={11} className="text-indigo-400" />
+                    <span className="text-[10px] text-slate-500 font-semibold tracking-wide">Projects</span>
+                  </div>
+                  <span className="text-[26px] font-extrabold tabular-nums tracking-tight leading-none text-indigo-300">
+                    {stats.totalProjectIdeas || 0}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* ── Footer ── */}
-        <div className="divider mx-4" />
-        <div className="px-5 py-4 flex items-center justify-center">
-          <p className="text-[11px] text-slate-600 font-medium">
-            Made with{' '}
-            <span className="text-rose-500/80">♥</span>
-            {' '}by{' '}
-            <a
-              href="https://link.minianon.in/tusharbhardwaj"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold transition-all duration-200 underline underline-offset-2 decoration-dotted"
-              style={{ color: '#a78bfa', textDecorationColor: 'rgba(167,139,250,0.4)' }}
-              onMouseEnter={e => { e.currentTarget.style.color = '#c4b5fd'; }}
-              onMouseLeave={e => { e.currentTarget.style.color = '#a78bfa'; }}
-            >
-              Mini Anon
-            </a>
-          </p>
-        </div>
+        {!isCollapsed && (
+          <div className="px-5 py-4 flex flex-col items-center justify-center shrink-0 animate-in fade-in duration-200">
+            <div className="divider w-full mb-4" />
+            <p className="text-[11px] text-slate-600 font-medium">
+              Made with{' '}
+              <span className="text-rose-500/80">♥</span>
+              {' '}by{' '}
+              <a
+                href="https://link.minianon.in/tusharbhardwaj"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold transition-all duration-200 underline underline-offset-2 decoration-dotted"
+                style={{ color: '#818cf8', textDecorationColor: 'rgba(129,140,248,0.4)' }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#a5b4fc'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = '#818cf8'; }}
+              >
+                Mini Anon
+              </a>
+            </p>
+          </div>
+        )}
 
         {/* CSS-in-JSX keyframes needed for sidebar-specific effects */}
         <style>{`
