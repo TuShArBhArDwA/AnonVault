@@ -3,7 +3,7 @@ import {
   Plus, Search, ArrowUpDown, ExternalLink, 
   Edit3, Trash2, Calendar, Link as LinkIcon, AlertTriangle, 
   Clock, ChevronDown, ChevronRight, ListCollapse,
-  Lock, X, Flame
+  Lock, X, Flame, Briefcase, CheckCircle2, ShieldCheck, MapPin, Globe
 } from 'lucide-react';
 import { formatDate, getPriorityStyles, getStatusStyles, sortApplicationsByDeadline, groupApplicationsByMonth } from '../utils/helpers';
 
@@ -27,11 +27,15 @@ export default function TimelineView({
   const [editingApp, setEditingApp] = useState(null);
   const [formName, setFormName] = useState('');
   const [formLink, setFormLink] = useState('');
-  const [formDate, setFormDate] = useState('');
-  const [formTime, setFormTime] = useState('');
+  const [formDaysLeft, setFormDaysLeft] = useState('1');
   const [formPriority, setFormPriority] = useState('medium');
   const [formStatus, setFormStatus] = useState('pending');
   const [formNotes, setFormNotes] = useState('');
+  const [formCompany, setFormCompany] = useState('');
+  const [formPpi, setFormPpi] = useState(false);
+  const [formTravel, setFormTravel] = useState(false);
+  const [formOnsite, setFormOnsite] = useState(false);
+  const [formRemote, setFormRemote] = useState(false);
 
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [selectedAppDetails, setSelectedAppDetails] = useState(null);
@@ -39,15 +43,15 @@ export default function TimelineView({
 
   const resetForm = () => {
     setFormName(''); setFormLink('');
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const y = tomorrow.getFullYear();
-    const m = String(tomorrow.getMonth() + 1).padStart(2, '0');
-    const d = String(tomorrow.getDate()).padStart(2, '0');
-    setFormDate(`${y}-${m}-${d}`);
-    setFormTime('12:00');
+    setFormDaysLeft('1');
     setFormPriority('medium'); setFormStatus('pending');
-    setFormNotes(''); setEditingApp(null);
+    setFormNotes(''); 
+    setFormCompany('');
+    setFormPpi(false);
+    setFormTravel(false);
+    setFormOnsite(false);
+    setFormRemote(false);
+    setEditingApp(null);
   };
 
   const handleOpenAdd = () => { resetForm(); setIsFormOpen(true); };
@@ -56,13 +60,18 @@ export default function TimelineView({
     setEditingApp(app);
     setFormName(app.name); setFormLink(app.link || '');
     if (app.deadline) {
-      const d = new Date(app.deadline);
-      setFormDate(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
-      setFormTime(`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`);
-    } else { setFormDate(''); setFormTime(''); }
+      const diffTime = new Date(app.deadline) - new Date();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      setFormDaysLeft(String(Math.max(1, diffDays)));
+    } else { setFormDaysLeft('1'); }
     setFormPriority(app.priority || 'medium');
     setFormStatus(app.status || 'pending');
     setFormNotes(app.notes || '');
+    setFormCompany(app.company || '');
+    setFormPpi(!!app.ppi);
+    setFormTravel(!!app.travel);
+    setFormOnsite(!!app.onsite);
+    setFormRemote(!!app.remote);
     setIsFormOpen(true);
   };
 
@@ -72,18 +81,25 @@ export default function TimelineView({
       showToast?.('error', 'Name Required', 'Please enter the hackathon or event name.');
       return;
     }
-    if (!formDate) {
-      showToast?.('error', 'Date Required', 'Please pick a deadline date.');
+    const days = parseInt(formDaysLeft, 10);
+    if (isNaN(days) || days < 0) {
+      showToast?.('error', 'Invalid Days', 'Please enter a valid non-negative number of days.');
       return;
     }
-    if (!formTime) {
-      showToast?.('error', 'Time Required', 'Please set a deadline time.');
-      return;
-    }
+
+    const calculatedDeadline = new Date();
+    calculatedDeadline.setDate(calculatedDeadline.getDate() + days);
+    calculatedDeadline.setHours(12, 0, 0, 0); // Standardize to noon for even tracking
+
     const appPayload = {
       name: formName.trim(), link: formLink.trim(),
-      deadline: new Date(`${formDate}T${formTime}`).toISOString(),
+      deadline: calculatedDeadline.toISOString(),
       priority: formPriority, status: formStatus, notes: formNotes.trim(),
+      company: formCompany.trim(),
+      ppi: formPpi,
+      travel: formTravel,
+      onsite: formOnsite,
+      remote: formRemote
     };
     if (editingApp) await onUpdate(editingApp.id, appPayload);
     else await onAdd(appPayload);
@@ -295,6 +311,12 @@ export default function TimelineView({
                   className="input-premium w-full px-3.5 py-2.5 text-[13px] rounded-xl" />
               </Field>
 
+              <Field label="Company / Host Organization">
+                <input type="text" placeholder="e.g. Google, Major League Hacking" value={formCompany}
+                  onChange={e => setFormCompany(e.target.value)}
+                  className="input-premium w-full px-3.5 py-2.5 text-[13px] rounded-xl" />
+              </Field>
+
               <Field label="Event Link">
                 <div className="relative">
                   <LinkIcon size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
@@ -304,15 +326,76 @@ export default function TimelineView({
                 </div>
               </Field>
 
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="Deadline Date" required>
-                  <input type="date" required value={formDate} onChange={e => setFormDate(e.target.value)}
-                    className="input-premium w-full px-3.5 py-2.5 text-[13px] rounded-xl" />
-                </Field>
-                <Field label="Deadline Time" required>
-                  <input type="time" required value={formTime} onChange={e => setFormTime(e.target.value)}
-                    className="input-premium w-full px-3.5 py-2.5 text-[13px] rounded-xl" />
-                </Field>
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">
+                  Days Remaining until Deadline <span className="text-rose-400">*</span>
+                </label>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFormDaysLeft(prev => String(Math.max(0, parseInt(prev, 10) - 1)))}
+                    className="w-11 h-11 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.08] hover:border-white/[0.12] active:scale-95 transition-all text-slate-300 font-bold flex items-center justify-center cursor-pointer text-lg select-none"
+                  >
+                    −
+                  </button>
+                  
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      pattern="[0-9]*"
+                      required
+                      value={formDaysLeft}
+                      onChange={e => {
+                        const val = e.target.value.replace(/[^0-9]/g, '');
+                        setFormDaysLeft(val || '0');
+                      }}
+                      className="input-premium w-full text-center py-2.5 font-bold text-white text-base rounded-xl select-all"
+                    />
+                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500 pointer-events-none select-none">
+                      {parseInt(formDaysLeft, 10) === 1 ? 'day' : 'days'}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setFormDaysLeft(prev => String(parseInt(prev, 10) + 1))}
+                    className="w-11 h-11 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.08] hover:border-white/[0.12] active:scale-95 transition-all text-slate-300 font-bold flex items-center justify-center cursor-pointer text-lg select-none"
+                  >
+                    +
+                  </button>
+
+                  {/* Hidden date picker triggered by Calendar Icon */}
+                  <div 
+                    onClick={(e) => {
+                      const input = e.currentTarget.querySelector('input[type="date"]');
+                      if (input) {
+                        if (typeof input.showPicker === 'function') {
+                          input.showPicker();
+                        } else {
+                          input.click();
+                        }
+                      }
+                    }}
+                    className="relative w-11 h-11 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.08] hover:border-white/[0.12] active:scale-95 transition-all flex items-center justify-center cursor-pointer text-slate-300"
+                  >
+                    <Calendar size={16} />
+                    <input
+                      type="date"
+                      onClick={e => e.stopPropagation()}
+                      onChange={e => {
+                        if (e.target.value) {
+                          const selected = new Date(e.target.value + 'T00:00:00');
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          const diffTime = selected - today;
+                          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                          setFormDaysLeft(String(Math.max(0, diffDays)));
+                        }
+                      }}
+                      className="absolute inset-0 opacity-0 pointer-events-none w-0 h-0"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -336,8 +419,77 @@ export default function TimelineView({
                 </Field>
               </div>
 
+              <div>
+                <p className="text-[11px] font-semibold text-slate-400 mb-2 uppercase tracking-wider">Event details / Perks</p>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setFormPpi(p => !p)}
+                    className={`flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all duration-200 cursor-pointer select-none active:scale-[0.98] ${
+                      formPpi
+                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.06)]'
+                        : 'bg-white/[0.02] border-white/[0.04] text-slate-400 hover:bg-white/[0.04] hover:text-slate-300'
+                    }`}
+                  >
+                    <ShieldCheck size={16} className={formPpi ? 'text-emerald-400' : 'text-slate-500'} />
+                    <div className="min-w-0">
+                      <p className="text-[12px] font-bold leading-none">Offers PPI</p>
+                      <p className="text-[10px] text-slate-550 mt-1 leading-none">Placement Interview</p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFormTravel(t => !t)}
+                    className={`flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all duration-200 cursor-pointer select-none active:scale-[0.98] ${
+                      formTravel
+                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.06)]'
+                        : 'bg-white/[0.02] border-white/[0.04] text-slate-400 hover:bg-white/[0.04] hover:text-slate-300'
+                    }`}
+                  >
+                    <Flame size={16} className={formTravel ? 'text-amber-400' : 'text-slate-500'} />
+                    <div className="min-w-0">
+                      <p className="text-[12px] font-bold leading-none">Travel Covered</p>
+                      <p className="text-[10px] text-slate-550 mt-1 leading-none">Reimbursements</p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFormOnsite(o => !o)}
+                    className={`flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all duration-200 cursor-pointer select-none active:scale-[0.98] ${
+                      formOnsite
+                        ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.06)]'
+                        : 'bg-white/[0.02] border-white/[0.04] text-slate-400 hover:bg-white/[0.04] hover:text-slate-300'
+                    }`}
+                  >
+                    <MapPin size={16} className={formOnsite ? 'text-indigo-400' : 'text-slate-500'} />
+                    <div className="min-w-0">
+                      <p className="text-[12px] font-bold leading-none">Onsite Event</p>
+                      <p className="text-[10px] text-slate-550 mt-1 leading-none">In-person experience</p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFormRemote(r => !r)}
+                    className={`flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all duration-200 cursor-pointer select-none active:scale-[0.98] ${
+                      formRemote
+                        ? 'bg-slate-500/15 border-slate-500/30 text-slate-300 shadow-[0_0_15px_rgba(100,116,139,0.06)]'
+                        : 'bg-white/[0.02] border-white/[0.04] text-slate-400 hover:bg-white/[0.04] hover:text-slate-300'
+                    }`}
+                  >
+                    <Globe size={16} className={formRemote ? 'text-slate-300' : 'text-slate-500'} />
+                    <div className="min-w-0">
+                      <p className="text-[12px] font-bold leading-none">Remote / Online</p>
+                      <p className="text-[10px] text-slate-550 mt-1 leading-none">Join from anywhere</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
               <Field label="Notes">
-                <textarea rows={5} placeholder="Project ideas, team, requirements…" value={formNotes}
+                <textarea rows={4} placeholder="Project ideas, team, requirements…" value={formNotes}
                   onChange={e => setFormNotes(e.target.value)}
                   className="input-premium w-full px-3.5 py-2.5 text-[13px] rounded-xl resize-none leading-relaxed" />
               </Field>
@@ -438,15 +590,36 @@ function HackathonCard({ app, isNearest, onEdit, onDelete, onViewDetails }) {
       }`}
     >
       <div className="p-5">
+        {/* Top Date & Days Left Strip */}
+        <div className="flex items-center justify-between text-[11px] mb-3 pb-2.5 border-b border-white/[0.04]">
+          <span className="flex items-center gap-1.5 text-slate-400 font-medium">
+            <Calendar size={11} className="text-indigo-400/80" />
+            {formatDate(app.deadline)}
+          </span>
+          <span className={`flex items-center gap-1 font-semibold tabular-nums ${
+            remaining.isExpired ? 'text-slate-600' :
+            remaining.isUrgent ? 'text-amber-400' : 'text-emerald-400'
+          }`}>
+            <Clock size={11} />
+            {remaining.text}
+          </span>
+        </div>
+
         {/* Title row */}
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1.5">
+            <div className="flex items-center gap-2 mb-1">
               {isNearest && <span className="beacon-amber" />}
               {app.priority === 'high' && !isNearest && <span className="beacon-red" />}
               <h4 className="text-[14px] font-bold text-white leading-tight truncate">{app.name}</h4>
             </div>
-            <div className="flex flex-wrap gap-1.5">
+            {app.company && (
+              <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate flex items-center gap-1">
+                <Briefcase size={10} className="text-slate-500" />
+                {app.company}
+              </p>
+            )}
+            <div className="flex flex-wrap gap-1.5 mt-2">
               {isNearest && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-bold rounded-full
                                  bg-amber-400/10 text-amber-300 border border-amber-400/20 animate-pulse">
@@ -459,11 +632,31 @@ function HackathonCard({ app, isNearest, onEdit, onDelete, onViewDetails }) {
               <span className={`inline-flex px-2 py-0.5 text-[9px] font-bold rounded-full border ${status.bg} ${status.text} ${status.border}`}>
                 {status.label}
               </span>
+              {app.ppi && (
+                <span className="inline-flex px-2 py-0.5 text-[9px] font-bold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  PPI
+                </span>
+              )}
+              {app.travel && (
+                <span className="inline-flex px-2 py-0.5 text-[9px] font-bold rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                  Travel
+                </span>
+              )}
+              {app.onsite && (
+                <span className="inline-flex px-2 py-0.5 text-[9px] font-bold rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                  Onsite
+                </span>
+              )}
+              {app.remote && (
+                <span className="inline-flex px-2 py-0.5 text-[9px] font-bold rounded-full bg-slate-500/10 text-slate-400 border border-white/[0.06]">
+                  Remote
+                </span>
+              )}
             </div>
           </div>
 
-          {/* Actions — always visible, pop on hover */}
-          <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+          {/* Actions — hidden by default, visible on hover */}
+          <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200" onClick={e => e.stopPropagation()}>
             {app.link && (
               <a href={app.link} target="_blank" rel="noreferrer"
                  className="p-1.5 text-slate-600 hover:text-white rounded-lg hover:bg-white/[0.06] transition-all cursor-pointer"
@@ -484,24 +677,9 @@ function HackathonCard({ app, isNearest, onEdit, onDelete, onViewDetails }) {
           </div>
         </div>
 
-        {/* Deadline strip */}
-        <div className="flex items-center gap-3 pt-3 border-t border-white/[0.04] text-[11px]">
-          <span className="flex items-center gap-1.5 text-slate-500">
-            <Calendar size={11} className="text-indigo-400/70" />
-            {formatDate(app.deadline)}
-          </span>
-          <span className={`flex items-center gap-1 font-semibold ${
-            remaining.isExpired ? 'text-slate-600' :
-            remaining.isUrgent ? 'text-amber-400' : 'text-emerald-400'
-          }`}>
-            <Clock size={11} />
-            {remaining.text}
-          </span>
-        </div>
-
         {/* Notes preview */}
         {app.notes && (
-          <p className="text-[11px] text-slate-500 leading-relaxed mt-3 line-clamp-2 whitespace-pre-line">
+          <p className="text-[11px] text-slate-500 leading-relaxed mt-2.5 line-clamp-2 whitespace-pre-line">
             {app.notes}
           </p>
         )}
@@ -541,6 +719,11 @@ function AppDetailModal({ app, onClose, onEdit, nearestAppId }) {
         </div>
 
         <div className="p-6 space-y-4 flex-1 overflow-y-auto">
+          {app.company && (
+            <InfoRow icon={<Briefcase size={13} className="text-indigo-400" />} label="Company">
+              <span className="font-semibold text-white">{app.company}</span>
+            </InfoRow>
+          )}
           {app.deadline && (
             <InfoRow icon={<Calendar size={13} className="text-indigo-400" />} label="Deadline">
               {formatDate(app.deadline)}
@@ -555,6 +738,35 @@ function AppDetailModal({ app, onClose, onEdit, nearestAppId }) {
               </a>
             </InfoRow>
           )}
+
+          {(app.ppi || app.travel || app.onsite || app.remote) && (
+            <div className="pt-2">
+              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Event Highlights</p>
+              <div className="flex flex-wrap gap-2">
+                {app.ppi && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-medium">
+                    <ShieldCheck size={11} /> Offers PPI
+                  </span>
+                )}
+                {app.travel && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 font-medium">
+                    <Flame size={11} /> Travel Covered
+                  </span>
+                )}
+                {app.onsite && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 font-medium">
+                    <MapPin size={11} /> Onsite
+                  </span>
+                )}
+                {app.remote && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] rounded-lg bg-slate-500/10 border border-slate-500/20 text-slate-400 font-medium">
+                    <Globe size={11} /> Remote / Online
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="divider" />
           <div className="space-y-2">
             <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Notes</p>

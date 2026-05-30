@@ -498,7 +498,7 @@ function computePendingTasks() {
 function AppInner() {
   const showToast = useToast();
   const [isAuthorized, setIsAuthorized] = useState(sessionStorage.getItem('minianon_authorized') === 'true');
-  const [activeTab, setActiveTab] = useState('timeline'); // timeline, ideas
+  const [activeTab, setActiveTab] = useState('tasks'); // daily checklist as default
   const didSyncRef = useRef(false);
 
   const [theme, setTheme] = useState(() => {
@@ -602,9 +602,11 @@ function AppInner() {
 
   const handleDeleteApplication = async (id) => {
     try {
+      const targetApp = applications.find(app => app.id === id);
+      const appName = targetApp ? targetApp.name : 'Hackathon';
       await deleteApplication(id);
       setApplications(prev => prev.filter(app => app.id !== id));
-      showToast('warning', 'Hackathon Deleted', 'The entry has been permanently removed.');
+      showToast('warning', 'Hackathon Removed', `"${appName}" has been removed.`);
     } catch (err) {
       console.error('Failed to delete application:', err);
       showToast('error', 'Delete Failed', 'Could not remove the hackathon.');
@@ -737,6 +739,7 @@ function AppInner() {
               <TasksView
                 showToast={showToast}
                 onTasksChange={refreshPendingTasks}
+                onLock={handleLock}
               />
             </div>
           </div>

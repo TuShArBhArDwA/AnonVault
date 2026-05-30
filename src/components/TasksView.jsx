@@ -3,7 +3,7 @@ import {
   Plus, Trash2, Edit3, X, ChevronDown,
   Check, Sun, Moon, RotateCcw,
   ChevronLeft, ChevronRight as ChevronRightIcon, Repeat2,
-  ListChecks, Sparkles, Minus, ArrowDown, EyeOff
+  ListChecks, Sparkles, Minus, ArrowDown, EyeOff, Lock
 } from 'lucide-react';
 import {
   getTasksForDate, addTask, updateTask, deleteTask,
@@ -456,7 +456,7 @@ function SectionLabel({ label, count, color = 'text-slate-600' }) {
 /* ══════════════════════════════════════════════════════════
    MAIN VIEW
 ══════════════════════════════════════════════════════════ */
-export default function TasksView({ theme, toggleTheme, showToast, onTasksChange }) {
+export default function TasksView({ theme, toggleTheme, showToast, onTasksChange, onLock }) {
   const [selectedDate, setSelectedDate] = useState(todayStr());
   const [tasks,        setTasks]        = useState([]);
   const [isFormOpen,   setIsFormOpen]   = useState(false);
@@ -511,18 +511,49 @@ export default function TasksView({ theme, toggleTheme, showToast, onTasksChange
   };
 
   const handleToggle    = useCallback(async task => {
-    setBusy(true);
-    await toggleTaskCompletion(task, selectedDate);
-    await refresh();
-    setBusy(false);
-  }, [selectedDate, refresh]);
+    // Optimistic Update
+    const isCompleted = !task.completed;
+    setTasks(prev => prev.map(t => {
+      if (t.id === task.id) {
+        return { ...t, completed: isCompleted };
+      }
+      return t;
+    }));
+
+    try {
+      await toggleTaskCompletion(task, selectedDate);
+      await refresh();
+    } catch (err) {
+      console.error('Failed to toggle task:', err);
+      showToast?.('error', 'Error', 'Failed to update task state. Rolling back.');
+      await refresh();
+    }
+  }, [selectedDate, refresh, showToast]);
 
   const handleToggleSub = useCallback(async (task, sid) => {
-    setBusy(true);
-    await toggleSubtaskCompletion(task, sid, selectedDate);
-    await refresh();
-    setBusy(false);
-  }, [selectedDate, refresh]);
+    // Optimistic Update
+    setTasks(prev => prev.map(t => {
+      if (t.id === task.id) {
+        const updatedSubs = (t.subtasks || []).map(st => {
+          if (st.id === sid) {
+            return { ...st, completed: !st.completed };
+          }
+          return st;
+        });
+        return { ...t, subtasks: updatedSubs };
+      }
+      return t;
+    }));
+
+    try {
+      await toggleSubtaskCompletion(task, sid, selectedDate);
+      await refresh();
+    } catch (err) {
+      console.error('Failed to toggle subtask:', err);
+      showToast?.('error', 'Error', 'Failed to update subtask state. Rolling back.');
+      await refresh();
+    }
+  }, [selectedDate, refresh, showToast]);
 
   const handleSave = async task => {
     setBusy(true);
@@ -578,14 +609,20 @@ export default function TasksView({ theme, toggleTheme, showToast, onTasksChange
 
       {/* Header */}
       <header className="glass-header px-7 py-4 flex items-center justify-between shrink-0">
-        <div>
+         <div>
           <h2 className="text-lg font-bold text-white tracking-tight">Daily Checklist</h2>
           <p className="text-[11px] text-slate-500 mt-0.5">{formatDayFull(selectedDate)}</p>
         </div>
-        <button onClick={() => { setEditingTask(null); setIsFormOpen(true); }}
-          className="btn-primary flex items-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-xl cursor-pointer">
-          <Plus size={14} /> New Task
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button onClick={onLock} className="btn-ghost p-2.5 rounded-xl cursor-pointer flex items-center justify-center"
+            title="Lock workspace">
+            <Lock size={14} className="text-slate-400 hover:text-rose-400 transition-colors" />
+          </button>
+          <button onClick={() => { setEditingTask(null); setIsFormOpen(true); }}
+            className="btn-primary flex items-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-xl cursor-pointer">
+            <Plus size={14} /> New Task
+          </button>
+        </div>
       </header>
 
       {/* Date nav + progress */}

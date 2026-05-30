@@ -97,6 +97,11 @@ export const addApplication = async (app) => {
     priority: app.priority || 'medium',
     status: app.status || 'pending',
     notes: app.notes || '',
+    company: app.company || '',
+    ppi: !!app.ppi,
+    travel: !!app.travel,
+    onsite: !!app.onsite,
+    remote: !!app.remote,
     ...(user ? { user_id: user.id } : {})
   };
 
@@ -121,7 +126,12 @@ export const updateApplication = async (id, updates) => {
       deadline: updates.deadline,
       priority: updates.priority,
       status: updates.status,
-      notes: updates.notes
+      notes: updates.notes,
+      company: updates.company,
+      ppi: !!updates.ppi,
+      travel: !!updates.travel,
+      onsite: !!updates.onsite,
+      remote: !!updates.remote
     })
     .eq('id', id)
     .select();
