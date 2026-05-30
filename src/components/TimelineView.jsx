@@ -215,38 +215,41 @@ export default function TimelineView({
   };
 
   return (
-    <div className="flex-1 h-screen flex flex-col overflow-hidden bg-slate-950 relative">
+    <div className="flex-1 h-screen flex flex-col overflow-hidden relative" style={{ background: '#07060f' }}>
       <div className="workspace-aurora-glow workspace-glow-1" />
       <div className="workspace-aurora-glow workspace-glow-2" />
 
       {/* Header */}
-      <header className="glass-header px-4 lg:px-7 py-4 flex items-center justify-between shrink-0">
+      <header className="glass-header px-4 lg:px-7 py-4 flex items-center justify-between shrink-0 relative z-10">
         <div className="flex items-center gap-3">
-          <button onClick={onMenuToggle} className="lg:hidden p-2 -ml-1 text-slate-400 hover:text-white rounded-lg cursor-pointer flex items-center justify-center shrink-0">
-            <Menu size={18} />
+          <button onClick={onMenuToggle}
+            className="lg:hidden p-2 -ml-1 text-slate-500 hover:text-white rounded-xl cursor-pointer flex items-center justify-center shrink-0 bg-white/[0.04] border border-white/[0.06] transition-all hover:bg-white/[0.07]">
+            <Menu size={16} />
           </button>
           <div>
-            <h2 className="text-base lg:text-lg font-bold text-white tracking-tight">Hackathon Timeline</h2>
-            <p className="text-[10px] lg:text-[11px] text-slate-500 mt-0.5">{(applications||[]).length} events tracked</p>
+            <h2 className="text-[15px] lg:text-[17px] font-extrabold text-white tracking-tight leading-tight">Hackathon Timeline</h2>
+            <p className="text-[10px] lg:text-[11px] text-slate-600 mt-0.5 font-medium">{(applications||[]).length} events tracked</p>
           </div>
         </div>
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <button
             onClick={onLock}
             className="btn-ghost p-2.5 rounded-xl cursor-pointer flex items-center justify-center"
             title="Lock workspace"
           >
-            <Lock size={14} className="text-slate-400 hover:text-rose-400 transition-colors" />
+            <Lock size={13} className="text-slate-500 hover:text-rose-400 transition-colors" />
           </button>
-          <button onClick={handleOpenAdd} className="btn-primary flex items-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-xl cursor-pointer">
+          <button onClick={handleOpenAdd} className="btn-primary flex items-center gap-2 px-4 py-2 text-[13px] font-bold rounded-xl cursor-pointer">
             <Plus size={14} />
-            Add Hackathon
+            <span className="hidden sm:inline">Add Hackathon</span>
+            <span className="sm:hidden">Add</span>
           </button>
         </div>
       </header>
 
       {/* Toolbar */}
-      <div className="px-7 py-3 border-b border-white/[0.04] flex flex-wrap gap-3 items-center justify-between shrink-0">
+      <div className="px-4 lg:px-7 py-3 border-b border-white/[0.04] flex flex-wrap gap-3 items-center justify-between shrink-0 relative z-10"
+        style={{ background: 'rgba(7,6,15,0.6)', backdropFilter: 'blur(16px)' }}>
         <div className="relative min-w-[220px] max-w-xs flex-1">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
           <input

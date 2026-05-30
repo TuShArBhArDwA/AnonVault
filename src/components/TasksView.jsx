@@ -36,9 +36,9 @@ function formatDayFull(dateStr) {
 
 const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 };
 const PRIORITY_META  = {
-  high:   { label: 'High',   color: 'text-rose-400',   bg: 'bg-rose-500/10',   border: 'border-rose-500/25',  dot: 'bg-rose-400',   cardBorder: 'border-rose-500/40'   },
-  medium: { label: 'Medium', color: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/25', dot: 'bg-amber-400',  cardBorder: 'border-amber-500/35'  },
-  low:    { label: 'Low',    color: 'text-slate-400',  bg: 'bg-white/[0.04]',  border: 'border-white/[0.06]', dot: 'bg-slate-600',  cardBorder: 'border-white/[0.07]'  },
+  high:   { label: 'High',   color: 'text-rose-400',   bg: 'bg-rose-500/10',   border: 'border-rose-500/25',  dot: 'bg-rose-400',   cardBorder: 'border-rose-500/35', glowClass: 'glow-high'   },
+  medium: { label: 'Medium', color: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/25', dot: 'bg-amber-400',  cardBorder: 'border-amber-500/30', glowClass: 'glow-medium' },
+  low:    { label: 'Low',    color: 'text-slate-400',  bg: 'bg-white/[0.04]',  border: 'border-white/[0.08]', dot: 'bg-slate-500',  cardBorder: 'border-white/[0.08]', glowClass: ''  },
 };
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -51,29 +51,46 @@ const RECUR_OPTS = [
 
 /* ── Checkbox ────────────────────────────────────────────── */
 function Checkbox({ checked, onChange, size = 'md' }) {
-  const sz = size === 'sm' ? 'w-4 h-4' : 'w-5 h-5';
+  const sz = size === 'sm' ? 'w-[18px] h-[18px]' : 'w-[22px] h-[22px]';
   return (
     <button
       type="button"
       onClick={e => { e.stopPropagation(); onChange(); }}
-      className={`${sz} rounded-md border flex items-center justify-center flex-shrink-0
-        transition-all duration-300 cursor-pointer select-none focus:outline-none
+      className={`${sz} rounded-lg flex items-center justify-center flex-shrink-0
+        transition-all duration-300 cursor-pointer select-none focus:outline-none relative overflow-hidden
         ${checked
-          ? 'bg-emerald-500/15 border-emerald-500/60 shadow-[0_0_12px_rgba(16,185,129,0.22)] text-emerald-400'
-          : 'border-slate-700 bg-white/[0.02] hover:border-slate-500 hover:bg-white/[0.04]'
+          ? 'text-emerald-400'
+          : 'hover:border-violet-500/50 hover:bg-violet-500/[0.05]'
         }`}
+      style={{
+        background: checked
+          ? 'linear-gradient(135deg, rgba(16,185,129,0.18) 0%, rgba(16,185,129,0.1) 100%)'
+          : 'rgba(255,255,255,0.025)',
+        border: checked
+          ? '1px solid rgba(16,185,129,0.5)'
+          : '1px solid rgba(100,116,139,0.35)',
+        boxShadow: checked ? '0 0 14px rgba(16,185,129,0.25), inset 0 1px 0 rgba(255,255,255,0.06)' : 'none',
+      }}
     >
+      {/* Fill shimmer on check */}
+      {checked && (
+        <span className="absolute inset-0 pointer-events-none"
+          style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 60%)' }}
+        />
+      )}
       <svg
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        strokeWidth="3.5"
+        strokeWidth="3"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="w-[70%] h-[70%] transition-all duration-300"
+        className="w-[58%] h-[58%]"
         style={{
           opacity: checked ? 1 : 0,
-          transform: checked ? 'scale(1)' : 'scale(0.6)',
+          transform: checked ? 'scale(1)' : 'scale(0.5)',
+          transition: 'opacity 0.25s ease, transform 0.3s cubic-bezier(0.34,1.56,0.64,1)',
+          filter: checked ? 'drop-shadow(0 0 3px rgba(16,185,129,0.6))' : 'none',
         }}
       >
         <polyline
@@ -87,7 +104,7 @@ function Checkbox({ checked, onChange, size = 'md' }) {
 }
 
 /* ── Task card with linktree thread ─────────────────────── */
-function TaskCard({ task, onToggle, onToggleSub, onEdit, onDelete, onCancel }) {
+function TaskCard({ task, onToggle, onToggleSub, onEdit, onDelete, onCancel, index = 0 }) {
   const [collapsed, setCollapsed] = useState(false);
   const hasSubtasks  = task.subtasks && task.subtasks.length > 0;
   const completedSubs = hasSubtasks ? task.subtasks.filter(s => s.completed).length : 0;
@@ -96,8 +113,15 @@ function TaskCard({ task, onToggle, onToggleSub, onEdit, onDelete, onCancel }) {
   const showThread   = hasSubtasks && !collapsed;
 
   return (
-    <div className={`relative rounded-2xl overflow-hidden transition-all duration-300 group
-      glass-card border ${p.cardBorder} ${task.completed ? 'opacity-55 scale-[0.99] border-white/[0.03]' : ''}`}>
+    <div
+      className={`relative rounded-2xl overflow-hidden group
+        glass-card border ${p.cardBorder} ${
+          task.completed ? 'opacity-50 scale-[0.99] border-white/[0.04]' : (
+            task.priority === 'high' ? p.glowClass : ''
+          )
+        }`}
+      style={{ animationDelay: `${index * 55}ms` }}
+    >
 
       {/* ── Main task row ── */}
       <div className="flex items-start gap-0 p-4 pb-0">
@@ -463,11 +487,21 @@ function DeleteModal({ task, onConfirm, onClose }) {
 }
 
 /* ── Section heading ─────────────────────────────────────── */
-function SectionLabel({ label, count, color = 'text-slate-600' }) {
+function SectionLabel({ label, count, color = 'text-slate-500', accentColor }) {
   return (
     <div className="flex items-center gap-3 px-1">
-      <p className={`text-[10px] font-bold uppercase tracking-widest shrink-0 ${color}`}>{label} · {count}</p>
-      <div className="flex-1 h-px bg-white/[0.04]" />
+      <div className="flex items-center gap-2 shrink-0">
+        {accentColor && (
+          <span className="w-1.5 h-1.5 rounded-full" style={{ background: accentColor, boxShadow: `0 0 6px ${accentColor}` }} />
+        )}
+        <p className={`text-[10px] font-bold uppercase tracking-[0.14em] ${color}`}>
+          {label}
+        </p>
+        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-white/[0.05] text-slate-500 tabular-nums">
+          {count}
+        </span>
+      </div>
+      <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, rgba(255,255,255,0.04) 0%, transparent 100%)' }} />
     </div>
   );
 }
@@ -624,55 +658,69 @@ export default function TasksView({ theme, toggleTheme, showToast, onTasksChange
   const isToday        = selectedDate === todayStr();
 
   return (
-    <div className="flex-1 h-screen flex flex-col overflow-hidden bg-slate-950 relative">
+    <div className="flex-1 h-screen flex flex-col overflow-hidden relative" style={{ background: '#07060f' }}>
       <div className="workspace-aurora-glow workspace-glow-1" />
       <div className="workspace-aurora-glow workspace-glow-2" />
 
       {/* Header */}
-      <header className="glass-header px-4 lg:px-7 py-4 flex items-center justify-between shrink-0">
-         <div className="flex items-center gap-3">
-           <button onClick={onMenuToggle} className="lg:hidden p-2 -ml-1 text-slate-400 hover:text-white rounded-lg cursor-pointer flex items-center justify-center shrink-0">
-             <Menu size={18} />
-           </button>
-           <div>
-             <h2 className="text-base lg:text-lg font-bold text-white tracking-tight">Daily Checklist</h2>
-             <p className="text-[10px] lg:text-[11px] text-slate-500 mt-0.5">{formatDayFull(selectedDate)}</p>
-           </div>
-         </div>
-        <div className="flex items-center gap-2.5">
-          <button onClick={onLock} className="btn-ghost p-2.5 rounded-xl cursor-pointer flex items-center justify-center"
-            title="Lock workspace">
-            <Lock size={14} className="text-slate-400 hover:text-rose-400 transition-colors" />
+      <header className="glass-header px-4 lg:px-7 py-4 flex items-center justify-between shrink-0 relative z-10">
+        <div className="flex items-center gap-3">
+          <button onClick={onMenuToggle}
+            className="lg:hidden p-2 -ml-1 text-slate-500 hover:text-white rounded-xl cursor-pointer flex items-center justify-center shrink-0 bg-white/[0.04] border border-white/[0.06] transition-all hover:bg-white/[0.07]">
+            <Menu size={16} />
           </button>
-          <button onClick={() => { setEditingTask(null); setIsFormOpen(true); }}
-            className="btn-primary flex items-center gap-2 px-4 py-2 text-[13px] font-semibold rounded-xl cursor-pointer">
-            <Plus size={14} /> New Task
+          <div>
+            <h2 className="text-[15px] lg:text-[17px] font-extrabold text-white tracking-tight leading-tight">Daily Checklist</h2>
+            <p className="text-[10px] lg:text-[11px] text-slate-600 mt-0.5 font-medium">{formatDayFull(selectedDate)}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={onLock}
+            className="btn-ghost p-2.5 rounded-xl cursor-pointer flex items-center justify-center"
+            title="Lock workspace">
+            <Lock size={13} className="text-slate-500 hover:text-rose-400 transition-colors" />
+          </button>
+          <button
+            onClick={() => { setEditingTask(null); setIsFormOpen(true); }}
+            className="btn-primary flex items-center gap-2 px-4 py-2 text-[13px] font-bold rounded-xl cursor-pointer">
+            <Plus size={14} />
+            <span className="hidden sm:inline">New Task</span>
+            <span className="sm:hidden">Add</span>
           </button>
         </div>
       </header>
 
       {/* Date nav + progress */}
-      <div className="px-7 py-3 border-b border-white/[0.04] flex items-center justify-between gap-4 shrink-0 bg-slate-950/40">
-        <div className="flex items-center gap-2">
-          <button onClick={() => shiftDate(-1)} className="btn-ghost p-2 rounded-xl cursor-pointer">
-            <ChevronLeft size={14} />
+      <div className="px-4 lg:px-7 py-3 border-b border-white/[0.04] flex items-center justify-between gap-4 shrink-0 relative z-10"
+        style={{ background: 'rgba(7,6,15,0.6)', backdropFilter: 'blur(16px)' }}>
+        <div className="flex items-center gap-1.5">
+          <button onClick={() => shiftDate(-1)}
+            className="btn-ghost p-2 rounded-lg cursor-pointer transition-all">
+            <ChevronLeft size={13} />
           </button>
 
-          <div className="flex items-center gap-1.5">
-            <span className={`text-[14px] font-bold tracking-tight ${isToday ? 'text-indigo-300' : 'text-white'}`}>
+          <div className="px-3 py-1.5 rounded-xl"
+            style={{
+              background: isToday ? 'rgba(56,189,248,0.10)' : 'rgba(255,255,255,0.05)',
+              border: isToday ? '1px solid rgba(56,189,248,0.25)' : '1px solid rgba(255,255,255,0.07)',
+            }}>
+            <span className={`text-[13px] font-bold tracking-tight ${
+              isToday ? 'text-sky-300' : 'text-slate-200'
+            }`}>
               {formatDisplayDate(selectedDate)}
             </span>
           </div>
 
-          <button onClick={() => shiftDate(1)} className="btn-ghost p-2 rounded-xl cursor-pointer">
-            <ChevronRightIcon size={14} />
+          <button onClick={() => shiftDate(1)}
+            className="btn-ghost p-2 rounded-lg cursor-pointer transition-all">
+            <ChevronRightIcon size={13} />
           </button>
 
           {!isToday && (
             <button onClick={() => setSelectedDate(todayStr())}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold
-                text-indigo-400 border border-indigo-500/25 bg-indigo-500/[0.06]
-                hover:bg-indigo-500/[0.12] rounded-xl transition-all cursor-pointer">
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold
+                text-sky-400 border border-sky-500/25 bg-sky-500/[0.07]
+                hover:bg-sky-500/[0.12] rounded-xl transition-all cursor-pointer">
               <RotateCcw size={10} /> Today
             </button>
           )}
@@ -680,15 +728,30 @@ export default function TasksView({ theme, toggleTheme, showToast, onTasksChange
 
         {totalCount > 0 && (
           <div className="flex items-center gap-3 shrink-0">
-            <div className="w-24 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
-              <div className={`h-full rounded-full transition-all duration-500 ${progress === 100 ? 'bg-emerald-500' : 'bg-indigo-500'}`}
-                style={{ width: `${progress}%` }} />
+            <div className="hidden sm:flex items-center gap-2">
+              <div className="w-20 h-1 bg-white/[0.06] rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-700"
+                  style={{
+                    width: `${progress}%`,
+                    background: progress === 100
+                      ? 'linear-gradient(90deg, #10b981, #34d399)'
+                      : 'linear-gradient(90deg, #0ea5e9, #38bdf8)',
+                    boxShadow: progress === 100
+                      ? '0 0 8px rgba(16,185,129,0.5)'
+                      : '0 0 8px rgba(56,189,248,0.4)',
+                  }}
+                />
+              </div>
+              <span className={`text-[11px] font-bold tabular-nums ${
+                progress === 100 ? 'text-emerald-400' : 'text-slate-500'
+              }`}>
+                {doneCount}/{totalCount}
+              </span>
             </div>
-            <span className={`text-[11px] font-bold tabular-nums ${progress === 100 ? 'text-emerald-400' : 'text-slate-400'}`}>
-              {doneCount}/{totalCount}
-            </span>
             {progress === 100 && (
-              <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 animate-pulse">
+              <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400"
+                style={{ animation: 'pulse 2s ease-in-out infinite' }}>
                 <Sparkles size={10} /> All done!
               </span>
             )}
@@ -697,18 +760,29 @@ export default function TasksView({ theme, toggleTheme, showToast, onTasksChange
       </div>
 
       {/* Task list */}
-      <div className="flex-1 overflow-y-auto px-7 py-6 space-y-6">
+      <div className="flex-1 overflow-y-auto px-4 lg:px-7 py-6 space-y-6 relative z-10">
         {totalCount === 0 ? (
-          <div className="flex flex-col items-center justify-center text-center py-20 max-w-sm mx-auto">
-            <div className="w-14 h-14 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mb-4">
-              <ListChecks size={24} className="text-slate-600" />
+          <div className="flex flex-col items-center justify-center text-center py-24 max-w-sm mx-auto">
+            <div className="relative mb-6">
+              <div className="w-16 h-16 rounded-3xl flex items-center justify-center"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(56,189,248,0.10) 0%, rgba(14,165,233,0.06) 100%)',
+                  border: '1px solid rgba(56,189,248,0.16)',
+                  boxShadow: '0 0 28px rgba(56,189,248,0.06)',
+                }}>
+                <ListChecks size={26} className="text-sky-500/60" />
+              </div>
+              <div className="absolute inset-0 rounded-3xl"
+                style={{ boxShadow: '0 0 0 8px rgba(124,58,237,0.04)', animation: 'pulse 3s ease-in-out infinite' }} />
             </div>
-            <h3 className="text-sm font-semibold text-slate-300">No tasks for this day</h3>
-            <p className="text-[12px] text-slate-600 mt-1.5 leading-relaxed">
-              Add a one-off task or create recurring ones to see them here.
+            <h3 className="text-[15px] font-bold text-slate-300 tracking-tight">No tasks for this day</h3>
+            <p className="text-[12px] text-slate-600 mt-2 leading-relaxed font-medium">
+              Add a one-off task or set up recurring ones to see them here.
             </p>
-            <button onClick={() => { setEditingTask(null); setIsFormOpen(true); }}
-              className="btn-primary mt-5 px-5 py-2 text-[13px] font-semibold rounded-xl cursor-pointer">
+            <button
+              onClick={() => { setEditingTask(null); setIsFormOpen(true); }}
+              className="btn-primary mt-6 px-6 py-2.5 text-[13px] font-bold rounded-xl cursor-pointer">
+              <Plus size={13} className="inline mr-1.5" />
               Add First Task
             </button>
           </div>
@@ -717,14 +791,21 @@ export default function TasksView({ theme, toggleTheme, showToast, onTasksChange
             {/* Pending tasks — single unified list */}
             {allPending.length > 0 && (
               <div className="space-y-3">
-                <SectionLabel label="To Do" count={allPending.length} />
-                {allPending.map(task => (
-                  <TaskCard key={task.id} task={task}
-                    onToggle={handleToggle} onToggleSub={handleToggleSub}
-                    onEdit={t => { setEditingTask(t); setIsFormOpen(true); }}
-                    onDelete={setDeleteTarget}
-                    onCancel={handleCancel}
-                  />
+                <SectionLabel
+                  label="To Do"
+                  count={allPending.length}
+                  color="text-slate-400"
+                  accentColor="#38bdf8"
+                />
+                {allPending.map((task, idx) => (
+                  <div key={task.id} className="card-animate-in" style={{ animationDelay: `${idx * 45}ms` }}>
+                    <TaskCard task={task} index={idx}
+                      onToggle={handleToggle} onToggleSub={handleToggleSub}
+                      onEdit={t => { setEditingTask(t); setIsFormOpen(true); }}
+                      onDelete={setDeleteTarget}
+                      onCancel={handleCancel}
+                    />
+                  </div>
                 ))}
               </div>
             )}
@@ -732,14 +813,21 @@ export default function TasksView({ theme, toggleTheme, showToast, onTasksChange
             {/* Completed */}
             {completedTasks.length > 0 && (
               <div className="space-y-3">
-                <SectionLabel label="Completed" count={completedTasks.length} />
-                {completedTasks.map(task => (
-                  <TaskCard key={task.id} task={task}
-                    onToggle={handleToggle} onToggleSub={handleToggleSub}
-                    onEdit={t => { setEditingTask(t); setIsFormOpen(true); }}
-                    onDelete={setDeleteTarget}
-                    onCancel={handleCancel}
-                  />
+                <SectionLabel
+                  label="Completed"
+                  count={completedTasks.length}
+                  color="text-emerald-600"
+                  accentColor="#10b981"
+                />
+                {completedTasks.map((task, idx) => (
+                  <div key={task.id} className="card-animate-in" style={{ animationDelay: `${idx * 35}ms` }}>
+                    <TaskCard task={task} index={idx}
+                      onToggle={handleToggle} onToggleSub={handleToggleSub}
+                      onEdit={t => { setEditingTask(t); setIsFormOpen(true); }}
+                      onDelete={setDeleteTarget}
+                      onCancel={handleCancel}
+                    />
+                  </div>
                 ))}
               </div>
             )}
