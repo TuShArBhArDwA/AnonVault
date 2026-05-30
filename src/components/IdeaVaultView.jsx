@@ -521,7 +521,9 @@ export default function IdeaVaultView({
 
   /* ── render ── */
   return (
-    <div className="flex-1 h-screen flex flex-col overflow-hidden bg-slate-950">
+    <div className="flex-1 h-screen flex flex-col overflow-hidden bg-slate-950 relative">
+      <div className="workspace-aurora-glow workspace-glow-1" />
+      <div className="workspace-aurora-glow workspace-glow-2" />
 
       {/* Header */}
       <header className="glass-header px-7 py-4 flex items-center justify-between shrink-0">
@@ -541,59 +543,46 @@ export default function IdeaVaultView({
       </header>
 
       {/* Unified Toolbar Dropdowns */}
-      <div className="px-7 py-3 border-b border-white/[0.04] flex flex-wrap gap-4 items-center justify-between shrink-0 bg-slate-950/40">
-        <div className="flex flex-wrap gap-4 items-center flex-1 min-w-[280px]">
-          {/* Search bar */}
-          <div className="relative min-w-[200px] max-w-xs flex-1">
-            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
-            <input type="text" placeholder="Search ideas…" value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="input-premium w-full pl-9 pr-4 py-2 text-[13px] rounded-xl" />
-          </div>
-
-          {/* Vertical Separator */}
-          <div className="w-[1px] h-5 bg-white/[0.08] hidden md:block self-center mx-1" />
-
-          {/* Tag Filter & Sort Controls Group */}
-          <div className="flex items-center gap-4 flex-wrap">
-            {/* Filter by Tag */}
-            <div className="relative flex items-center">
-              <span className="text-[11px] font-bold text-slate-500 mr-2.5 uppercase tracking-wider hidden sm:inline-block">Filter</span>
-              <CustomDropdown
-                value={selectedTag}
-                onChange={setSelectedTag}
-                options={tagOptions}
-                icon={<Tag size={11} className="text-indigo-400/80 group-hover:text-indigo-300 transition-colors" />}
-                placeholder="All Tags"
-              />
-            </div>
-
-            {/* Thinner divider between dropdowns */}
-            <div className="w-[1px] h-4 bg-white/[0.06] hidden sm:block self-center" />
-
-            {/* Sort Menu */}
-            <div className="relative flex items-center">
-              <span className="text-[11px] font-bold text-slate-500 mr-2.5 uppercase tracking-wider hidden sm:inline-block">Sort</span>
-              <CustomDropdown
-                value={sortBy}
-                onChange={setSortBy}
-                options={sortOptions}
-                icon={<Calendar size={11} className="text-amber-400/80 group-hover:text-amber-300 transition-colors" />}
-                placeholder="Custom (Drag & Drop)"
-              />
-            </div>
-          </div>
+      <div className="px-7 py-3 border-b border-white/[0.04] flex flex-wrap gap-3 items-center justify-between shrink-0">
+        <div className="relative min-w-[220px] max-w-xs flex-1">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search ideas…"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="input-premium w-full pl-9 pr-4 py-2 text-[13px] rounded-xl"
+          />
         </div>
 
-        {/* Selected tag indicator pill */}
-        {selectedTag && (
-          <div className="flex items-center gap-1.5">
-            <span className="flex items-center gap-1.5 tag-pill bg-indigo-500/20 border-indigo-400/30 text-indigo-300">
-              <Hash size={9} /> {selectedTag}
-              <button onClick={() => setSelectedTag('')} className="hover:text-white ml-0.5 cursor-pointer" title="Clear filter"><X size={9} /></button>
-            </span>
-          </div>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {selectedTag && (
+            <div className="flex items-center shrink-0">
+              <span className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-xl">
+                <Hash size={9} /> {selectedTag}
+                <button onClick={() => setSelectedTag('')} className="hover:text-white ml-0.5 cursor-pointer" title="Clear filter">
+                  <X size={9} />
+                </button>
+              </span>
+            </div>
+          )}
+
+          <CustomDropdown
+            value={selectedTag}
+            onChange={setSelectedTag}
+            options={tagOptions}
+            icon={<Tag size={11} className="text-indigo-400/80" />}
+            placeholder="All Tags"
+          />
+
+          <CustomDropdown
+            value={sortBy}
+            onChange={setSortBy}
+            options={sortOptions}
+            icon={<Calendar size={11} className="text-amber-400/80" />}
+            placeholder="Custom"
+          />
+        </div>
       </div>
 
       {/* Grid */}
@@ -1034,7 +1023,7 @@ function IdeaCard({ idea, sortBy, onEdit, onDelete, onSelectTag, onViewDetails, 
   return (
     <article
       onClick={() => onViewDetails && onViewDetails(idea)}
-      className="glass-card rounded-2xl !overflow-visible cursor-pointer select-none group"
+      className="glass-card rounded-2xl !overflow-visible cursor-pointer select-none group tactile-item"
     >
       {/* hero image */}
       {primaryImage?.url && (

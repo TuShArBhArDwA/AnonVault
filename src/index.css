@@ -387,46 +387,196 @@ input[type="date"].input-premium::-webkit-calendar-picker-indicator:hover {
   flex-shrink: 0;
 }
 
-/* ─── Lock screen animations ──────────────────────────────── */
+/* ─── Lock screen animations ──────────────────────────────────── */
 
-/* Wrong PIN — resist / vibrate (rapid short taps, decaying) */
-@keyframes resist {
-  0%   { transform: translateX(0); }
-  8%   { transform: translateX(-10px) rotate(-0.5deg); }
-  18%  { transform: translateX(9px)  rotate(0.5deg); }
-  28%  { transform: translateX(-7px) rotate(-0.3deg); }
-  38%  { transform: translateX(6px)  rotate(0.3deg); }
-  48%  { transform: translateX(-4px); }
-  58%  { transform: translateX(3px); }
-  68%  { transform: translateX(-2px); }
-  80%  { transform: translateX(1px); }
-  100% { transform: translateX(0); }
+/* Aurora orb slow drift */
+@keyframes lockOrbDrift {
+  0%,100% { transform: translate(0,0) scale(1); }
+  30%      { transform: translate(22px,-18px) scale(1.05); }
+  65%      { transform: translate(-14px,12px) scale(0.96); }
 }
-.animate-resist { animation: resist 0.55s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
-
-/* Backwards compat alias */
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-6px); }
-  40%, 80% { transform: translateX(6px); }
+.lock-orb {
+  position: absolute; border-radius: 50%;
+  animation: lockOrbDrift 14s ease-in-out infinite;
 }
-.animate-shake { animation: shake 0.4s ease-in-out; }
-
-/* Success unlock — content fades up and out */
-@keyframes unlockFadeUp {
-  0%   { opacity: 1; transform: scale(1) translateY(0); filter: blur(0px); }
-  60%  { opacity: 0.6; transform: scale(1.04) translateY(-12px); filter: blur(1px); }
-  100% { opacity: 0; transform: scale(1.08) translateY(-28px); filter: blur(6px); }
+.lock-orb--slow {
+  animation: lockOrbDrift 20s ease-in-out infinite reverse;
 }
-.animate-unlock { animation: unlockFadeUp 3.0s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
 
-/* Success screen flash */
-@keyframes successFlash {
+/* Horizontal sweep beam — top to bottom */
+@keyframes lockSweep {
+  0%   { top: -2px; opacity: 0; }
+  4%   { opacity: 1; }
+  96%  { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+.lock-sweep-beam {
+  position: absolute; top: -2px;
+  animation: lockSweep 7s linear infinite;
+}
+
+/* Data stream items scrolling downward */
+@keyframes lockStream {
+  0%   { transform: translateY(-160%); opacity: 0; }
+  8%   { opacity: 1; }
+  92%  { opacity: 1; }
+  100% { transform: translateY(110vh); opacity: 0; }
+}
+
+/* Logo outer ring slow rotation */
+@keyframes lockRingRotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.lock-ring-outer {
+  animation: lockRingRotate 18s linear infinite;
+}
+
+/* Wrong PIN — 3D slam backward and tilt vibrate */
+@keyframes slamBack {
+  0% { transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg); }
+  15% { transform: translate3d(0, 0, -140px) rotateX(16deg) rotateY(-12deg); filter: brightness(1.2) drop-shadow(0 0 30px rgba(239,68,68,0.3)); }
+  30% { transform: translate3d(-12px, 6px, -130px) rotateX(12deg) rotateY(16deg); }
+  45% { transform: translate3d(10px, -8px, -140px) rotateX(-16deg) rotateY(-6deg); }
+  60% { transform: translate3d(-6px, 4px, -135px) rotateX(10deg) rotateY(10deg); }
+  75% { transform: translate3d(4px, -3px, -140px) rotateX(-6deg) rotateY(-8deg); }
+  90% { transform: translate3d(-1px, 1px, -140px) rotateX(3deg) rotateY(3deg); }
+  100% { transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg); }
+}
+.animate-slam-back {
+  animation: slamBack 0.72s cubic-bezier(0.25, 0.8, 0.25, 1) both;
+}
+
+/* CRT static line scan flicker */
+@keyframes scanlineMove {
+  from { background-position: 0 0; }
+  to { background-position: 0 100%; }
+}
+@keyframes crtFlicker {
+  0%, 100% { opacity: 0.15; }
+  45% { opacity: 0.45; }
+  50% { opacity: 0.9; }
+  55% { opacity: 0.3; }
+  85% { opacity: 0.7; }
+}
+.crt-noise-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.08), rgba(0, 255, 0, 0.03), rgba(0, 0, 255, 0.08));
+  background-size: 100% 4px, 6px 100%;
+  opacity: 0;
+}
+.animate-crt-flicker {
+  animation: crtFlicker 0.25s infinite, scanlineMove 8s linear infinite;
+  opacity: 0.65;
+}
+
+/* Laser scan alert line sweep */
+@keyframes laserSweep {
+  0% { top: -10%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 110%; opacity: 0; }
+}
+.lock-laser-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: linear-gradient(90deg, transparent 0%, #ef4444 30%, #f87171 50%, #ef4444 70%, transparent 100%);
+  box-shadow: 0 0 20px #ef4444, 0 0 40px #ef4444;
+  z-index: 25;
+  pointer-events: none;
+  animation: laserSweep 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* Chromatic color shift aberration for warning text */
+@keyframes chromaticShift {
+  0% { text-shadow: 2px -1px 0 rgba(239,68,68,0.8), -2px 1px 0 rgba(99,102,241,0.8); }
+  25% { text-shadow: -3px 2px 0 rgba(239,68,68,0.9), 3px -2px 0 rgba(139,92,246,0.9); }
+  50% { text-shadow: 4px -3px 0 rgba(239,68,68,0.7), -4px 3px 0 rgba(99,102,241,0.7); }
+  75% { text-shadow: -2px 1px 0 rgba(239,68,68,0.9), 2px -1px 0 rgba(139,92,246,0.9); }
+  100% { text-shadow: 0 0 12px rgba(239,68,68,0.8); }
+}
+.lock-warning-glitch {
+  animation: chromaticShift 0.6s infinite;
+}
+
+/* 3D Vault Door Wing splits */
+.vault-door-container {
+  perspective: 1200px;
+  transform-style: preserve-3d;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+.vault-wing-left {
+  clip-path: inset(0 50% 0 0);
+  transform-origin: left center;
+  transition: transform 1.35s cubic-bezier(0.77, 0, 0.175, 1), opacity 1.25s ease-out;
+}
+.vault-wing-right {
+  clip-path: inset(0 0 0 50%);
+  transform-origin: right center;
+  transition: transform 1.35s cubic-bezier(0.77, 0, 0.175, 1), opacity 1.25s ease-out;
+}
+.vault-open-left {
+  transform: rotateY(-105deg) translateZ(30px) translateX(-40px);
+  opacity: 0.1;
+  pointer-events: none;
+}
+.vault-open-right {
+  transform: rotateY(105deg) translateZ(30px) translateX(40px);
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+/* Wrong PIN — red edge vignette flash */
+@keyframes errorVignetteAnim {
   0%   { opacity: 0; }
-  10%  { opacity: 0.15; }
+  12%  { opacity: 1; }
+  60%  { opacity: 0.8; }
   100% { opacity: 0; }
 }
-.animate-success-flash { animation: successFlash 3.0s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+.lock-error-vignette { animation: errorVignetteAnim 1s ease forwards; }
+
+/* Wrong PIN — red border inset flash */
+@keyframes errorBorderAnim {
+  0%   { opacity: 0; }
+  10%  { opacity: 1; }
+  55%  { opacity: 0.7; }
+  100% { opacity: 0; }
+}
+.lock-error-border { animation: errorBorderAnim 1s ease forwards; }
+
+/* Wrong PIN — ACCESS DENIED badge pop */
+@keyframes deniedBadgePop {
+  0%   { opacity: 0; transform: translate(-50%,-50%) scale(0.65); }
+  14%  { opacity: 1; transform: translate(-50%,-50%) scale(1.1); }
+  24%  { transform: translate(-50%,-50%) scale(0.96); }
+  34%  { transform: translate(-51%,-50%) scale(1.02); }
+  44%  { transform: translate(-49%,-50%) scale(1); }
+  56%  { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+  78%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%,-50%) scale(0.88); }
+}
+.lock-denied-badge { animation: deniedBadgePop 1s cubic-bezier(0.16,1,0.3,1) forwards; }
+
+/* Wrong PIN — glitch text chromatic aberration */
+@keyframes deniedGlitch {
+  0%   { text-shadow: 0 0 18px rgba(239,68,68,0.9), 0 0 50px rgba(239,68,68,0.35); }
+  8%   { text-shadow: 4px 0 0 rgba(239,68,68,0.9), -4px 0 0 rgba(139,92,246,0.8), 0 0 45px rgba(239,68,68,0.6); }
+  18%  { text-shadow: -3px 0 0 rgba(239,68,68,0.9), 3px 0 0 rgba(99,102,241,0.8), 0 0 28px rgba(239,68,68,0.5); }
+  28%  { text-shadow: 5px 0 0 rgba(239,68,68,0.8), -5px 0 0 rgba(168,85,247,0.7), 0 0 55px rgba(239,68,68,0.7); }
+  40%  { text-shadow: -2px 0 0 rgba(239,68,68,0.9), 2px 0 0 rgba(99,102,241,0.8), 0 0 18px rgba(239,68,68,0.5); }
+  55%  { text-shadow: 0 0 18px rgba(239,68,68,0.9), 0 0 50px rgba(239,68,68,0.35); }
+  100% { text-shadow: 0 0 8px rgba(239,68,68,0.4), 0 0 24px rgba(239,68,68,0.15); }
+}
 
 /* PIN dot pop */
 @keyframes dotPop {
@@ -435,36 +585,43 @@ input[type="date"].input-premium::-webkit-calendar-picker-indicator:hover {
   80%  { transform: scale(0.95); }
   100% { transform: scale(1.1); }
 }
-.animate-dot-pop { animation: dotPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+.animate-dot-pop { animation: dotPop 0.25s cubic-bezier(0.34,1.56,0.64,1) forwards; }
 
 /* Mini Anon popup slide up */
 @keyframes popupSlideUp {
   from { opacity: 0; transform: translateY(16px) scale(0.96); }
   to   { opacity: 1; transform: translateY(0)    scale(1); }
 }
-.animate-popup { animation: popupSlideUp 0.38s cubic-bezier(0.34, 1.2, 0.64, 1) forwards; }
-
-/* Floating orb drift */
-@keyframes orbDrift {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33%       { transform: translate(20px, -15px) scale(1.04); }
-  66%       { transform: translate(-12px, 10px) scale(0.97); }
-}
-.animate-orb { animation: orbDrift 12s ease-in-out infinite; }
-.animate-orb-slow { animation: orbDrift 18s ease-in-out infinite reverse; }
+.animate-popup { animation: popupSlideUp 0.38s cubic-bezier(0.34,1.2,0.64,1) forwards; }
 
 /* Key press ripple */
 @keyframes keyRipple {
-  from { transform: scale(0.9); opacity: 0.4; }
-  to   { transform: scale(1.6); opacity: 0; }
+  from { transform: scale(0.85); opacity: 0.45; }
+  to   { transform: scale(1.7);  opacity: 0; }
 }
 
-/* Icon ring pulse (lock screen) */
+/* Backwards compat — orb drift for other parts of app */
+@keyframes orbDrift {
+  0%,100% { transform: translate(0,0) scale(1); }
+  33%      { transform: translate(20px,-15px) scale(1.04); }
+  66%      { transform: translate(-12px,10px) scale(0.97); }
+}
+.animate-orb      { animation: orbDrift 12s ease-in-out infinite; }
+.animate-orb-slow { animation: orbDrift 18s ease-in-out infinite reverse; }
+
+/* Icon ring pulse (used in old lock screen, keep for compat) */
 @keyframes ringPulse {
-  0%, 100% { opacity: 0.5; transform: scale(1); }
-  50%       { opacity: 1;   transform: scale(1.04); }
+  0%,100% { opacity: 0.5; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.04); }
 }
 
+/* Shake alias */
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%,60% { transform: translateX(-6px); }
+  40%,80% { transform: translateX(6px); }
+}
+.animate-shake { animation: shake 0.4s ease-in-out; }
 
 /* ─── Gradient text ──────────────────────────────────────────── */
 .gradient-text {
@@ -624,3 +781,210 @@ input[type="date"].input-premium::-webkit-calendar-picker-indicator:hover {
 .light ::-webkit-scrollbar-track { background: transparent; }
 .light ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.15); }
 .light ::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.3); }
+
+/* ─── Hacker Terminal Unlock Sequence ───────────────────────── */
+@keyframes terminalFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes terminalLine {
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+@keyframes scanline {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes highlightPulse {
+  0%   { box-shadow: 0 0 0px rgba(52,211,153,0); background: rgba(52,211,153,0.08); }
+  40%  { box-shadow: 0 0 40px rgba(52,211,153,0.55), 0 0 80px rgba(52,211,153,0.25); background: rgba(52,211,153,0.18); }
+  100% { box-shadow: 0 0 120px rgba(52,211,153,0.8), 0 0 200px rgba(52,211,153,0.4); background: rgba(52,211,153,0.28); }
+}
+
+@keyframes zoomIntoLine {
+  0%   { transform: scale3d(1, 1, 1) translateZ(0); opacity: 1; filter: blur(0px); }
+  25%  { transform: scale3d(1.8, 1.8, 1) translateZ(50px); opacity: 1; filter: blur(0px); }
+  60%  { transform: scale3d(6, 6, 1) translateZ(250px); opacity: 1; filter: blur(1px); }
+  85%  { transform: scale3d(22, 22, 1) translateZ(700px); opacity: 0.65; filter: blur(8px); }
+  100% { transform: scale3d(60, 60, 1) translateZ(1400px); opacity: 0; filter: blur(24px); }
+}
+
+@keyframes terminalFlash {
+  0%   { opacity: 0; }
+  15%  { opacity: 1; }
+  35%  { opacity: 0.85; }
+  55%  { opacity: 1; }
+  70%  { opacity: 0.9; }
+  85%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes glitchShift {
+  0%   { clip-path: inset(0 0 95% 0); transform: translate(-3px, 0); }
+  10%  { clip-path: inset(10% 0 80% 0); transform: translate(3px, 0); }
+  20%  { clip-path: inset(25% 0 60% 0); transform: translate(-2px, 0); }
+  30%  { clip-path: inset(50% 0 30% 0); transform: translate(2px, 0); }
+  40%  { clip-path: inset(70% 0 10% 0); transform: translate(-1px, 0); }
+  50%  { clip-path: inset(0 0 0 0); transform: translate(0, 0); opacity: 0; }
+  100% { clip-path: inset(0 0 0 0); transform: translate(0, 0); opacity: 0; }
+}
+
+.terminal-overlay {
+  animation: terminalFadeIn 0.18s ease forwards;
+}
+
+.terminal-line {
+  animation: terminalLine 0.12s ease forwards;
+  opacity: 0;
+}
+
+.terminal-cursor {
+  animation: cursorBlink 0.7s step-end infinite;
+}
+
+.terminal-scanline {
+  animation: scanline 2.2s linear infinite;
+}
+
+.terminal-highlight {
+  animation: highlightPulse 0.9s cubic-bezier(0.16,1,0.3,1) forwards;
+}
+
+.terminal-zoom {
+  animation: zoomIntoLine 1.4s cubic-bezier(0.55, 0, 1, 0.45) forwards;
+}
+
+.terminal-flash {
+  animation: terminalFlash 0.6s ease forwards;
+}
+
+/* ─── Premium Workspace Redesign Accents ───────────────────────── */
+
+/* Workspace background ambient drifting aurora glow */
+.workspace-aurora-glow {
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(120px);
+  z-index: 0;
+  opacity: 0.12;
+  mix-blend-mode: screen;
+}
+.workspace-glow-1 {
+  background: radial-gradient(circle, #6366f1 0%, transparent 70%);
+  top: -10%;
+  right: -5%;
+  animation: driftSlow 18s ease-in-out infinite alternate;
+}
+.workspace-glow-2 {
+  background: radial-gradient(circle, #22d3ee 0%, transparent 70%);
+  bottom: -15%;
+  left: -5%;
+  animation: driftSlow 22s ease-in-out infinite alternate-reverse;
+}
+@keyframes driftSlow {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(50px, -40px) scale(1.15); }
+  100% { transform: translate(-30px, 20px) scale(0.9); }
+}
+
+/* Premium checklist checkbox drawing svg checkmark animation */
+.checkbox-draw-path {
+  stroke-dasharray: 20;
+  stroke-dashoffset: 20;
+  transition: stroke-dashoffset 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+input:checked + label .checkbox-draw-path {
+  stroke-dashoffset: 0;
+}
+
+/* Fluid strikethrough drawing for completed items */
+.strikethrough-draw {
+  position: relative;
+  transition: color 0.3s ease;
+}
+.strikethrough-draw::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 0;
+  height: 1.5px;
+  background: rgba(148, 163, 184, 0.45);
+  transition: width 0.38s cubic-bezier(0.77, 0, 0.175, 1);
+}
+.strikethrough-completed {
+  color: rgba(148, 163, 184, 0.45) !important;
+}
+.strikethrough-completed::after {
+  width: 100%;
+}
+
+/* Golden glowing pulsating border for starred cards */
+@keyframes starBorderPulse {
+  0%, 100% {
+    border-color: rgba(245, 158, 11, 0.35);
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+  50% {
+    border-color: rgba(245, 158, 11, 0.7);
+    box-shadow: 0 0 22px rgba(245, 158, 11, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+}
+.premium-starred-card {
+  animation: starBorderPulse 3s ease-in-out infinite;
+}
+
+/* Premium smooth right drawer panel */
+.premium-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: 480px;
+  z-index: 100;
+  background: linear-gradient(180deg, rgba(8, 9, 21, 0.96) 0%, rgba(5, 6, 14, 0.99) 100%);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: -20px 0 50px rgba(0, 0, 0, 0.85);
+  transform: translateX(100%);
+  transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.premium-drawer.open {
+  transform: translateX(0);
+}
+.premium-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(2, 2, 8, 0.65);
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+.premium-drawer-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Tactile detail list items */
+.tactile-item {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s ease, border-color 0.2s ease;
+}
+.tactile-item:hover {
+  transform: translateY(-1.5px) scale(1.006);
+}
+

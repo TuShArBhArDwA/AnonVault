@@ -1,11 +1,71 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Plus, Search, ArrowUpDown, ExternalLink, 
   Edit3, Trash2, Calendar, Link as LinkIcon, AlertTriangle, 
   Clock, ChevronDown, ChevronRight, ListCollapse,
-  Lock, X, Flame, Briefcase, CheckCircle2, ShieldCheck, MapPin, Globe
+  Lock, X, Flame, Briefcase, CheckCircle2, ShieldCheck, MapPin, Globe, Star
 } from 'lucide-react';
 import { formatDate, getPriorityStyles, getStatusStyles, sortApplicationsByDeadline, groupApplicationsByMonth } from '../utils/helpers';
+
+/* ─── Premium Custom Dropdown ─────────────────────────── */
+function CustomDropdown({ value, onChange, options, icon, placeholder }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const activeOption = options.find(o => o.value === value) || { label: placeholder || value };
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="select-premium pl-8 pr-10 py-2 text-[13px] rounded-xl cursor-pointer font-medium flex items-center gap-1.5 min-w-[130px] justify-between relative group/btn"
+      >
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+          {icon}
+        </span>
+        <span className="truncate pr-1">{activeOption.label}</span>
+        <ChevronDown 
+          size={12} 
+          className={`text-slate-500 transition-transform duration-200 group-hover/btn:text-slate-350 ${isOpen ? 'rotate-180 text-indigo-400' : ''}`} 
+        />
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-2 min-w-[180px] bg-slate-950/98 backdrop-blur-xl border border-white/[0.08] rounded-xl shadow-[0_12px_30px_rgba(0,0,0,0.6)] py-1.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+          {options.map((opt, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => {
+                onChange(opt.value);
+                setIsOpen(false);
+              }}
+              className={`w-full text-left px-3.5 py-2.5 text-[12.5px] transition-all flex items-center justify-between border-b border-white/[0.04] last:border-b-0 hover:bg-white/[0.04] cursor-pointer ${
+                value === opt.value 
+                  ? 'text-indigo-300 font-semibold bg-indigo-500/[0.04]' 
+                  : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              <span>{opt.label}</span>
+              {value === opt.value && <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function TimelineView({ 
   applications, 
@@ -28,7 +88,7 @@ export default function TimelineView({
   const [formName, setFormName] = useState('');
   const [formLink, setFormLink] = useState('');
   const [formDaysLeft, setFormDaysLeft] = useState('1');
-  const [formPriority, setFormPriority] = useState('medium');
+  const [formStarred, setFormStarred] = useState(false);
   const [formStatus, setFormStatus] = useState('pending');
   const [formNotes, setFormNotes] = useState('');
   const [formCompany, setFormCompany] = useState('');
@@ -44,7 +104,7 @@ export default function TimelineView({
   const resetForm = () => {
     setFormName(''); setFormLink('');
     setFormDaysLeft('1');
-    setFormPriority('medium'); setFormStatus('pending');
+    setFormStarred(false); setFormStatus('pending');
     setFormNotes(''); 
     setFormCompany('');
     setFormPpi(false);
@@ -64,7 +124,7 @@ export default function TimelineView({
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       setFormDaysLeft(String(Math.max(1, diffDays)));
     } else { setFormDaysLeft('1'); }
-    setFormPriority(app.priority || 'medium');
+    setFormStarred(app.priority === 'high');
     setFormStatus(app.status || 'pending');
     setFormNotes(app.notes || '');
     setFormCompany(app.company || '');
@@ -94,7 +154,8 @@ export default function TimelineView({
     const appPayload = {
       name: formName.trim(), link: formLink.trim(),
       deadline: calculatedDeadline.toISOString(),
-      priority: formPriority, status: formStatus, notes: formNotes.trim(),
+      priority: formStarred ? 'high' : 'medium',
+      status: formStatus, notes: formNotes.trim(),
       company: formCompany.trim(),
       ppi: formPpi,
       travel: formTravel,
@@ -134,23 +195,28 @@ export default function TimelineView({
 
   const selectClass = "px-3 py-1.5 text-xs text-slate-300 rounded-lg cursor-pointer transition-all focus:outline-none input-premium";
 
-  const TimelineNodeDot = ({ app }) => (
-    <div className={`absolute -left-[27px] top-5 w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center z-10 transition-all ${
-      app.id === nearestAppId
-        ? 'border-amber-400 bg-amber-400/20 shadow-[0_0_10px_rgba(245,158,11,0.5)]'
-        : app.priority === 'high'
-          ? 'border-rose-400 bg-rose-400/20 shadow-[0_0_10px_rgba(239,68,68,0.5)]'
-          : 'border-slate-700 bg-slate-900'
-    }`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${
-        app.id === nearestAppId ? 'bg-amber-400' :
-        app.priority === 'high' ? 'bg-rose-400' : 'bg-slate-600'
-      }`} />
-    </div>
-  );
+  const TimelineNodeDot = ({ app }) => {
+    const isStarred = app.priority === 'high';
+    return (
+      <div className={`absolute -left-[27px] top-5 w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center z-10 transition-all ${
+        app.id === nearestAppId
+          ? 'border-amber-400 bg-amber-400/20 shadow-[0_0_10px_rgba(245,158,11,0.5)]'
+          : isStarred
+            ? 'border-amber-400 bg-amber-400/20 shadow-[0_0_10px_rgba(245,158,11,0.4)]'
+            : 'border-slate-700 bg-slate-900'
+      }`}>
+        <span className={`w-1.5 h-1.5 rounded-full ${
+          app.id === nearestAppId ? 'bg-amber-400' :
+          isStarred ? 'bg-amber-400' : 'bg-slate-600'
+        }`} />
+      </div>
+    );
+  };
 
   return (
-    <div className="flex-1 h-screen flex flex-col overflow-hidden bg-slate-950">
+    <div className="flex-1 h-screen flex flex-col overflow-hidden bg-slate-950 relative">
+      <div className="workspace-aurora-glow workspace-glow-1" />
+      <div className="workspace-aurora-glow workspace-glow-2" />
 
       {/* Header */}
       <header className="glass-header px-7 py-4 flex items-center justify-between shrink-0">
@@ -187,21 +253,35 @@ export default function TimelineView({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <select value={selectedPriority} onChange={e => setSelectedPriority(e.target.value)} className={selectClass}>
-            <option value="all">All Priorities</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
+          {/* Custom Star Filter Button */}
+          <button
+            onClick={() => setSelectedPriority(p => p === 'high' ? 'all' : 'high')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold rounded-xl border transition-all cursor-pointer ${
+              selectedPriority === 'high'
+                ? 'bg-amber-400/10 border-amber-400/35 text-amber-300 shadow-[0_0_15px_rgba(251,191,36,0.06)]'
+                : 'bg-white/[0.02] border-white/[0.04] text-slate-400 hover:bg-white/[0.04] hover:text-slate-300'
+            }`}
+            title="Filter by featured events"
+          >
+            <Star size={13} className={selectedPriority === 'high' ? 'fill-amber-300 text-amber-300' : 'text-slate-500'} />
+            <span>Starred Only</span>
+          </button>
 
-          <select value={selectedStatus} onChange={e => setSelectedStatus(e.target.value)} className={selectClass}>
-            <option value="all">All Statuses</option>
-            <option value="pending">Pending</option>
-            <option value="applied">Registered</option>
-            <option value="interviewing">Building</option>
-            <option value="offered">Winner</option>
-            <option value="rejected">Completed</option>
-          </select>
+          {/* Premium Status Custom Dropdown */}
+          <CustomDropdown
+            value={selectedStatus}
+            onChange={setSelectedStatus}
+            options={[
+              { value: 'all', label: 'All Statuses' },
+              { value: 'pending', label: 'Pending' },
+              { value: 'applied', label: 'Registered' },
+              { value: 'interviewing', label: 'Building' },
+              { value: 'offered', label: 'Winner' },
+              { value: 'rejected', label: 'Completed' }
+            ]}
+            icon={<CheckCircle2 size={11} className="text-indigo-400/80" />}
+            placeholder="All Statuses"
+          />
 
           <button
             onClick={() => setSortOrder(p => p === 'asc' ? 'desc' : 'asc')}
@@ -301,7 +381,21 @@ export default function TimelineView({
                 <h3 className="text-[15px] font-bold text-white">{editingApp ? 'Edit Hackathon' : 'New Hackathon'}</h3>
                 <p className="text-[11px] text-slate-500 mt-0.5">{editingApp ? 'Update the details below' : 'Track a new event or deadline'}</p>
               </div>
-              <button onClick={() => setIsFormOpen(false)} className="btn-ghost p-2 rounded-lg cursor-pointer"><X size={15} /></button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFormStarred(s => !s)}
+                  className={`p-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                    formStarred
+                      ? 'bg-amber-400/10 border border-amber-400/35 text-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.06)]'
+                      : 'btn-ghost text-slate-550 hover:text-amber-400'
+                  }`}
+                  title={formStarred ? 'Featured (Starred)' : 'Mark as Featured'}
+                >
+                  <Star size={15} className={formStarred ? 'fill-amber-300' : ''} />
+                </button>
+                <button onClick={() => setIsFormOpen(false)} className="btn-ghost p-2 rounded-lg cursor-pointer"><X size={15} /></button>
+              </div>
             </div>
 
             <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
@@ -398,15 +492,7 @@ export default function TimelineView({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="Priority">
-                  <select value={formPriority} onChange={e => setFormPriority(e.target.value)}
-                    className="input-premium w-full px-3.5 py-2.5 text-[13px] rounded-xl cursor-pointer">
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                  </select>
-                </Field>
+              <div className="grid grid-cols-1 gap-4">
                 <Field label="Status">
                   <select value={formStatus} onChange={e => setFormStatus(e.target.value)}
                     className="input-premium w-full px-3.5 py-2.5 text-[13px] rounded-xl cursor-pointer">
@@ -581,13 +667,20 @@ function HackathonCard({ app, isNearest, onEdit, onDelete, onViewDetails }) {
 
   const remaining = getTimeRemaining(app.deadline);
 
+  const isStarred = app.priority === 'high';
+
   return (
     <article
       onClick={() => onViewDetails && onViewDetails(app)}
-      className={`glass-card rounded-2xl cursor-pointer select-none group ${
-        isNearest ? 'glow-nearest border-amber-500/30' :
-        app.priority === 'high' ? 'glow-high border-rose-500/25' : ''
+      className={`glass-card rounded-2xl cursor-pointer select-none group transition-all duration-300 tactile-item ${
+        isNearest ? 'glow-nearest' :
+        isStarred ? 'premium-starred-card' : ''
       }`}
+      style={{
+        borderColor: isNearest 
+          ? 'rgba(245, 158, 11, 0.45)' 
+          : undefined,
+      }}
     >
       <div className="p-5">
         {/* Top Date & Days Left Strip */}
@@ -608,10 +701,11 @@ function HackathonCard({ app, isNearest, onEdit, onDelete, onViewDetails }) {
         {/* Title row */}
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
               {isNearest && <span className="beacon-amber" />}
-              {app.priority === 'high' && !isNearest && <span className="beacon-red" />}
+              {isStarred && !isNearest && <span className="beacon-amber" />}
               <h4 className="text-[14px] font-bold text-white leading-tight truncate">{app.name}</h4>
+              {isStarred && <Star size={13} className="fill-amber-400 text-amber-400 shrink-0" />}
             </div>
             {app.company && (
               <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate flex items-center gap-1">
@@ -626,9 +720,6 @@ function HackathonCard({ app, isNearest, onEdit, onDelete, onViewDetails }) {
                   ⚡ Soonest
                 </span>
               )}
-              <span className={`inline-flex px-2 py-0.5 text-[9px] font-bold rounded-full border ${priority.bg} ${priority.text} ${priority.border}`}>
-                {priority.label}
-              </span>
               <span className={`inline-flex px-2 py-0.5 text-[9px] font-bold rounded-full border ${status.bg} ${status.text} ${status.border}`}>
                 {status.label}
               </span>
@@ -707,9 +798,11 @@ function AppDetailModal({ app, onClose, onEdit, nearestAppId }) {
               {app.id === nearestAppId && (
                 <span className="tag-pill text-amber-300 border-amber-500/25 bg-amber-500/10">⚡ Soonest</span>
               )}
-              <span className={`tag-pill ${getPriorityStyles(app.priority).text}`}>
-                {getPriorityStyles(app.priority).label}
-              </span>
+              {app.priority === 'high' && (
+                <span className="tag-pill text-amber-300 border-amber-500/25 bg-amber-500/10 flex items-center gap-1">
+                  <Star size={10} className="fill-amber-300 text-amber-300" /> Featured
+                </span>
+              )}
               <span className={`tag-pill ${getStatusStyles(app.status).text}`}>
                 {getStatusStyles(app.status).label}
               </span>

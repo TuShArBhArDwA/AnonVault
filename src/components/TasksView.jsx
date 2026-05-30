@@ -45,24 +45,35 @@ const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const RECUR_OPTS = [
   { value: 'daily',    label: 'Every Day'         },
   { value: 'weekdays', label: 'Weekdays (Mon–Fri)' },
-  { value: 'weekends', label: 'Weekends (Sat & Sun)' },
-  { value: 'weekly',   label: 'Custom Days'        },
-];
-
-/* ── Checkbox ────────────────────────────────────────────── */
+  { value: 'weekends',/* ── Checkbox ────────────────────────────────────────────── */
 function Checkbox({ checked, onChange, size = 'md' }) {
-  const sz = size === 'sm' ? 'w-[15px] h-[15px]' : 'w-[18px] h-[18px]';
+  const sz = size === 'sm' ? 'w-4 h-4' : 'w-5 h-5';
   return (
     <button
+      type="button"
       onClick={e => { e.stopPropagation(); onChange(); }}
-      className={`${sz} rounded-[5px] border-2 flex items-center justify-center flex-shrink-0
-        transition-all duration-200 cursor-pointer
+      className={`${sz} rounded-md border flex items-center justify-center flex-shrink-0
+        transition-all duration-300 cursor-pointer select-none focus:outline-none
         ${checked
-          ? 'bg-emerald-500 border-emerald-500 shadow-[0_0_8px_rgba(52,211,153,0.45)]'
-          : 'border-slate-700 hover:border-emerald-500/60'
+          ? 'bg-emerald-500/15 border-emerald-500/60 shadow-[0_0_12px_rgba(16,185,129,0.22)] text-emerald-400'
+          : 'border-slate-700 bg-white/[0.02] hover:border-slate-500 hover:bg-white/[0.04]'
         }`}
     >
-      {checked && <Check size={size === 'sm' ? 8 : 10} className="text-white stroke-[3]" />}
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="w-[70%] h-[70%] transition-all duration-300"
+        style={{
+          opacity: checked ? 1 : 0,
+          transform: checked ? 'scale(1)' : 'scale(0.6)',
+        }}
+      >
+        <polyline points="20 6 9 17 4 12" className="checkbox-draw-path" />
+      </svg>
     </button>
   );
 }
@@ -78,7 +89,7 @@ function TaskCard({ task, onToggle, onToggleSub, onEdit, onDelete, onCancel }) {
 
   return (
     <div className={`relative rounded-2xl overflow-hidden transition-all duration-300 group
-      glass-card border ${p.cardBorder} ${task.completed ? 'opacity-55' : ''}`}>
+      glass-card border ${p.cardBorder} ${task.completed ? 'opacity-55 scale-[0.99] border-white/[0.03]' : ''}`}>
 
       {/* ── Main task row ── */}
       <div className="flex items-start gap-0 p-4 pb-0">
@@ -95,8 +106,8 @@ function TaskCard({ task, onToggle, onToggleSub, onEdit, onDelete, onCancel }) {
         <div className="flex-1 min-w-0 pb-4">
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <span className={`block text-[14px] font-semibold leading-snug transition-all ${
-                task.completed ? 'line-through text-slate-600' : 'text-white'
+              <span className={`inline-block text-[14px] font-semibold leading-snug strikethrough-draw transition-all ${
+                task.completed ? 'strikethrough-completed text-slate-500' : 'text-white'
               }`}>
                 {task.title}
               </span>
@@ -109,6 +120,11 @@ function TaskCard({ task, onToggle, onToggleSub, onEdit, onDelete, onCancel }) {
                         allSubsDone ? 'bg-emerald-500' : p.dot.replace('bg-', 'bg-')
                       }`}
                       style={{ width: `${(completedSubs / task.subtasks.length) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-[10px] text-slate-650 font-medium tabular-nums">
+                    {completedSubs}/{task.subtasks.length} subtasks
+                  </span>h) * 100}%` }}
                     />
                   </div>
                   <span className="text-[10px] text-slate-600 font-medium tabular-nums">
@@ -184,8 +200,8 @@ function TaskCard({ task, onToggle, onToggleSub, onEdit, onDelete, onCancel }) {
                 onChange={() => onToggleSub(task, st.id)}
                 size="sm"
               />
-              <span className={`text-[12.5px] flex-1 leading-snug transition-all ${
-                st.completed ? 'line-through text-slate-600' : 'text-slate-300'
+              <span className={`inline-block text-[12.5px] flex-1 leading-snug strikethrough-draw transition-all ${
+                st.completed ? 'strikethrough-completed text-slate-500' : 'text-slate-300'
               }`}>
                 {st.title}
               </span>
@@ -605,7 +621,9 @@ export default function TasksView({ theme, toggleTheme, showToast, onTasksChange
   const isToday        = selectedDate === todayStr();
 
   return (
-    <div className="flex-1 h-screen flex flex-col overflow-hidden bg-slate-950">
+    <div className="flex-1 h-screen flex flex-col overflow-hidden bg-slate-950 relative">
+      <div className="workspace-aurora-glow workspace-glow-1" />
+      <div className="workspace-aurora-glow workspace-glow-2" />
 
       {/* Header */}
       <header className="glass-header px-7 py-4 flex items-center justify-between shrink-0">
