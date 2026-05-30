@@ -65,19 +65,26 @@ class ErrorBoundary extends React.Component {
 /* ================= access-granted overlay ================= */
 function AccessGranted({ onComplete }) {
   const [active, setActive] = useState(false);
+  const [phase, setPhase] = useState('welcome'); // 'welcome' -> 'fadeOut'
 
   useEffect(() => {
     // Start active phase immediately after mount to trigger animations
     const raf = requestAnimationFrame(() => setActive(true));
     
-    // Complete success sequence and hand over to parent transition
-    const t = setTimeout(() => {
+    // Welcome Screen -> Fade Out: at 1800ms
+    const tFadeOut = setTimeout(() => {
+      setPhase('fadeOut');
+    }, 1800);
+
+    // Complete success sequence and hand over to parent: at 2250ms
+    const tComplete = setTimeout(() => {
       onComplete();
-    }, 1300);
+    }, 2250);
     
     return () => {
       cancelAnimationFrame(raf);
-      clearTimeout(t);
+      clearTimeout(tFadeOut);
+      clearTimeout(tComplete);
     };
   }, [onComplete]);
 
@@ -86,86 +93,128 @@ function AccessGranted({ onComplete }) {
       style={{
         position: 'absolute', inset: 0, zIndex: 60,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'radial-gradient(circle at center, rgba(10, 18, 34, 0.96) 0%, rgba(3, 5, 10, 0.99) 100%)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        opacity: active ? 1 : 0,
-        transition: 'opacity 0.4s ease',
+        background: 'radial-gradient(circle at center, rgba(6, 10, 20, 0.98) 0%, rgba(2, 4, 8, 1) 100%)',
+        backdropFilter: 'blur(30px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(30px) saturate(180%)',
+        opacity: phase === 'fadeOut' ? 0 : active ? 1 : 0,
+        transform: phase === 'fadeOut' ? 'scale(1.05)' : 'scale(1)',
+        transition: 'opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1)',
+        overflow: 'hidden',
       }}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 32 }}>
-        
-        {/* Animated Ripple circles */}
-        <div style={{ position: 'relative', width: 180, height: 180, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          
-          {/* Animated concentric shockwave rings */}
-          {[1, 2, 3].map(i => (
-            <div key={i} style={{
-              position: 'absolute',
-              borderRadius: '50%',
-              border: `1.5px solid rgba(56, 189, 248, ${0.4 - i * 0.1})`,
-              width: 60,
-              height: 60,
-              opacity: active ? 0 : 0.8,
-              transform: active ? 'scale(2.8)' : 'scale(0.8)',
-              transition: `transform ${0.95 + i * 0.15}s cubic-bezier(0.1, 0.8, 0.2, 1) 0.1s, opacity ${0.9 + i * 0.15}s cubic-bezier(0.1, 0.8, 0.2, 1) 0.1s`,
-              boxShadow: i === 1 ? '0 0 24px rgba(56, 189, 248, 0.15)' : 'none',
-            }} />
-          ))}
+      {/* Premium background cyber grid floor */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        backgroundImage: `
+          linear-gradient(rgba(56, 189, 248, 0.02) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(56, 189, 248, 0.02) 1px, transparent 1px)
+        `,
+        backgroundSize: '40px 40px',
+        backgroundPosition: 'center',
+        opacity: active ? 0.75 : 0,
+        transition: 'opacity 1s ease',
+        pointerEvents: 'none',
+      }} />
 
-          {/* Central target check badge */}
+      <div style={{ 
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 32,
+        transform: active ? 'translateY(0)' : 'translateY(10px)',
+        transition: 'transform 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
+        textAlign: 'center',
+        maxWidth: 480,
+        padding: '0 24px',
+        position: 'relative',
+        zIndex: 62,
+      }}>
+        
+        {/* Animated Badge Header */}
+        <div style={{ 
+          position: 'relative', width: 140, height: 140, 
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {/* Outer ring */}
           <div style={{
-            width: 80, height: 80, borderRadius: '50%',
-            background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.25) 0%, rgba(56, 189, 248, 0.1) 100%)',
-            border: '1.5px solid rgba(56, 189, 248, 0.6)',
-            boxShadow: '0 0 40px rgba(56, 189, 248, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
+            position: 'absolute', inset: 0, borderRadius: '50%',
+            border: '2px dashed rgba(56, 189, 248, 0.3)',
+            animation: 'lockRingRotate 12s linear infinite',
+          }} />
+
+          {/* Central emblem */}
+          <div style={{
+            width: 88, height: 88, borderRadius: '50%',
+            background: 'linear-gradient(135deg, rgba(52, 211, 153, 0.22) 0%, rgba(56, 189, 248, 0.08) 100%)',
+            border: '2px solid #34d399',
+            boxShadow: '0 0 45px rgba(52, 211, 153, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'transform 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) 0.05s, opacity 0.5s ease',
-            transform: active ? 'scale(1)' : 'scale(0.5)',
-            opacity: active ? 1 : 0,
             zIndex: 2,
+            transform: active ? 'scale(1) rotate(0deg)' : 'scale(0.3) rotate(-90deg)',
+            transition: 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
           }}>
-            <svg viewBox="0 0 44 44" fill="none" width="36" height="36">
-              <polyline
-                points="11,23 19,31 34,15"
-                stroke="#38bdf8"
-                strokeWidth="3.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{
-                  strokeDasharray: 40,
-                  strokeDashoffset: active ? 0 : 40,
-                  transition: 'stroke-dashoffset 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.25s',
-                  filter: 'drop-shadow(0 0 8px rgba(56, 189, 248, 0.85))',
-                }}
-              />
+            {/* Cyber safe lock badge */}
+            <svg viewBox="0 0 24 24" fill="none" width="40" height="40" style={{ animation: 'highlightPulse 2s infinite' }}>
+              <rect x="3" y="11" width="18" height="11" rx="2" stroke="#34d399" strokeWidth="2" />
+              <path d="M7 11V7a5 5 0 0110 0v4" stroke="#34d399" strokeWidth="2" strokeLinecap="round" />
+              <circle cx="12" cy="16" r="1.5" fill="#34d399" />
             </svg>
           </div>
         </div>
 
-        {/* Access status labels */}
-        <div style={{
-          textAlign: 'center',
-          opacity: active ? 1 : 0,
-          transform: active ? 'translateY(0)' : 'translateY(12px)',
-          transition: 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s, opacity 0.6s ease 0.15s'
-        }}>
-          <p style={{
-            margin: 0, fontSize: 14, fontWeight: 800,
-            letterSpacing: '0.3em', textTransform: 'uppercase',
-            color: '#38bdf8',
-            textShadow: '0 0 24px rgba(56, 189, 248, 0.5)',
-            fontFamily: "'Plus Jakarta Sans', sans-serif"
-          }}>Access Granted</p>
-          <p style={{
-            margin: '8px 0 0', fontSize: 10, fontWeight: 600,
-            letterSpacing: '0.18em', color: 'rgba(148, 163, 184, 0.5)',
-            textTransform: 'uppercase',
-            fontFamily: "'JetBrains Mono', monospace"
+        {/* Text Area */}
+        <div style={{ position: 'relative', width: '100%', minHeight: 90 }}>
+          <div style={{
+            display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center',
           }}>
-            decrypting secure vault...
-          </p>
+            <h2 style={{
+              margin: 0, 
+              fontSize: 26, 
+              fontWeight: 900,
+              letterSpacing: '0.22em', 
+              textTransform: 'uppercase',
+              color: '#e2e8f0',
+              textShadow: '0 0 30px rgba(56, 189, 248, 0.45)',
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              animation: 'popupSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+            }}>
+              Welcome <span style={{ color: '#38bdf8', textShadow: '0 0 35px rgba(56, 189, 248, 0.85)' }}>Mini Anon</span>
+            </h2>
+
+            <p style={{
+              margin: 0, 
+              fontSize: 13, 
+              fontWeight: 500,
+              color: 'rgba(148, 163, 184, 0.85)',
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              animation: 'popupSlideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards',
+              opacity: 0,
+            }}>
+              Your vault is ready.
+            </p>
+
+            <div style={{ 
+              display: 'flex', alignItems: 'center', gap: 6,
+              animation: 'popupSlideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.25s forwards',
+              opacity: 0,
+              marginTop: 6
+            }}>
+              <span style={{
+                fontSize: 10, 
+                fontWeight: 800,
+                letterSpacing: '0.15em', 
+                color: '#34d399', 
+                textTransform: 'uppercase',
+                fontFamily: "'JetBrains Mono', monospace",
+              }}>
+                LET'S GET BACK TO WORK
+              </span>
+              <span style={{
+                width: 6, height: 10,
+                backgroundColor: '#34d399',
+                animation: 'cursorBlink 1s step-end infinite',
+              }} />
+            </div>
+          </div>
         </div>
+
       </div>
     </div>
   );
@@ -189,12 +238,96 @@ function LockScreen({ onAuthorize }) {
   const [crtGlitch, setCrtGlitch]   = useState(false);
   const [laserActive, setLaserActive] = useState(false);
 
+  // Responsive state for the daily quote widget
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+  // Extensive tech, logic, and philosophy daily quotes pool (stable for 24 hours)
+  const QUOTES = [
+    { text: "Privacy is not a luxury, it is a fundamental prerequisite.", author: "Mini Anon" },
+    { text: "Simplicity is the ultimate sophistication.", author: "Leonardo da Vinci" },
+    { text: "Complexity is the enemy of execution.", author: "Tony Robbins" },
+    { text: "Control is an illusion, but order is a deliberate choice.", author: "SecOps" },
+    { text: "Logic will get you from A to B. Imagination will take you everywhere.", author: "Albert Einstein" },
+    { text: "The present is theirs; the future, for which I worked, is mine.", author: "Nikola Tesla" },
+    { text: "First, solve the problem. Then, write the code.", author: "John Johnson" },
+    { text: "The only true wisdom is in knowing you know nothing.", author: "Socrates" },
+    { text: "Excellence is not an act, but a habit.", author: "Aristotle" },
+    { text: "The best way to predict the future is to invent it.", author: "Alan Kay" },
+    { text: "An unexamined life is not worth living.", author: "Socrates" },
+    { text: "Make it simple, but significant.", author: "Don Draper" },
+    { text: "Focus is a matter of deciding what things you're not going to do.", author: "John Carmack" },
+    { text: "Code is like humor. When you have to explain it, it's bad.", author: "Cory House" },
+    { text: "Clean code always looks like it was written by someone who cares.", author: "Michael Feathers" },
+    { text: "Talk is cheap. Show me the code.", author: "Linus Torvalds" },
+    { text: "The structure of a software system reflects the structure of its builders.", author: "Melvin Conway" },
+    { text: "Mastery is not about learning more, but about eliminating noise.", author: "Philosophy" },
+    { text: "The art of simplicity is a puzzle of complexity.", author: "Anonymous" },
+    { text: "Logical thinking is the gateway to precise solutions.", author: "Tech Node" },
+    { text: "Do not seek to follow in the footsteps of the wise. Seek what they sought.", author: "Basho" },
+    { text: "Knowing is not enough; we must apply. Willing is not enough; we must do.", author: "J. W. von Goethe" },
+    { text: "One man's constant is another man's variable.", author: "Alan Perlis" },
+    { text: "Programs must be written for people to read, and only incidentally for machines to execute.", author: "Harold Abelson" },
+    { text: "Before software can be reusable it first has to be usable.", author: "Ralph Johnson" },
+    { text: "The mind is not a vessel to be filled, but a fire to be kindled.", author: "Plutarch" },
+    { text: "Truth is ever to be found in simplicity, and not in the multiplicity and confusion of things.", author: "Isaac Newton" },
+    { text: "If you cannot explain it simply, you do not understand it well enough.", author: "Albert Einstein" },
+    { text: "Quality is free, but only to those who are willing to pay for it in discipline.", author: "Anonymous" },
+    { text: "We shape our tools, and thereafter our tools shape us.", author: "Marshall McLuhan" },
+    { text: "A clear path is built by removing one obstacle at a time.", author: "Logic Gate" },
+    { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
+    { text: "Everything has beauty, but not everyone sees it.", author: "Confucius" },
+    { text: "To understand recursion, one must first understand recursion.", author: "Stephen Hawking" },
+    { text: "The computer was born to solve problems that did not exist before.", author: "Bill Gates" },
+    { text: "Optimism is an occupational hazard of programming; feedback is the treatment.", author: "Kent Beck" },
+    { text: "Software is a great combination between artistry and engineering.", author: "Bill Gates" },
+    { text: "There are only two hard things in Computer Science: cache invalidation and naming things.", author: "Phil Karlton" },
+    { text: "Computers are useless. They can only give you answers.", author: "Pablo Picasso" },
+    { text: "It's not a bug – it's an undocumented feature.", author: "Anonymous" },
+    { text: "Good design adds value faster than it adds cost.", author: "Thomas C. Gale" },
+    { text: "Any fool can write code that a computer can understand. Good programmers write code that humans can understand.", author: "Martin Fowler" },
+    { text: "Deleted code is debugged code.", author: "Jeff Sickel" },
+    { text: "Simplicity is prerequisite for reliability.", author: "Edsger W. Dijkstra" },
+    { text: "The function of good software is to make the complex appear simple.", author: "Grady Booch" },
+    { text: "The advance of technology is based on making it fit in so that you don't even notice it.", author: "Bill Gates" },
+    { text: "Security is not a product, but a process.", author: "Bruce Schneier" },
+    { text: "The price of reliability is the pursuit of the utmost simplicity.", author: "C. A. R. Hoare" },
+    { text: "Computers are like Old Testament gods; lots of rules and no mercy.", author: "Joseph Campbell" },
+    { text: "Measuring programming progress by lines of code is like measuring aircraft building progress by weight.", author: "Bill Gates" },
+    { text: "If debugging is the process of removing software bugs, then programming must be the process of putting them in.", author: "Edsger W. Dijkstra" },
+    { text: "There are two ways of constructing a software design: One way is to make it so simple that there are obviously no deficiencies, and the other way is to make it so complicated that there are no obvious deficiencies.", author: "C. A. R. Hoare" },
+    { text: "A primary cause of complexity is that software vendors uncritically adopt hardware solutions.", author: "Niklaus Wirth" },
+    { text: "Design is not just what it looks like and feels like. Design is how it works.", author: "Steve Jobs" },
+    { text: "Information is harder to protect than hardware: it can be in more than one place at the same time.", author: "Securitas" },
+    { text: "The only secure system is one that is powered off, unplugged, locked in a titanium safe, and buried in concrete.", author: "Gene Spafford" },
+    { text: "In the face of ambiguity, refuse the temptation to guess.", author: "The Zen of Python" },
+    { text: "Errors should never pass silently. Unless explicitly silenced.", author: "The Zen of Python" },
+    { text: "Beautiful is better than ugly. Explicit is better than implicit. Simple is better than complex.", author: "Tim Peters" },
+    { text: "If the implementation is hard to explain, it's a bad idea. If the implementation is easy to explain, it may be a good idea.", author: "The Zen of Python" }
+  ];
+
+  // Daily stable index calculation (changes every 24 hours at midnight)
+  const getDailyIndex = () => {
+    const d = new Date();
+    const dayHash = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+    return dayHash % QUOTES.length;
+  };
+  
+  const dailyQuote = QUOTES[getDailyIndex()];
+
   const correctPin = import.meta.env.VITE_APP_PIN;
 
   useEffect(() => { setTimeout(() => setMounted(true), 80); }, []);
+  
   useEffect(() => {
     const t = setTimeout(() => setShowPopup(true), 3000);
     return () => clearTimeout(t);
+  }, []);
+
+  // Resize listener for responsive widget hiding
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const addRipple = (label, x = 50, y = 33) => {
@@ -497,6 +630,56 @@ function LockScreen({ onAuthorize }) {
     <div className="w-screen h-screen flex flex-col items-center justify-center select-none relative overflow-hidden"
       style={{ background: 'radial-gradient(ellipse 120% 120% at 50% -10%, #08101e 0%, #05080f 55%, #020408 100%)',
                fontFamily: "'Plus Jakarta Sans',system-ui,-apple-system,sans-serif" }}>
+
+      {/* ── TODAY'S QUOTE WIDGET (Top Right, Desktop Only) ── */}
+      {windowWidth >= 1200 && (
+        <div style={{
+          position: 'absolute', top: 32, right: 32, zIndex: 20, width: 340,
+          display: 'flex', flexDirection: 'column', gap: 14,
+          padding: '20px', borderRadius: 24,
+          background: 'linear-gradient(135deg, rgba(10, 15, 30, 0.6) 0%, rgba(5, 8, 16, 0.8) 100%)',
+          border: '1px solid rgba(56, 189, 248, 0.15)',
+          boxShadow: '0 20px 45px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255, 255, 255, 0.03)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          opacity: unlocking ? 0 : mounted ? 1 : 0,
+          transform: unlocking ? 'scale(0.9) translateY(-10px)' : mounted ? 'scale(1)' : 'scale(0.85)',
+          transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.25s',
+        }}>
+          {/* Widget Header */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 8px #38bdf8' }} />
+            <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.18em', color: 'rgba(148, 163, 184, 0.55)', textTransform: 'uppercase', fontFamily: "'JetBrains Mono',monospace" }}>TODAY'S QUOTE</span>
+          </div>
+
+          {/* Quote Body */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minHeight: 60, justifyContent: 'center' }}>
+            <p style={{
+              margin: 0,
+              fontSize: 11,
+              lineHeight: 1.5,
+              fontWeight: 500,
+              fontStyle: 'italic',
+              color: 'rgba(241, 245, 249, 0.95)',
+              fontFamily: "'Plus Jakarta Sans', sans-serif"
+            }}>
+              "{dailyQuote.text}"
+            </p>
+            <span style={{
+              fontSize: 9,
+              fontWeight: 700,
+              letterSpacing: '0.06em',
+              color: '#38bdf8',
+              textTransform: 'uppercase',
+              fontFamily: "'JetBrains Mono', monospace",
+              alignSelf: 'flex-end',
+              marginTop: 4
+            }}>
+              — {dailyQuote.author}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* ═══ CINEMATIC BACKGROUND ═══ */}
       <div className="absolute inset-0 pointer-events-none" style={{ overflow: 'hidden' }}>
