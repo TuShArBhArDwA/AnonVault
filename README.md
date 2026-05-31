@@ -30,7 +30,7 @@ AnonVault is a highly secure, privacy-first personal workspace engineered to cen
 
 #### 1. Database & Storage Configuration
 This application is powered by Supabase. Create a free Supabase project and execute the following:
-1. Open the **SQL Editor** in your Supabase dashboard and run the database creation query found in `supabase/schema.sql` (or `scripts/supabase_setup.sql`).
+1. Open the **SQL Editor** in your Supabase dashboard and run the database creation query found in [supabase/schema.sql](supabase/schema.sql) (or [scripts/supabase_setup.sql](scripts/supabase_setup.sql)).
 2. Go to the **Storage** panel, create a new public bucket, and name it exactly `idea-images` to enable uploading visual design attachments.
 
 #### 2. Environment Configuration

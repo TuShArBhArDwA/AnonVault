@@ -30,7 +30,7 @@ AnonVault एक अत्यधिक सुरक्षित, गोपनी
 
 #### 1. डेटाबेस और स्टोरेज सेटअप
 यह एप्लिकेशन Supabase द्वारा संचालित है। एक निःशुल्क Supabase प्रोजेक्ट बनाएं और निम्नलिखित कार्य करें:
-1. अपने Supabase डैशबोर्ड में **SQL Editor** खोलें और `supabase/schema.sql` (या `scripts/supabase_setup.sql`) में दिए गए डेटाबेस क्रिएशन क्वेरी को चलाएं।
+1. अपने Supabase डैशबोर्ड में **SQL Editor** खोलें और [supabase/schema.sql](supabase/schema.sql) (या [scripts/supabase_setup.sql](scripts/supabase_setup.sql)) में दिए गए डेटाबेस क्रिएशन क्वेरी को चलाएं।
 2. **Storage** पैनल में जाएं, एक नया पब्लिक बकेट बनाएं, और उसका नाम बिल्कुल `idea-images` रखें।
 
 #### 2. एनवायरनमेंट कॉन्फ़िगरेशन
