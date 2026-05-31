@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { CalendarRange, Lightbulb, TrendingUp, CheckSquare, X, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CalendarRange, Lightbulb, TrendingUp, CheckSquare, X, Zap, ChevronLeft, ChevronRight, Rocket } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab, stats, mobileOpen, setMobileOpen }) {
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -40,7 +40,7 @@ export default function Sidebar({ activeTab, setActiveTab, stats, mobileOpen, se
     {
       id: 'project-ideas',
       label: 'Project Ideas',
-      icon: Lightbulb,
+      icon: Rocket,
       count: stats.totalProjectIdeas,
       desc: 'Brainstorm concepts',
       accent: '#818cf8',
@@ -294,7 +294,7 @@ export default function Sidebar({ activeTab, setActiveTab, stats, mobileOpen, se
                 {/* Project Ideas */}
                 <div className="stat-card">
                   <div className="flex items-center gap-1.5 mb-2.5">
-                    <Lightbulb size={11} className="text-indigo-400" />
+                    <Rocket size={11} className="text-indigo-400" />
                     <span className="text-[10px] text-slate-500 font-semibold tracking-wide">Projects</span>
                   </div>
                   <span className="text-[26px] font-extrabold tabular-nums tracking-tight leading-none text-indigo-300">

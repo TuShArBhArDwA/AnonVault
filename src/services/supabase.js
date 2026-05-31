@@ -93,6 +93,7 @@ export const addApplication = async (app) => {
   const payload = {
     name: app.name,
     link: app.link || '',
+    links: app.links || [],
     deadline: app.deadline,
     priority: app.priority || 'medium',
     status: app.status || 'pending',
@@ -123,6 +124,7 @@ export const updateApplication = async (id, updates) => {
     .update({
       name: updates.name,
       link: updates.link,
+      links: updates.links || [],
       deadline: updates.deadline,
       priority: updates.priority,
       status: updates.status,
@@ -332,6 +334,40 @@ export const upsertTaskCompletion = async (taskId, dateStr, completed) => {
   }
   return completed;
 };
+
+export const fetchSubtaskCompletions = async () => {
+  const client = getSupabaseClient();
+  if (!client) throw new Error('Supabase not configured');
+
+  const { data, error } = await client
+    .from('subtask_completions')
+    .select('*');
+
+  if (error) throw error;
+  return data || [];
+};
+
+export const upsertSubtaskCompletion = async (taskId, subtaskId, dateStr, completed) => {
+  const client = getSupabaseClient();
+  if (!client) throw new Error('Supabase not configured');
+
+  if (completed) {
+    const { error } = await client
+      .from('subtask_completions')
+      .upsert({ task_id: taskId, subtask_id: subtaskId, date: dateStr, completed: true }, { onConflict: 'task_id,subtask_id,date' });
+    if (error) throw error;
+  } else {
+    const { error } = await client
+      .from('subtask_completions')
+      .delete()
+      .eq('task_id', taskId)
+      .eq('subtask_id', subtaskId)
+      .eq('date', dateStr);
+    if (error) throw error;
+  }
+  return completed;
+};
+
 
 // --- Project Ideas API ---
 

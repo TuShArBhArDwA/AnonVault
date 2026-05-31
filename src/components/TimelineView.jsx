@@ -89,6 +89,7 @@ export default function TimelineView({
   const [formName, setFormName] = useState('');
   const [formLink, setFormLink] = useState('');
   const [formDaysLeft, setFormDaysLeft] = useState('1');
+  const [formLinks, setFormLinks] = useState([]);
   const [formStarred, setFormStarred] = useState(false);
   const [formStatus, setFormStatus] = useState('pending');
   const [formNotes, setFormNotes] = useState('');
@@ -104,6 +105,7 @@ export default function TimelineView({
 
   const resetForm = () => {
     setFormName(''); setFormLink('');
+    setFormLinks([]);
     setFormDaysLeft('1');
     setFormStarred(false); setFormStatus('pending');
     setFormNotes(''); 
@@ -120,10 +122,15 @@ export default function TimelineView({
   const handleOpenEdit = (app) => {
     setEditingApp(app);
     setFormName(app.name); setFormLink(app.link || '');
+    setFormLinks(app.links || []);
     if (app.deadline) {
-      const diffTime = new Date(app.deadline) - new Date();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      setFormDaysLeft(String(Math.max(1, diffDays)));
+      const targetDate = new Date(app.deadline);
+      targetDate.setHours(0, 0, 0, 0);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const diffTime = targetDate - today;
+      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+      setFormDaysLeft(String(Math.max(0, diffDays)));
     } else { setFormDaysLeft('1'); }
     setFormStarred(app.priority === 'high');
     setFormStatus(app.status || 'pending');
@@ -154,6 +161,7 @@ export default function TimelineView({
 
     const appPayload = {
       name: formName.trim(), link: formLink.trim(),
+      links: formLinks.filter(l => l.url.trim()),
       deadline: calculatedDeadline.toISOString(),
       priority: formStarred ? 'high' : 'medium',
       status: formStatus, notes: formNotes.trim(),
@@ -166,6 +174,20 @@ export default function TimelineView({
     if (editingApp) await onUpdate(editingApp.id, appPayload);
     else await onAdd(appPayload);
     setIsFormOpen(false); resetForm();
+  };
+
+  const addLinkRow = () => {
+    setFormLinks([...formLinks, { url: '', label: '' }]);
+  };
+
+  const removeLinkRow = (idx) => {
+    setFormLinks(formLinks.filter((_, i) => i !== idx));
+  };
+
+  const changeLinkRow = (idx, link) => {
+    const updated = [...formLinks];
+    updated[idx] = link;
+    setFormLinks(updated);
   };
 
   const handleDeleteClick = (id) => setDeleteConfirmId(id);
@@ -589,6 +611,30 @@ export default function TimelineView({
                   className="input-premium w-full px-3.5 py-2.5 text-[13px] rounded-xl resize-none leading-relaxed" />
               </Field>
 
+              {/* Links Section */}
+              <Field label="Additional Links">
+                <div className="space-y-2">
+                  {formLinks.map((link, i) => (
+                    <LinkRow
+                      key={i}
+                      link={link}
+                      index={i}
+                      onRemove={removeLinkRow}
+                      onChange={changeLinkRow}
+                    />
+                  ))}
+                  <button
+                    type="button"
+                    onClick={addLinkRow}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 text-[12px] font-semibold
+                               text-indigo-400 border border-dashed border-indigo-500/25 rounded-xl
+                               hover:border-indigo-500/50 hover:bg-indigo-500/[0.05] transition-all cursor-pointer"
+                  >
+                    <Plus size={13} /> Add Link Reference
+                  </button>
+                </div>
+              </Field>
+
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setIsFormOpen(false)} className="btn-ghost flex-1 py-2.5 text-[13px] font-semibold rounded-xl cursor-pointer">Cancel</button>
                 <button type="submit" className="btn-primary flex-1 py-2.5 text-[13px] font-semibold rounded-xl cursor-pointer">
@@ -665,8 +711,13 @@ function HackathonCard({ app, isNearest, onEdit, onDelete, onViewDetails }) {
   const status = getStatusStyles(app.status);
 
   const getTimeRemaining = (deadlineStr) => {
-    const diffTime = new Date(deadlineStr) - new Date();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const targetDate = new Date(deadlineStr);
+    targetDate.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diffTime = targetDate - today;
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+    
     if (diffDays < 0) return { text: `Expired ${Math.abs(diffDays)}d ago`, isUrgent: false, isExpired: true };
     if (diffDays === 0) return { text: 'Due today', isUrgent: true, isExpired: false };
     if (diffDays === 1) return { text: 'Due tomorrow', isUrgent: true, isExpired: false };
@@ -783,6 +834,28 @@ function HackathonCard({ app, isNearest, onEdit, onDelete, onViewDetails }) {
             {app.notes}
           </p>
         )}
+
+        {/* Additional links */}
+        {app.links && app.links.length > 0 && (
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 mt-3 pt-2.5 border-t border-white/[0.04] text-[11px]" onClick={e => e.stopPropagation()}>
+            <span className="text-slate-550 font-bold select-none flex items-center gap-1 shrink-0">
+              <LinkIcon size={10} className="text-slate-600" />
+              Links:
+            </span>
+            {app.links.map((lnk, idx) => (
+              <a
+                key={idx}
+                href={lnk.url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-0.5 text-indigo-400 hover:text-indigo-300 transition-colors underline decoration-indigo-500/25 hover:decoration-indigo-300/80 font-semibold"
+              >
+                <span>{lnk.label || 'Link'}</span>
+                <ExternalLink size={8} className="opacity-60" />
+              </a>
+            ))}
+          </div>
+        )}
       </div>
     </article>
   );
@@ -869,6 +942,26 @@ function AppDetailModal({ app, onClose, onEdit, nearestAppId }) {
             </div>
           )}
 
+          {/* Multiple links */}
+          {app.links && app.links.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Additional Links</p>
+              <div className="space-y-1.5">
+                {app.links.map((link, i) => (
+                  <a key={i} href={link.url} target="_blank" rel="noreferrer"
+                    className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]
+                               hover:bg-indigo-500/[0.07] hover:border-indigo-500/20 transition-all group/link">
+                    <Globe size={13} className="text-indigo-400 shrink-0" />
+                    <span className="text-[13px] text-slate-300 truncate flex-1 group-hover/link:text-indigo-300">
+                      {link.label || link.url}
+                    </span>
+                    <ExternalLink size={11} className="text-slate-600 group-hover/link:text-indigo-400 shrink-0" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="divider" />
           <div className="space-y-2">
             <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Notes</p>
@@ -885,6 +978,39 @@ function AppDetailModal({ app, onClose, onEdit, nearestAppId }) {
             className="btn-ghost py-2.5 px-5 text-[13px] font-semibold rounded-xl cursor-pointer">Close</button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ─── Single link row inside form ─────────────────────── */
+function LinkRow({ link, index, onRemove, onChange }) {
+  return (
+    <div className="flex items-center gap-2 p-2.5 bg-white/[0.025] border border-white/[0.06] rounded-xl">
+      <Globe size={12} className="text-indigo-400 shrink-0" />
+      <div className="flex-1 grid grid-cols-2 gap-2">
+        <input
+          type="url"
+          placeholder="https://…"
+          value={link.url}
+          onChange={e => onChange(index, { ...link, url: e.target.value })}
+          className="input-premium px-3 py-2 text-[12px] rounded-lg w-full"
+        />
+        <input
+          type="text"
+          placeholder="Label (e.g. GitHub)"
+          value={link.label}
+          onChange={e => onChange(index, { ...link, label: e.target.value })}
+          className="input-premium px-3 py-2 text-[12px] rounded-lg w-full"
+        />
+      </div>
+      <button
+        type="button"
+        onClick={() => onRemove(index)}
+        className="p-1.5 text-slate-550 hover:text-rose-455 transition-colors cursor-pointer shrink-0"
+        title="Remove link"
+      >
+        <X size={13} />
+      </button>
     </div>
   );
 }

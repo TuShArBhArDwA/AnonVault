@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS public.applications (
     name TEXT NOT NULL,
     company TEXT DEFAULT '',
     link TEXT DEFAULT '',
+    links JSONB DEFAULT '[]'::jsonb,
     deadline TIMESTAMP WITH TIME ZONE,
     priority TEXT DEFAULT 'medium',
     status TEXT DEFAULT 'pending',
@@ -74,6 +75,17 @@ CREATE TABLE IF NOT EXISTS public.task_completions (
     CONSTRAINT task_completions_task_id_date_key UNIQUE (task_id, date)
 );
 
+-- --- Subtask Completions (Log for Checklist subtasks) ---
+CREATE TABLE IF NOT EXISTS public.subtask_completions (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    task_id UUID REFERENCES public.tasks(id) ON DELETE CASCADE,
+    subtask_id TEXT NOT NULL,
+    date TEXT NOT NULL,
+    completed BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    CONSTRAINT subtask_completions_task_id_subtask_id_date_key UNIQUE (task_id, subtask_id, date)
+);
+
 -- --- Project Ideas (Brainstorming concepts) ---
 CREATE TABLE IF NOT EXISTS public.project_ideas (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -101,6 +113,7 @@ ALTER TABLE public.applications DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ideas DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tasks DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.task_completions DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.subtask_completions DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.project_ideas DISABLE ROW LEVEL SECURITY;
 
 -- ====================================================================
@@ -119,6 +132,9 @@ ALTER TABLE public.project_ideas DISABLE ROW LEVEL SECURITY;
 --
 -- ALTER TABLE public.task_completions ENABLE ROW LEVEL SECURITY;
 -- CREATE POLICY "Open Access" ON public.task_completions FOR ALL USING (true) WITH CHECK (true);
+--
+-- ALTER TABLE public.subtask_completions ENABLE ROW LEVEL SECURITY;
+-- CREATE POLICY "Open Access" ON public.subtask_completions FOR ALL USING (true) WITH CHECK (true);
 --
 -- ALTER TABLE public.project_ideas ENABLE ROW LEVEL SECURITY;
 -- CREATE POLICY "Open Access" ON public.project_ideas FOR ALL USING (true) WITH CHECK (true);

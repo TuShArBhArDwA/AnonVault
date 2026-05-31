@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { 
-  Plus, Search, Tag, Trash2, Edit3, X, Lightbulb, Menu, Lock, 
+  Plus, Search, Tag, Trash2, Edit3, X, Rocket, Menu, Lock, 
   Globe, ExternalLink, Info, GripVertical, ChevronLeft, ChevronRight, 
   Maximize2, Calendar, Image as ImageIcon, FileImage, AlertTriangle, Hash,
   ChevronDown
@@ -627,7 +627,7 @@ export default function ProjectIdeasView({
         {processedIdeas.length === 0 ? (
           <div className="flex flex-col items-center justify-center text-center py-20 max-w-sm mx-auto">
             <div className="w-14 h-14 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mb-4">
-              <Lightbulb size={24} className="text-slate-600 animate-pulse" />
+              <Rocket size={24} className="text-indigo-400 animate-pulse" />
             </div>
             <h3 className="text-sm font-semibold text-slate-300">No concepts yet</h3>
             <p className="text-[12px] text-slate-600 mt-1.5 leading-relaxed">

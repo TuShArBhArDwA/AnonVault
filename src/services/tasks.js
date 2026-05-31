@@ -31,6 +31,8 @@ import {
   deleteTaskFromSupabase,
   fetchTaskCompletions,
   upsertTaskCompletion,
+  fetchSubtaskCompletions,
+  upsertSubtaskCompletion,
 } from './supabase';
 
 const TASKS_KEY    = 'anonvault_tasks';
@@ -109,14 +111,35 @@ function rowsToCompletionsMap(rows) {
 export async function loadAllTasks() {
   if (useSupabase()) {
     try {
-      const [tasks, compRows] = await Promise.all([
+      let fetchedSubCompSuccessfully = false;
+      const [tasks, compRows, subCompRows] = await Promise.all([
         sbFetchTasks(),
         fetchTaskCompletions(),
+        fetchSubtaskCompletions()
+          .then(rows => {
+            fetchedSubCompSuccessfully = true;
+            return rows;
+          })
+          .catch(err => {
+            console.warn('[tasks] subtask_completions table may not exist yet, falling back to localStorage for recurring subtasks:', err);
+            return [];
+          })
       ]);
       // sync to localStorage as cache
       saveLocalTasks(tasks);
       const compMap = rowsToCompletionsMap(compRows);
       saveCompletions(compMap);
+
+      if (fetchedSubCompSuccessfully) {
+        const subCompMap = {};
+        for (const r of subCompRows) {
+          const key = `${r.task_id}__${r.subtask_id}`;
+          if (!subCompMap[key]) subCompMap[key] = {};
+          subCompMap[key][r.date] = r.completed;
+        }
+        saveSubCompletions(subCompMap);
+      }
+
       return { tasks, completions: compMap };
     } catch (err) {
       console.warn('[tasks] Supabase fetch failed, falling back to localStorage:', err);
@@ -285,6 +308,14 @@ export async function toggleSubtaskCompletion(task, subtaskId, dateStr) {
     const next = !sc[key][dateStr];
     sc[key][dateStr] = next;
     saveSubCompletions(sc);
+
+    if (useSupabase()) {
+      try {
+        await upsertSubtaskCompletion(task.id, subtaskId, dateStr, next);
+      } catch (err) {
+        console.warn('[tasks] Supabase upsertSubtaskCompletion failed:', err);
+      }
+    }
     return next;
   } else {
     const tasks = loadLocalTasks();
