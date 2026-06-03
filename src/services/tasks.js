@@ -268,28 +268,39 @@ export async function toggleTaskCompletion(task, dateStr) {
     c[task.id][dateStr] = next;
     saveCompletions(c);
 
-    // If unchecking parent, uncheck all subtasks for this date
-    if (!next) {
-      const sc = loadSubCompletions();
-      (task.subtasks || []).forEach(st => {
-        const stKey = `${task.id}__${st.id}`;
-        if (sc[stKey]) delete sc[stKey][dateStr];
-      });
-      saveSubCompletions(sc);
+    // Sync all subtask completions for this date to match parent completion state
+    const sc = loadSubCompletions();
+    (task.subtasks || []).forEach(st => {
+      const stKey = `${task.id}__${st.id}`;
+      if (!sc[stKey]) sc[stKey] = {};
+      sc[stKey][dateStr] = next;
+    });
+    saveSubCompletions(sc);
 
-      if (useSupabase()) {
-        try {
-          const client = getSupabaseClient();
-          if (client) {
+    if (useSupabase()) {
+      try {
+        const client = getSupabaseClient();
+        if (client) {
+          if (next) {
+            const rows = (task.subtasks || []).map(st => ({
+              task_id: task.id,
+              subtask_id: st.id,
+              date: dateStr,
+              completed: true
+            }));
+            if (rows.length > 0) {
+              await client.from('subtask_completions').upsert(rows, { onConflict: 'task_id,subtask_id,date' });
+            }
+          } else {
             await client
               .from('subtask_completions')
               .delete()
               .eq('task_id', task.id)
               .eq('date', dateStr);
           }
-        } catch (err) {
-          console.warn('[tasks] Supabase bulk subtask uncompletion failed:', err);
         }
+      } catch (err) {
+        console.warn('[tasks] Supabase bulk subtask sync failed:', err);
       }
     }
 
@@ -309,13 +320,11 @@ export async function toggleTaskCompletion(task, dateStr) {
       const next = !tasks[idx].completed;
       tasks[idx].completed = next;
 
-      // If unchecking parent, uncheck all subtasks
-      if (!next) {
-        tasks[idx].subtasks = (tasks[idx].subtasks || []).map(st => ({
-          ...st,
-          completed: false
-        }));
-      }
+      // Sync all subtasks to match parent completion state
+      tasks[idx].subtasks = (tasks[idx].subtasks || []).map(st => ({
+        ...st,
+        completed: next
+      }));
 
       saveLocalTasks(tasks);
 
