@@ -268,6 +268,31 @@ export async function toggleTaskCompletion(task, dateStr) {
     c[task.id][dateStr] = next;
     saveCompletions(c);
 
+    // If unchecking parent, uncheck all subtasks for this date
+    if (!next) {
+      const sc = loadSubCompletions();
+      (task.subtasks || []).forEach(st => {
+        const stKey = `${task.id}__${st.id}`;
+        if (sc[stKey]) delete sc[stKey][dateStr];
+      });
+      saveSubCompletions(sc);
+
+      if (useSupabase()) {
+        try {
+          const client = getSupabaseClient();
+          if (client) {
+            await client
+              .from('subtask_completions')
+              .delete()
+              .eq('task_id', task.id)
+              .eq('date', dateStr);
+          }
+        } catch (err) {
+          console.warn('[tasks] Supabase bulk subtask uncompletion failed:', err);
+        }
+      }
+    }
+
     if (useSupabase()) {
       try {
         await upsertTaskCompletion(task.id, dateStr, next);
@@ -283,11 +308,20 @@ export async function toggleTaskCompletion(task, dateStr) {
     if (idx !== -1) {
       const next = !tasks[idx].completed;
       tasks[idx].completed = next;
+
+      // If unchecking parent, uncheck all subtasks
+      if (!next) {
+        tasks[idx].subtasks = (tasks[idx].subtasks || []).map(st => ({
+          ...st,
+          completed: false
+        }));
+      }
+
       saveLocalTasks(tasks);
 
       if (useSupabase()) {
         try {
-          await updateTaskInSupabase(task.id, { ...tasks[idx], completed: next });
+          await updateTaskInSupabase(task.id, tasks[idx]);
         } catch (err) {
           console.warn('[tasks] Supabase toggleCompletion failed:', err);
         }

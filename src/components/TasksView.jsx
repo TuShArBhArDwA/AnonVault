@@ -129,12 +129,16 @@ function TaskCard({ task, onToggle, onToggleSub, onEdit, onDelete, onCancel, ind
       <div className="flex items-start gap-0 p-4 pb-0">
 
         {/* Left: checkbox */}
-        <div className="mr-3 shrink-0 mt-0.5">
-          <Checkbox
-            checked={task.completed}
-            onChange={() => onToggle(task)}
-            disabled={hasSubtasks}
-          />
+        <div className="mr-3 shrink-0 mt-0.5 w-[22px] h-[22px] flex items-center justify-center">
+          {(!hasSubtasks || task.completed) ? (
+            <Checkbox
+              checked={task.completed}
+              onChange={() => onToggle(task)}
+              disabled={false}
+            />
+          ) : (
+            <div className="w-1.5 h-1.5 rounded-full bg-slate-750" />
+          )}
         </div>
 
         {/* Right: task title + meta + actions */}
