@@ -593,7 +593,12 @@ export default function TasksView({ theme, toggleTheme, showToast, onTasksChange
           }
           return st;
         });
-        return { ...t, subtasks: updatedSubs };
+        const allCompleted = updatedSubs.every(st => st.completed);
+        return { 
+          ...t, 
+          subtasks: updatedSubs,
+          completed: allCompleted ? true : t.completed
+        };
       }
       return t;
     }));

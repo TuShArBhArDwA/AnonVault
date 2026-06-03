@@ -316,6 +316,30 @@ export async function toggleSubtaskCompletion(task, subtaskId, dateStr) {
         console.warn('[tasks] Supabase upsertSubtaskCompletion failed:', err);
       }
     }
+
+    // Auto-check parent task if all subtasks are complete
+    const allCompleted = task.subtasks.every(st => {
+      const stKey = `${task.id}__${st.id}`;
+      const isCompleted = st.id === subtaskId ? next : !!(sc[stKey]?.[dateStr]);
+      return isCompleted;
+    });
+
+    if (allCompleted) {
+      const c = loadCompletions();
+      if (!c[task.id]) c[task.id] = {};
+      if (!c[task.id][dateStr]) {
+        c[task.id][dateStr] = true;
+        saveCompletions(c);
+        if (useSupabase()) {
+          try {
+            await upsertTaskCompletion(task.id, dateStr, true);
+          } catch (err) {
+            console.warn('[tasks] Supabase auto-completion failed:', err);
+          }
+        }
+      }
+    }
+
     return next;
   } else {
     const tasks = loadLocalTasks();
@@ -325,6 +349,13 @@ export async function toggleSubtaskCompletion(task, subtaskId, dateStr) {
       if (stIdx !== -1) {
         const next = !tasks[tIdx].subtasks[stIdx].completed;
         tasks[tIdx].subtasks[stIdx].completed = next;
+
+        // Auto-check parent task if all subtasks are complete
+        const allCompleted = tasks[tIdx].subtasks.every(st => st.completed);
+        if (allCompleted) {
+          tasks[tIdx].completed = true;
+        }
+
         saveLocalTasks(tasks);
 
         if (useSupabase()) {
