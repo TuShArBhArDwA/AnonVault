@@ -50,17 +50,19 @@ const RECUR_OPTS = [
 ];
 
 /* ── Checkbox ────────────────────────────────────────────── */
-function Checkbox({ checked, onChange, size = 'md' }) {
+function Checkbox({ checked, onChange, size = 'md', disabled = false }) {
   const sz = size === 'sm' ? 'w-[18px] h-[18px]' : 'w-[22px] h-[22px]';
   return (
     <button
       type="button"
-      onClick={e => { e.stopPropagation(); onChange(); }}
+      disabled={disabled}
+      onClick={e => { e.stopPropagation(); if (!disabled) onChange(); }}
       className={`${sz} rounded-lg flex items-center justify-center flex-shrink-0
-        transition-all duration-300 cursor-pointer select-none focus:outline-none relative overflow-hidden
+        transition-all duration-300 select-none focus:outline-none relative overflow-hidden
+        ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
         ${checked
           ? 'text-emerald-400'
-          : 'hover:border-violet-500/50 hover:bg-violet-500/[0.05]'
+          : disabled ? '' : 'hover:border-violet-500/50 hover:bg-violet-500/[0.05]'
         }`}
       style={{
         background: checked
@@ -131,6 +133,7 @@ function TaskCard({ task, onToggle, onToggleSub, onEdit, onDelete, onCancel, ind
           <Checkbox
             checked={task.completed}
             onChange={() => onToggle(task)}
+            disabled={hasSubtasks}
           />
         </div>
 
@@ -597,7 +600,7 @@ export default function TasksView({ theme, toggleTheme, showToast, onTasksChange
         return { 
           ...t, 
           subtasks: updatedSubs,
-          completed: allCompleted ? true : t.completed
+          completed: allCompleted
         };
       }
       return t;

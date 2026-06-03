@@ -338,6 +338,19 @@ export async function toggleSubtaskCompletion(task, subtaskId, dateStr) {
           }
         }
       }
+    } else {
+      const c = loadCompletions();
+      if (c[task.id] && c[task.id][dateStr]) {
+        delete c[task.id][dateStr];
+        saveCompletions(c);
+        if (useSupabase()) {
+          try {
+            await upsertTaskCompletion(task.id, dateStr, false);
+          } catch (err) {
+            console.warn('[tasks] Supabase auto-uncompletion failed:', err);
+          }
+        }
+      }
     }
 
     return next;
@@ -352,9 +365,7 @@ export async function toggleSubtaskCompletion(task, subtaskId, dateStr) {
 
         // Auto-check parent task if all subtasks are complete
         const allCompleted = tasks[tIdx].subtasks.every(st => st.completed);
-        if (allCompleted) {
-          tasks[tIdx].completed = true;
-        }
+        tasks[tIdx].completed = allCompleted;
 
         saveLocalTasks(tasks);
 
