@@ -1191,7 +1191,6 @@ function IdeaCard({ idea, sortBy, onEdit, onDelete, onSelectTag, onViewDetails, 
             )}
             <h4 className="text-[13px] font-bold text-white leading-snug break-words flex-1 mt-0.5 flex items-center gap-1.5">
               <span>{idea.title}</span>
-              {isPinned && <Star size={12} className="fill-amber-400 text-amber-400 shrink-0" />}
             </h4>
           </div>
           

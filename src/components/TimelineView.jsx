@@ -814,7 +814,6 @@ function HackathonCard({ app, isNearest, onEdit, onDelete, onViewDetails }) {
               {isNearest && <span className="beacon-amber" />}
               {isStarred && !isNearest && <span className="beacon-amber" />}
               <h4 className="text-[14px] font-bold text-white leading-tight truncate">{app.name}</h4>
-              {isStarred && <Star size={13} className="fill-amber-400 text-amber-400 shrink-0" />}
             </div>
             {app.company && (
               <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate flex items-center gap-1">
@@ -856,23 +855,44 @@ function HackathonCard({ app, isNearest, onEdit, onDelete, onViewDetails }) {
           </div>
 
           {/* Actions — hidden by default, visible on hover */}
-          <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200" onClick={e => e.stopPropagation()}>
-            {app.link && (
-              <a href={app.link} target="_blank" rel="noreferrer"
-                 className="p-1.5 text-slate-600 hover:text-white rounded-lg hover:bg-white/[0.06] transition-all cursor-pointer"
-                 title="Open link">
-                <ExternalLink size={12} />
-              </a>
-            )}
-            <button onClick={() => onEdit(app)}
-              className="p-1.5 text-slate-600 hover:text-indigo-400 rounded-lg hover:bg-indigo-500/[0.08] transition-all cursor-pointer"
-              title="Edit">
-              <Edit3 size={12} />
+          <div className="flex items-center gap-0.5 bg-white/[0.02] border border-white/[0.07] rounded-xl p-0.5 shrink-0 select-none
+                          opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100
+                          transition-all duration-200 ease-out"
+               onClick={e => e.stopPropagation()}>
+            {/* star/pin toggle button */}
+            <button onClick={() => onUpdate(app.id, { priority: isStarred ? 'medium' : 'high' })}
+              className={`p-1.5 rounded-lg transition-all cursor-pointer flex items-center justify-center border border-transparent ${
+                isStarred 
+                  ? 'text-amber-400 hover:text-amber-300 hover:bg-amber-400/[0.08] hover:border-amber-400/20' 
+                  : 'text-slate-400 hover:text-amber-400 hover:bg-amber-400/[0.08] hover:border-amber-400/20'
+              }`}
+              title={isStarred ? "Unstar hackathon" : "Star hackathon"}>
+              <Star size={11} className={isStarred ? 'fill-amber-400' : ''} />
             </button>
+
+            <div className="w-[1px] h-3 bg-white/[0.08] self-center" />
+
+            {app.link && (
+              <>
+                <a href={app.link} target="_blank" rel="noreferrer"
+                   className="p-1.5 text-slate-400 hover:text-indigo-400 rounded-lg hover:bg-indigo-500/[0.08] transition-all cursor-pointer flex items-center justify-center border border-transparent hover:border-indigo-500/20"
+                   title="Open link">
+                  <ExternalLink size={11} />
+                </a>
+                <div className="w-[1px] h-3 bg-white/[0.08] self-center" />
+              </>
+            )}
+
+            <button onClick={() => onEdit(app)}
+              className="p-1.5 text-slate-400 hover:text-indigo-400 rounded-lg hover:bg-indigo-500/[0.08] transition-all cursor-pointer flex items-center justify-center border border-transparent hover:border-indigo-500/20"
+              title="Edit">
+              <Edit3 size={11} />
+            </button>
+
             <button onClick={() => onDelete(app.id)}
-              className="p-1.5 text-slate-600 hover:text-rose-400 rounded-lg hover:bg-rose-500/[0.08] transition-all cursor-pointer"
+              className="p-1.5 text-slate-455 hover:text-rose-455 rounded-lg hover:bg-rose-500/[0.08] transition-all cursor-pointer flex items-center justify-center border border-transparent hover:border-rose-500/20"
               title="Delete">
-              <Trash2 size={12} />
+              <Trash2 size={11} />
             </button>
           </div>
         </div>
