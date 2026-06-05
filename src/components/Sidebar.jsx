@@ -63,16 +63,6 @@ export default function Sidebar({ activeTab, setActiveTab, stats, mobileOpen, se
         ${isCollapsed ? 'w-[72px]' : 'w-[268px]'}
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
 
-        {/* Mobile close */}
-        <div className="lg:hidden absolute top-4 right-4 z-50">
-          <button
-            onClick={() => setMobileOpen(false)}
-            className="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-white rounded-xl bg-white/[0.05] border border-white/[0.08] cursor-pointer transition-all hover:bg-white/[0.08]"
-          >
-            <X size={15} />
-          </button>
-        </div>
-
         {/* ── Brand header ── */}
         <div className={`px-4 pt-7 pb-5 flex items-center justify-between relative group/brandheader shrink-0`}>
           <div className="flex items-center gap-3">
