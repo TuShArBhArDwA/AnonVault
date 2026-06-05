@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Plus, Search, ArrowUpDown, ExternalLink, 
   Edit3, Trash2, Calendar, Link as LinkIcon, AlertTriangle, 
-  Clock, ChevronDown, ChevronRight, ListCollapse,
+  Clock, ChevronDown, ChevronUp, ChevronRight, ListCollapse,
   Lock, X, Flame, Briefcase, CheckCircle2, ShieldCheck, MapPin, Globe, Star, Menu
 } from 'lucide-react';
 import { formatDate, getPriorityStyles, getStatusStyles, sortApplicationsByDeadline, groupApplicationsByMonth } from '../utils/helpers';
@@ -991,28 +991,28 @@ function LinkRow({ link, index, total, onRemove, onChange, onMoveUp, onMoveDown 
   return (
     <div className="flex items-center gap-2 p-2.5 bg-white/[0.025] border border-white/[0.06] rounded-xl">
       {/* Up/Down buttons for ordering */}
-      <div className="flex flex-col gap-0.5 shrink-0">
+      <div className="flex flex-col gap-1 shrink-0">
         <button
           type="button"
           disabled={index === 0}
           onClick={() => onMoveUp(index)}
-          className={`p-0.5 text-slate-550 rounded hover:bg-white/[0.05] hover:text-white transition-all cursor-pointer ${
-            index === 0 ? 'opacity-20 cursor-not-allowed' : ''
+          className={`p-1.5 rounded-lg bg-white/[0.02] border border-white/[0.06] text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/[0.08] hover:border-indigo-500/20 active:scale-95 transition-all cursor-pointer ${
+            index === 0 ? 'opacity-20 cursor-not-allowed pointer-events-none' : ''
           }`}
           title="Move link up"
         >
-          ▲
+          <ChevronUp size={11} />
         </button>
         <button
           type="button"
           disabled={index === total - 1}
           onClick={() => onMoveDown(index)}
-          className={`p-0.5 text-slate-550 rounded hover:bg-white/[0.05] hover:text-white transition-all cursor-pointer ${
-            index === total - 1 ? 'opacity-20 cursor-not-allowed' : ''
+          className={`p-1.5 rounded-lg bg-white/[0.02] border border-white/[0.06] text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/[0.08] hover:border-indigo-500/20 active:scale-95 transition-all cursor-pointer ${
+            index === total - 1 ? 'opacity-20 cursor-not-allowed pointer-events-none' : ''
           }`}
           title="Move link down"
         >
-          ▼
+          <ChevronDown size={11} />
         </button>
       </div>
 
