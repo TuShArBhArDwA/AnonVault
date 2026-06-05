@@ -847,16 +847,18 @@ function HackathonCard({ app, isNearest, onEdit, onDelete, onViewDetails }) {
               Links:
             </span>
             {app.links.map((lnk, idx) => (
-              <a
-                key={idx}
-                href={lnk.url}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-0.5 text-indigo-400 hover:text-indigo-300 transition-colors underline decoration-indigo-500/25 hover:decoration-indigo-300/80 font-semibold"
-              >
-                <span>{lnk.label || 'Link'}</span>
-                <ExternalLink size={8} className="opacity-60" />
-              </a>
+              <React.Fragment key={idx}>
+                {idx > 0 && <span className="text-slate-600 select-none mx-0.5">•</span>}
+                <a
+                  href={lnk.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-0.5 text-indigo-400 hover:text-indigo-300 transition-colors underline decoration-indigo-500/25 hover:decoration-indigo-300/80 font-semibold"
+                >
+                  <span>{lnk.label || 'Link'}</span>
+                  <ExternalLink size={8} className="opacity-60" />
+                </a>
+              </React.Fragment>
             ))}
           </div>
         )}
