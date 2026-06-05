@@ -1262,6 +1262,7 @@ function AppInner() {
       const added = await addIdea(newIdea);
       setIdeas(prev => [added, ...prev]);
       showToast('success', 'Idea Captured', `"${added.title}" has been saved to the vault.`);
+      return added;
     } catch (err) {
       console.error('Failed to add idea:', err);
       showToast('error', 'Capture Failed', 'Could not save idea. Check your Supabase table.');
@@ -1306,7 +1307,7 @@ function AppInner() {
         return updated;
       });
       showToast('success', 'Concept Created (Local)', `"${newIdea.title}" added to local workspace.`);
-      return;
+      return added;
     }
 
     try {
@@ -1314,6 +1315,7 @@ function AppInner() {
       setProjectIdeas(prev => [added, ...prev]);
       setProjectIdeasCount(prev => prev + 1);
       showToast('success', 'Concept Created', `"${added.title}" added to workspace.`);
+      return added;
     } catch (err) {
       console.error('Failed to add project idea:', err);
       showToast('error', 'Capture Failed', 'Could not save concept to Supabase.');

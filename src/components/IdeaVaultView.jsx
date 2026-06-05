@@ -4,7 +4,7 @@ import {
   AlertTriangle, FileImage, Link as LinkIcon,
   Lightbulb, Lock, Hash, ExternalLink, Image as ImageIcon,
   Globe, ChevronDown, ChevronUp, GripVertical, Info, Maximize2,
-  ChevronLeft, ChevronRight, Menu
+  ChevronLeft, ChevronRight, Menu, Star
 } from 'lucide-react';
 import { uploadIdeaImage } from '../services/supabase';
 import { formatDate } from '../utils/helpers';
@@ -238,6 +238,24 @@ export default function IdeaVaultView({
   const [isFormOpen, setIsFormOpen]     = useState(false);
   const [editingIdea, setEditingIdea]   = useState(null);
 
+  const [pinnedIds, setPinnedIds] = useState(() => {
+    try {
+      const saved = localStorage.getItem('anonvault_ideas_pinned');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+  const [formStarred, setFormStarred] = useState(false);
+
+  const togglePin = (id) => {
+    setPinnedIds(prev => {
+      const updated = prev.includes(id) 
+        ? prev.filter(item => item !== id)
+        : [...prev, id];
+      localStorage.setItem('anonvault_ideas_pinned', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   /* sorting and drag state */
   /* sorting and drag state */
   const [orderedIdeas, setOrderedIdeas] = useState([]);
@@ -306,6 +324,7 @@ export default function IdeaVaultView({
     setFormImages([]); setFormLinks([]);
     setUploadingIndex(null); setUploadError('');
     setEditingIdea(null); setAttachTab('images');
+    setFormStarred(false);
   };
 
   const handleOpenAdd = () => { resetForm(); setIsFormOpen(true); };
@@ -316,6 +335,7 @@ export default function IdeaVaultView({
     setFormContent(idea.content || '');
     setFormTags(idea.tags || []);
     setTagInputVal('');
+    setFormStarred(pinnedIds.includes(idea.id));
 
     // normalise legacy single image_url → images array
     const imgs = idea.images && idea.images.length > 0
@@ -472,8 +492,31 @@ export default function IdeaVaultView({
       tags:      finalTags,
     };
 
-    if (editingIdea) await onUpdate(editingIdea.id, payload);
-    else             await onAdd(payload);
+    if (editingIdea) {
+      await onUpdate(editingIdea.id, payload);
+      setPinnedIds(prev => {
+        const isCurrentlyPinned = prev.includes(editingIdea.id);
+        if (formStarred && !isCurrentlyPinned) {
+          const updated = [...prev, editingIdea.id];
+          localStorage.setItem('anonvault_ideas_pinned', JSON.stringify(updated));
+          return updated;
+        } else if (!formStarred && isCurrentlyPinned) {
+          const updated = prev.filter(id => id !== editingIdea.id);
+          localStorage.setItem('anonvault_ideas_pinned', JSON.stringify(updated));
+          return updated;
+        }
+        return prev;
+      });
+    } else {
+      const added = await onAdd(payload);
+      if (added && added.id && formStarred) {
+        setPinnedIds(prev => {
+          const updated = [...prev, added.id];
+          localStorage.setItem('anonvault_ideas_pinned', JSON.stringify(updated));
+          return updated;
+        });
+      }
+    }
     setIsFormOpen(false); resetForm();
   };
 
@@ -513,6 +556,8 @@ export default function IdeaVaultView({
   };
 
   const processedIdeas = getProcessedIdeas();
+  const pinnedIdeas = processedIdeas.filter(idea => pinnedIds.includes(idea.id));
+  const regularIdeas = processedIdeas.filter(idea => !pinnedIds.includes(idea.id));
 
   /* FLIP layout transition animation */
   const prevRectsRef = useRef({});
@@ -657,36 +702,79 @@ export default function IdeaVaultView({
           </div>
         ) : (
           <div>
-            <div className="columns-1 md:columns-2 xl:columns-3 gap-5">
-              {processedIdeas.map(idea => (
-                <div
-                  key={idea.id}
-                  data-flip-id={idea.id}
-                  draggable={sortBy === 'custom' && hoveredDragId === idea.id && !searchTerm && !selectedTag}
-                  onDragStart={e => handleDragStart(e, idea.id)}
-                  onDragEnd={handleDragEnd}
-                  onDragOver={e => handleDragOver(e, idea.id)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={e => handleDrop(e, idea.id)}
-                  className={`break-inside-avoid mb-5 transition-opacity duration-200 ${
-                    draggedId === idea.id ? 'opacity-20 scale-95 border-2 border-dashed border-indigo-500/20 rounded-2xl' : ''
-                  } ${
-                    draggedOverId === idea.id ? 'border-2 border-indigo-500 scale-[1.01] shadow-[0_0_15px_rgba(99,102,241,0.25)] rounded-2xl' : ''
-                  }`}
-                >
-                  <IdeaCard
-                    idea={idea}
-                    sortBy={sortBy}
-                    onEdit={handleOpenEdit}
-                    onDelete={id => setDeleteConfirmId(id)}
-                    onSelectTag={setSelectedTag}
-                    onViewDetails={setSelectedIdea}
-                    isFilteringOrSearching={!!(searchTerm || selectedTag)}
-                    setHoveredDragId={setHoveredDragId}
-                  />
+            {/* Pinned Section */}
+            {pinnedIdeas.length > 0 && (
+              <div className="mb-8 animate-in fade-in duration-300">
+                <div className="flex items-center gap-2 mb-4">
+                  <Star size={14} className="fill-amber-400 text-amber-400" />
+                  <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Pinned Ideas</h3>
+                  <span className="px-2 py-0.5 text-[10px] bg-amber-400/10 text-amber-350 rounded-full font-bold border border-amber-400/20">{pinnedIdeas.length}</span>
                 </div>
-              ))}
-            </div>
+                <div className="columns-1 md:columns-2 xl:columns-3 gap-5">
+                  {pinnedIdeas.map(idea => (
+                    <div key={idea.id} className="break-inside-avoid mb-5">
+                      <IdeaCard
+                        idea={idea}
+                        sortBy={sortBy}
+                        onEdit={handleOpenEdit}
+                        onDelete={id => setDeleteConfirmId(id)}
+                        onSelectTag={setSelectedTag}
+                        onViewDetails={setSelectedIdea}
+                        isFilteringOrSearching={true}
+                        setHoveredDragId={setHoveredDragId}
+                        isPinned={true}
+                        onTogglePin={togglePin}
+                      />
+                    </div>
+                  ))}
+                </div>
+                {regularIdeas.length > 0 && <div className="h-px bg-white/[0.04] my-8" />}
+              </div>
+            )}
+
+            {/* Main Section */}
+            {regularIdeas.length > 0 && (
+              <>
+                {pinnedIdeas.length > 0 && (
+                  <div className="flex items-center gap-2 mb-4">
+                    <Lightbulb size={14} className="text-slate-500" />
+                    <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Other Ideas</h3>
+                  </div>
+                )}
+                <div className="columns-1 md:columns-2 xl:columns-3 gap-5">
+                  {regularIdeas.map(idea => (
+                    <div
+                      key={idea.id}
+                      data-flip-id={idea.id}
+                      draggable={sortBy === 'custom' && hoveredDragId === idea.id && !searchTerm && !selectedTag}
+                      onDragStart={e => handleDragStart(e, idea.id)}
+                      onDragEnd={handleDragEnd}
+                      onDragOver={e => handleDragOver(e, idea.id)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={e => handleDrop(e, idea.id)}
+                      className={`break-inside-avoid mb-5 transition-opacity duration-200 ${
+                        draggedId === idea.id ? 'opacity-20 scale-95 border-2 border-dashed border-indigo-500/20 rounded-2xl' : ''
+                      } ${
+                        draggedOverId === idea.id ? 'border-2 border-indigo-500 scale-[1.01] shadow-[0_0_15px_rgba(99,102,241,0.25)] rounded-2xl' : ''
+                      }`}
+                    >
+                      <IdeaCard
+                        idea={idea}
+                        sortBy={sortBy}
+                        onEdit={handleOpenEdit}
+                        onDelete={id => setDeleteConfirmId(id)}
+                        onSelectTag={setSelectedTag}
+                        onViewDetails={setSelectedIdea}
+                        isFilteringOrSearching={!!(searchTerm || selectedTag)}
+                        setHoveredDragId={setHoveredDragId}
+                        isPinned={false}
+                        onTogglePin={togglePin}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -702,7 +790,21 @@ export default function IdeaVaultView({
                 <h3 className="text-[15px] font-bold text-white">{editingIdea ? 'Edit Idea' : 'New Idea'}</h3>
                 <p className="text-[11px] text-slate-500 mt-0.5">{editingIdea ? 'Update your idea below' : 'Capture a creative thought'}</p>
               </div>
-              <button onClick={() => setIsFormOpen(false)} className="btn-ghost p-2 rounded-lg cursor-pointer"><X size={15} /></button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFormStarred(s => !s)}
+                  className={`p-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                    formStarred
+                      ? 'bg-amber-400/10 border border-amber-400/35 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.06)]'
+                      : 'btn-ghost text-slate-555 hover:text-amber-400'
+                  }`}
+                  title={formStarred ? 'Featured (Starred)' : 'Mark as Featured'}
+                >
+                  <Star size={15} className={formStarred ? 'fill-amber-300' : ''} />
+                </button>
+                <button onClick={() => setIsFormOpen(false)} className="btn-ghost p-2 rounded-lg cursor-pointer"><X size={15} /></button>
+              </div>
             </div>
 
             <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
@@ -1062,7 +1164,7 @@ function IdeaDetailModal({ idea, onClose, onEdit }) {
 }
 
 /* ─── Idea Card ───────────────────────────────────────── */
-function IdeaCard({ idea, sortBy, onEdit, onDelete, onSelectTag, onViewDetails, isFilteringOrSearching, setHoveredDragId }) {
+function IdeaCard({ idea, sortBy, onEdit, onDelete, onSelectTag, onViewDetails, isFilteringOrSearching, setHoveredDragId, isPinned, onTogglePin }) {
   const images = idea.images?.length > 0
     ? idea.images
     : idea.image_url ? [{ url: idea.image_url, caption: '' }] : [];
@@ -1100,7 +1202,10 @@ function IdeaCard({ idea, sortBy, onEdit, onDelete, onSelectTag, onViewDetails, 
                 <GripVertical size={13} className="mt-0.5" />
               </div>
             )}
-            <h4 className="text-[13px] font-bold text-white leading-snug break-words flex-1 mt-0.5">{idea.title}</h4>
+            <h4 className="text-[13px] font-bold text-white leading-snug break-words flex-1 mt-0.5 flex items-center gap-1.5">
+              <span>{idea.title}</span>
+              {isPinned && <Star size={12} className="fill-amber-400 text-amber-400 shrink-0" />}
+            </h4>
           </div>
           
           {/* Glass action container strip (hidden by default, shown on card hover) */}
@@ -1109,6 +1214,19 @@ function IdeaCard({ idea, sortBy, onEdit, onDelete, onSelectTag, onViewDetails, 
                           transition-all duration-200 ease-out"
                onClick={e => e.stopPropagation()}
                onDragStart={e => e.stopPropagation()}>
+            {/* pin toggle button */}
+            <button onClick={() => onTogglePin(idea.id)}
+              className={`p-1.5 rounded-lg transition-all cursor-pointer flex items-center justify-center border border-transparent ${
+                isPinned 
+                  ? 'text-amber-400 hover:text-amber-300 hover:bg-amber-400/[0.08] hover:border-amber-400/20' 
+                  : 'text-slate-400 hover:text-amber-400 hover:bg-amber-400/[0.08] hover:border-amber-400/20'
+              }`}
+              title={isPinned ? "Unpin idea" : "Pin idea"}>
+              <Star size={11} className={isPinned ? 'fill-amber-400' : ''} />
+            </button>
+            
+            <div className="w-[1px] h-3 bg-white/[0.08] self-center" />
+
             {/* info tooltip */}
             <div className="relative group/info select-none">
               <button
@@ -1131,7 +1249,7 @@ function IdeaCard({ idea, sortBy, onEdit, onDelete, onSelectTag, onViewDetails, 
             </button>
             
             <button onClick={() => onDelete(idea.id)}
-              className="p-1.5 text-slate-450 hover:text-rose-450 rounded-lg hover:bg-rose-500/[0.08] transition-all cursor-pointer flex items-center justify-center border border-transparent hover:border-rose-500/20"
+              className="p-1.5 text-slate-455 hover:text-rose-455 rounded-lg hover:bg-rose-500/[0.08] transition-all cursor-pointer flex items-center justify-center border border-transparent hover:border-rose-500/20"
               title="Delete idea">
               <Trash2 size={11} />
             </button>
