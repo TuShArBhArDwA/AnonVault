@@ -1176,7 +1176,9 @@ function IdeaCard({ idea, sortBy, onEdit, onDelete, onSelectTag, onViewDetails, 
   return (
     <article
       onClick={() => onViewDetails && onViewDetails(idea)}
-      className="glass-card rounded-2xl !overflow-visible cursor-pointer select-none group tactile-item"
+      className={`glass-card rounded-2xl !overflow-visible cursor-pointer select-none group tactile-item ${
+        isPinned ? 'premium-starred-card' : ''
+      }`}
     >
       {/* hero image */}
       {primaryImage?.url && (
