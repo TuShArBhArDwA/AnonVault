@@ -93,9 +93,35 @@ function ImageRow({ img, index, onRemove, onChangeUrl, onFileUpload, uploadingIn
 }
 
 /* ─── Single link row inside form ─────────────────────── */
-function LinkRow({ link, index, onRemove, onChange }) {
+function LinkRow({ link, index, total, onRemove, onChange, onMoveUp, onMoveDown }) {
   return (
     <div className="flex items-center gap-2 p-2.5 bg-white/[0.025] border border-white/[0.06] rounded-xl">
+      {/* Up/Down buttons for ordering */}
+      <div className="flex flex-col gap-0.5 shrink-0">
+        <button
+          type="button"
+          disabled={index === 0}
+          onClick={() => onMoveUp(index)}
+          className={`p-0.5 text-slate-550 rounded hover:bg-white/[0.05] hover:text-white transition-all cursor-pointer ${
+            index === 0 ? 'opacity-20 cursor-not-allowed' : ''
+          }`}
+          title="Move link up"
+        >
+          ▲
+        </button>
+        <button
+          type="button"
+          disabled={index === total - 1}
+          onClick={() => onMoveDown(index)}
+          className={`p-0.5 text-slate-550 rounded hover:bg-white/[0.05] hover:text-white transition-all cursor-pointer ${
+            index === total - 1 ? 'opacity-20 cursor-not-allowed' : ''
+          }`}
+          title="Move link down"
+        >
+          ▼
+        </button>
+      </div>
+
       <Globe size={12} className="text-indigo-400 shrink-0" />
       <div className="flex-1 grid grid-cols-2 gap-2">
         <input
@@ -439,6 +465,16 @@ export default function ProjectIdeasView({
     setFormLinks(updated);
   };
 
+  const moveLink = (index, direction) => {
+    const nextIdx = index + direction;
+    if (nextIdx < 0 || nextIdx >= formLinks.length) return;
+    const updated = [...formLinks];
+    const temp = updated[index];
+    updated[index] = updated[nextIdx];
+    updated[nextIdx] = temp;
+    setFormLinks(updated);
+  };
+
   // Form Tags Helper Handlers
   const handleTagKeyDown = (e) => {
     if (e.key === 'Enter' || e.key === ',') {
@@ -742,8 +778,11 @@ export default function ProjectIdeasView({
                       key={i}
                       link={link}
                       index={i}
+                      total={formLinks.length}
                       onRemove={removeLinkRow}
                       onChange={changeLinkRow}
+                      onMoveUp={idx => moveLink(idx, -1)}
+                      onMoveDown={idx => moveLink(idx, 1)}
                     />
                   ))}
                   <button
