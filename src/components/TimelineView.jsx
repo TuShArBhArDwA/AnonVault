@@ -370,12 +370,12 @@ export default function TimelineView({
           </div>
         ) : (
           <>
-            {/* Starred / Favorite Section */}
+            {/* Starred / Pinned Section */}
             {starredApps.length > 0 && selectedPriority !== 'high' && (
               <div className="mb-8">
                 <div className="flex items-center gap-2 mb-4">
                   <Star size={14} className="fill-amber-400 text-amber-400" />
-                  <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Favorite Hackathons</h3>
+                  <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Pinned Hackathons</h3>
                   <span className="px-2 py-0.5 text-[10px] bg-amber-400/10 text-amber-300 rounded-full font-bold border border-amber-400/20">{starredApps.length}</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
