@@ -217,7 +217,12 @@ export default function TimelineView({
       (selectedStatus === 'all' || app.status === selectedStatus);
   });
 
-  const sortedApps = sortApplicationsByDeadline(filteredApps, sortOrder);
+  const starredApps = filteredApps.filter(app => app.priority === 'high');
+  const mainApps = selectedPriority === 'all' 
+    ? filteredApps.filter(app => app.priority !== 'high')
+    : filteredApps;
+
+  const sortedApps = sortApplicationsByDeadline(mainApps, sortOrder);
   const groupedApps = groupApplicationsByMonth(sortedApps);
 
   const nearestAppId = (() => {
@@ -363,50 +368,90 @@ export default function TimelineView({
               </button>
             )}
           </div>
-        ) : groupByMonthMode ? (
-          <div className="relative pl-5 ml-1" style={{ borderLeft: '1px solid rgba(99,102,241,0.12)' }}>
-            <div className="space-y-10">
-              {Object.keys(groupedApps).map(monthYear => {
-                const isExpanded = expandedMonths[monthYear] !== false;
-                const monthApps = groupedApps[monthYear];
-                return (
-                  <div key={monthYear} className="relative">
-                    {/* Month marker */}
-                    <div className="absolute -left-[27px] top-1 w-4 h-4 rounded-full bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center">
-                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
-                    </div>
-                    <button
-                      onClick={() => toggleMonth(monthYear)}
-                      className="flex items-center gap-2 text-[13px] font-semibold text-slate-300 hover:text-white transition-colors mb-4 cursor-pointer"
-                    >
-                      {isExpanded ? <ChevronDown size={14} className="text-slate-500" /> : <ChevronRight size={14} className="text-slate-500" />}
-                      {monthYear}
-                      <span className="px-2 py-0.5 text-[10px] bg-white/[0.06] text-slate-500 rounded-full font-medium">{monthApps.length}</span>
-                    </button>
-                    {isExpanded && (
-                      <div className="relative pl-5 space-y-4" style={{ borderLeft: '1px solid rgba(255,255,255,0.05)' }}>
-                        {monthApps.map(app => (
-                          <div key={app.id} className="relative">
-                            <TimelineNodeDot app={app} />
-                            <HackathonCard app={app} isNearest={app.id===nearestAppId} onEdit={handleOpenEdit} onDelete={handleDeleteClick} onViewDetails={setSelectedAppDetails} />
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
         ) : (
-          <div className="relative pl-5 ml-1 space-y-4" style={{ borderLeft: '1px solid rgba(99,102,241,0.12)' }}>
-            {sortedApps.map(app => (
-              <div key={app.id} className="relative">
-                <TimelineNodeDot app={app} />
-                <HackathonCard app={app} isNearest={app.id===nearestAppId} onEdit={handleOpenEdit} onDelete={handleDeleteClick} onViewDetails={setSelectedAppDetails} />
+          <>
+            {/* Starred / Favorite Section */}
+            {starredApps.length > 0 && selectedPriority !== 'high' && (
+              <div className="mb-8">
+                <div className="flex items-center gap-2 mb-4">
+                  <Star size={14} className="fill-amber-400 text-amber-400" />
+                  <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Favorite Hackathons</h3>
+                  <span className="px-2 py-0.5 text-[10px] bg-amber-400/10 text-amber-300 rounded-full font-bold border border-amber-400/20">{starredApps.length}</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                  {starredApps.map(app => (
+                    <HackathonCard 
+                      key={app.id} 
+                      app={app} 
+                      isNearest={app.id === nearestAppId} 
+                      onEdit={handleOpenEdit} 
+                      onDelete={handleDeleteClick} 
+                      onViewDetails={setSelectedAppDetails} 
+                    />
+                  ))}
+                </div>
+                {mainApps.length > 0 && <div className="h-px bg-white/[0.04] my-8" />}
               </div>
-            ))}
-          </div>
+            )}
+
+            {mainApps.length > 0 && (
+              <>
+                {/* Timeline label if favorites are present */}
+                {starredApps.length > 0 && selectedPriority !== 'high' && (
+                  <div className="flex items-center gap-2 mb-6">
+                    <Calendar size={14} className="text-slate-500" />
+                    <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Timeline</h3>
+                  </div>
+                )}
+
+                {groupByMonthMode ? (
+                  <div className="relative pl-5 ml-1" style={{ borderLeft: '1px solid rgba(99,102,241,0.12)' }}>
+                    <div className="space-y-10">
+                      {Object.keys(groupedApps).map(monthYear => {
+                        const isExpanded = expandedMonths[monthYear] !== false;
+                        const monthApps = groupedApps[monthYear];
+                        return (
+                          <div key={monthYear} className="relative">
+                            {/* Month marker */}
+                            <div className="absolute -left-[27px] top-1 w-4 h-4 rounded-full bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center">
+                              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                            </div>
+                            <button
+                              onClick={() => toggleMonth(monthYear)}
+                              className="flex items-center gap-2 text-[13px] font-semibold text-slate-300 hover:text-white transition-colors mb-4 cursor-pointer"
+                            >
+                              {isExpanded ? <ChevronDown size={14} className="text-slate-500" /> : <ChevronRight size={14} className="text-slate-500" />}
+                              {monthYear}
+                              <span className="px-2 py-0.5 text-[10px] bg-white/[0.06] text-slate-500 rounded-full font-medium">{monthApps.length}</span>
+                            </button>
+                            {isExpanded && (
+                              <div className="relative pl-5 space-y-4" style={{ borderLeft: '1px solid rgba(255,255,255,0.05)' }}>
+                                {monthApps.map(app => (
+                                  <div key={app.id} className="relative">
+                                    <TimelineNodeDot app={app} />
+                                    <HackathonCard app={app} isNearest={app.id===nearestAppId} onEdit={handleOpenEdit} onDelete={handleDeleteClick} onViewDetails={setSelectedAppDetails} />
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative pl-5 ml-1 space-y-4" style={{ borderLeft: '1px solid rgba(99,102,241,0.12)' }}>
+                    {sortedApps.map(app => (
+                      <div key={app.id} className="relative">
+                        <TimelineNodeDot app={app} />
+                        <HackathonCard app={app} isNearest={app.id===nearestAppId} onEdit={handleOpenEdit} onDelete={handleDeleteClick} onViewDetails={setSelectedAppDetails} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </>
         )}
       </div>
 
