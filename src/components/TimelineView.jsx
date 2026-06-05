@@ -222,14 +222,11 @@ export default function TimelineView({
     const isStarred = app.priority === 'high';
     return (
       <div className={`absolute -left-[27px] top-5 w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center z-10 transition-all ${
-        app.id === nearestAppId
-          ? 'border-amber-400 bg-amber-400/20 shadow-[0_0_10px_rgba(245,158,11,0.5)]'
-          : isStarred
-            ? 'border-amber-400 bg-amber-400/20 shadow-[0_0_10px_rgba(245,158,11,0.4)]'
-            : 'border-slate-700 bg-slate-900'
+        isStarred
+          ? 'border-amber-400 bg-amber-400/20 shadow-[0_0_10px_rgba(245,158,11,0.4)]'
+          : 'border-slate-700 bg-slate-900'
       }`}>
         <span className={`w-1.5 h-1.5 rounded-full ${
-          app.id === nearestAppId ? 'bg-amber-400' :
           isStarred ? 'bg-amber-400' : 'bg-slate-600'
         }`} />
       </div>
@@ -733,14 +730,8 @@ function HackathonCard({ app, isNearest, onEdit, onDelete, onViewDetails }) {
     <article
       onClick={() => onViewDetails && onViewDetails(app)}
       className={`glass-card rounded-2xl cursor-pointer select-none group transition-all duration-300 tactile-item ${
-        isNearest ? 'glow-nearest' :
         isStarred ? 'premium-starred-card' : ''
       }`}
-      style={{
-        borderColor: isNearest 
-          ? 'rgba(245, 158, 11, 0.45)' 
-          : undefined,
-      }}
     >
       <div className="p-5">
         {/* Top Date & Days Left Strip */}
