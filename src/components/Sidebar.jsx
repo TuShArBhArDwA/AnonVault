@@ -339,23 +339,6 @@ export default function Sidebar({ activeTab, setActiveTab, stats, mobileOpen, se
                 <span className="absolute -top-7 px-2 py-0.5 bg-slate-900 border border-white/10 text-[9px] text-slate-355 rounded-md opacity-0 group-hover/ln2:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">LinkedIn (Mini Anon)</span>
               </a>
             </div>
-
-            <p className="text-[11px] text-slate-655 font-medium">
-              Made with{' '}
-              <span className="text-rose-500/80">♥</span>
-              {' '}by{' '}
-              <a
-                href="https://link.minianon.in/tusharbhardwaj"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-semibold transition-all duration-200 underline underline-offset-2 decoration-dotted"
-                style={{ color: '#818cf8', textDecorationColor: 'rgba(129,140,248,0.4)' }}
-                onMouseEnter={e => { e.currentTarget.style.color = '#a5b4fc'; }}
-                onMouseLeave={e => { e.currentTarget.style.color = '#818cf8'; }}
-              >
-                Mini Anon
-              </a>
-            </p>
           </div>
         ) : (
           <div className="py-4 flex flex-col items-center justify-center shrink-0 w-full gap-2">
