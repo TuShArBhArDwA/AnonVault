@@ -217,9 +217,9 @@ export default function TimelineView({
       (selectedStatus === 'all' || app.status === selectedStatus);
   });
 
-  const starredApps = filteredApps.filter(app => app.priority === 'high');
+  const starredApps = filteredApps.filter(app => app.priority === 'high' && !(app.deadline && new Date(app.deadline) < new Date()));
   const mainApps = selectedPriority === 'all' 
-    ? filteredApps.filter(app => app.priority !== 'high')
+    ? filteredApps.filter(app => app.priority !== 'high' || (app.deadline && new Date(app.deadline) < new Date()))
     : filteredApps;
 
   const sortedApps = sortApplicationsByDeadline(mainApps, sortOrder);
@@ -387,6 +387,7 @@ export default function TimelineView({
                       onEdit={handleOpenEdit} 
                       onDelete={handleDeleteClick} 
                       onViewDetails={setSelectedAppDetails} 
+                      onUpdate={onUpdate}
                     />
                   ))}
                 </div>
@@ -429,7 +430,7 @@ export default function TimelineView({
                                 {monthApps.map(app => (
                                   <div key={app.id} className="relative">
                                     <TimelineNodeDot app={app} />
-                                    <HackathonCard app={app} isNearest={app.id===nearestAppId} onEdit={handleOpenEdit} onDelete={handleDeleteClick} onViewDetails={setSelectedAppDetails} />
+                                    <HackathonCard app={app} isNearest={app.id===nearestAppId} onEdit={handleOpenEdit} onDelete={handleDeleteClick} onViewDetails={setSelectedAppDetails} onUpdate={onUpdate} />
                                   </div>
                                 ))}
                               </div>
@@ -444,7 +445,7 @@ export default function TimelineView({
                     {sortedApps.map(app => (
                       <div key={app.id} className="relative">
                         <TimelineNodeDot app={app} />
-                        <HackathonCard app={app} isNearest={app.id===nearestAppId} onEdit={handleOpenEdit} onDelete={handleDeleteClick} onViewDetails={setSelectedAppDetails} />
+                        <HackathonCard app={app} isNearest={app.id===nearestAppId} onEdit={handleOpenEdit} onDelete={handleDeleteClick} onViewDetails={setSelectedAppDetails} onUpdate={onUpdate} />
                       </div>
                     ))}
                   </div>
@@ -761,7 +762,7 @@ function InfoRow({ icon, label, children }) {
 }
 
 /* ── HACKATHON CARD ── */
-function HackathonCard({ app, isNearest, onEdit, onDelete, onViewDetails }) {
+function HackathonCard({ app, isNearest, onEdit, onDelete, onViewDetails, onUpdate }) {
   const priority = getPriorityStyles(app.priority);
   const status = getStatusStyles(app.status);
 
