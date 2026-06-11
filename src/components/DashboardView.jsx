@@ -97,9 +97,9 @@ function DashboardTaskCard({ task, onToggle, onToggleSub, index = 0 }) {
     <div
       className={`relative rounded-xl overflow-hidden group
         glass-card border ${p.cardBorder} ${
-          task.completed ? 'opacity-50 scale-[0.99] border-white/[0.04]' : (
-            task.priority === 'high' ? p.glowClass : ''
-          )
+          task.completed 
+            ? 'opacity-50 scale-[0.99] border-white/[0.04]' 
+            : `hover:-translate-y-[1.5px] hover:shadow-lg hover:shadow-black/25 hover:border-white/[0.12] ${task.priority === 'high' ? p.glowClass : ''}`
         } transition-all duration-300`}
       style={{ animationDelay: `${index * 55}ms` }}
     >
@@ -466,7 +466,7 @@ export default function DashboardView({
               );
             })()}
 
-            <div className="flex-1 overflow-y-auto pr-1 space-y-3">
+            <div className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar">
               {tasksLoading ? (
                 <div className="h-full flex items-center justify-center text-slate-500 text-xs gap-2">
                   <span className="w-3.5 h-3.5 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
@@ -500,7 +500,7 @@ export default function DashboardView({
         </div>
 
           {/* Right Side: Hackathons, Ideas, and Projects */}
-          <div className="space-y-6 flex flex-col h-[480px] overflow-y-auto pr-1">
+          <div className="space-y-6 flex flex-col h-[480px] overflow-y-auto pr-1 custom-scrollbar">
             
             {/* Hackathons Panel */}
             <div 
@@ -546,7 +546,7 @@ export default function DashboardView({
                         <div 
                           key={app.id} 
                           onClick={() => onSelectHackathon?.(app.id)}
-                          className="glass-card rounded-2xl cursor-pointer select-none group transition-all duration-300 tactile-item p-4 border border-white/[0.05] hover:border-white/[0.08] hover:bg-white/[0.03]"
+                          className="glass-card rounded-2xl cursor-pointer select-none group transition-all duration-300 tactile-item p-4 border border-white/[0.04] hover:border-white/[0.12] hover:bg-white/[0.03] hover:-translate-y-[1.5px] hover:shadow-lg hover:shadow-black/25"
                         >
                           {/* Top Date & Days Left Strip */}
                           <div className="flex items-center justify-between text-[11px] mb-3 pb-2.5 border-b border-white/[0.04]">
@@ -628,7 +628,7 @@ export default function DashboardView({
                       <div 
                         key={idea.id} 
                         onClick={() => onSelectIdea?.(idea.id)}
-                        className="py-2.5 flex items-center justify-between gap-4 group/item cursor-pointer hover:bg-white/[0.02] px-2 -mx-2 rounded-xl transition-all"
+                        className="py-2.5 flex items-center justify-between gap-4 group/item cursor-pointer hover:bg-white/[0.03] px-3 -mx-2.5 rounded-xl transition-all hover:translate-x-0.5"
                       >
                         <div className="min-w-0 flex-1">
                           <p className="text-[12px] font-semibold text-slate-200 truncate group-hover/item:text-white transition-colors">{idea.title}</p>
@@ -678,7 +678,7 @@ export default function DashboardView({
                       <div 
                         key={proj.id} 
                         onClick={() => onSelectProject?.(proj.id)}
-                        className="py-2.5 flex items-center justify-between gap-4 group/item cursor-pointer hover:bg-white/[0.02] px-2 -mx-2 rounded-xl transition-all"
+                        className="py-2.5 flex items-center justify-between gap-4 group/item cursor-pointer hover:bg-white/[0.03] px-3 -mx-2.5 rounded-xl transition-all hover:translate-x-0.5"
                       >
                         <div className="min-w-0 flex-1">
                           <p className="text-[12px] font-semibold text-slate-200 truncate group-hover/item:text-white transition-colors">{proj.title}</p>
@@ -701,6 +701,21 @@ export default function DashboardView({
         @keyframes rotateGlow {
           from { transform: rotate(0deg); }
           to   { transform: rotate(360deg); }
+        }
+        /* Custom thin scrollbars for dashboard widgets */
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+          height: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 99px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.12);
         }
       `}</style>
     </div>
