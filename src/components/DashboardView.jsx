@@ -355,20 +355,20 @@ export default function DashboardView({
           </div>
         </div>
 
-        {/* Live time & task pill */}
-        <div className="flex items-center gap-2.5">
-          <div className="flex items-center justify-center px-4 py-2 rounded-xl h-[34px]" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
-            <span className="text-[13px] font-bold text-white tracking-widest font-mono tabular-nums leading-none">
-              {getFormattedTime()}
+        {/* Live time */}
+        <div className="flex items-center justify-center px-5 py-2 rounded-xl h-[42px] gap-3" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <div className="flex flex-col items-end">
+            <span className="text-[16px] font-bold text-white tracking-widest font-mono tabular-nums leading-none">
+              {currentTime.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false })}
+            </span>
+            <span className="text-[9px] font-medium text-slate-600 tracking-[0.12em] uppercase mt-0.5">
+              {currentTime.toLocaleTimeString(undefined, { hour12: true }).split(' ')[1]}
             </span>
           </div>
-
-          {tasks.length > 0 && (
-            <div className="px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest h-[34px] flex items-center gap-1.5" style={{ background: pendingCount === 0 ? 'rgba(16,185,129,0.08)' : 'rgba(56,189,248,0.08)', border: `1px solid ${pendingCount === 0 ? 'rgba(16,185,129,0.2)' : 'rgba(56,189,248,0.18)'}`, color: pendingCount === 0 ? '#34d399' : '#38bdf8' }}>
-              <span className="w-1.5 h-1.5 rounded-full" style={{ background: pendingCount === 0 ? '#34d399' : '#38bdf8', boxShadow: `0 0 6px ${pendingCount === 0 ? '#34d399' : '#38bdf8'}` }} />
-              {pendingCount === 0 ? 'All Done' : `${pendingCount} Left`}
-            </div>
-          )}
+          <div className="w-px h-5 bg-white/[0.06]" />
+          <span className="text-[20px] font-light font-mono tabular-nums text-slate-700 leading-none w-[22px] text-center">
+            {String(currentTime.getSeconds()).padStart(2, '0')}
+          </span>
         </div>
       </header>
 
