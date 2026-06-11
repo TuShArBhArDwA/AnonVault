@@ -222,93 +222,46 @@ export default function Sidebar({ activeTab, setActiveTab, stats, mobileOpen, se
               );
             })}
           </nav>
-          {/* ── Overview stats ── */}
+           {/* ── Remaining Tasks stat panel ── */}
           {!isCollapsed && (
-            <div className="mt-7 animate-in fade-in duration-200">
-              <p className="text-[10px] font-bold text-slate-600 uppercase tracking-[0.18em] px-3 mb-3">
-                Overview
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {/* Today's tasks */}
-                <div className={`stat-card transition-all duration-300 group/taskcard cursor-pointer ${
-                  stats.pendingTasks > 0 ? 'stat-card-pending' : 'stat-card-completed'
-                }`}>
-                  <div className="flex items-center gap-1.5 mb-2.5">
-                    <CheckSquare 
-                      size={11} 
-                      className={`${
-                        stats.pendingTasks > 0 
-                          ? 'text-sky-400 group-hover/taskcard:animate-pulse' 
-                          : 'text-emerald-400 group-hover/taskcard:scale-110 transition-transform'
-                      }`} 
-                    />
-                    <span className="text-[10px] text-slate-500 font-semibold tracking-wide select-none">Tasks</span>
-                  </div>
-                  <div className="flex items-end justify-between">
-                    {stats.pendingTasks > 0 ? (
-                      <>
-                        <span className="text-[26px] font-extrabold tabular-nums tracking-tight leading-none text-sky-300">
-                          {stats.pendingTasks}
-                        </span>
-                        <span className="text-[9px] text-slate-655 font-bold mb-0.5 select-none">rem</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-[24px] font-black tracking-tight leading-none text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.35)]">
-                          ✓
-                        </span>
-                        <span className="text-[9px] text-emerald-400 font-bold mb-0.5 select-none bg-emerald-500/10 border border-emerald-500/25 px-1.5 py-0.5 rounded-lg">
-                          All Done
-                        </span>
-                      </>
-                    )}
-                  </div>
+            <div className="mt-7 animate-in fade-in duration-200 px-3">
+              <div 
+                className={`stat-card transition-all duration-300 group/taskcard cursor-pointer border ${
+                  stats.pendingTasks > 0 
+                    ? 'stat-card-pending border-sky-500/15' 
+                    : 'stat-card-completed border-emerald-500/15'
+                }`}
+                onClick={() => setActiveTab('tasks')}
+              >
+                <div className="flex items-center gap-1.5 mb-2.5">
+                  <CheckSquare 
+                    size={11} 
+                    className={`${
+                      stats.pendingTasks > 0 
+                        ? 'text-sky-400 group-hover/taskcard:animate-pulse' 
+                        : 'text-emerald-400 group-hover/taskcard:scale-110 transition-transform'
+                    }`} 
+                  />
+                  <span className="text-[10px] text-slate-500 font-semibold tracking-wide select-none">Tasks Remaining</span>
                 </div>
-
-                {/* Hackathons */}
-                <div className="stat-card">
-                  <div className="flex items-center gap-1.5 mb-2.5">
-                    <CalendarRange size={11} className={stats.totalApplications > 0 ? 'text-sky-400' : 'text-slate-600'} />
-                    <span className="text-[10px] text-slate-500 font-semibold tracking-wide">Events</span>
-                  </div>
-                  <span className={`text-[26px] font-extrabold tabular-nums tracking-tight leading-none ${
-                    stats.totalApplications > 0 ? 'text-sky-300' : 'text-slate-500'
-                  }`}>
-                    {stats.totalApplications}
-                  </span>
-                </div>
-
-                {/* Ideas */}
-                <div className="stat-card">
-                  <div className="flex items-center gap-1.5 mb-2.5">
-                    <TrendingUp size={11} className="text-amber-400" />
-                    <span className="text-[10px] text-slate-500 font-semibold tracking-wide">Ideas</span>
-                  </div>
-                  <span className="text-[26px] font-extrabold tabular-nums tracking-tight leading-none text-amber-300">
-                    {stats.totalIdeas || 0}
-                  </span>
-                </div>
-
-                {/* Project Ideas */}
-                <div className="stat-card">
-                  <div className="flex items-center gap-1.5 mb-2.5">
-                    <Rocket size={11} className="text-indigo-400" />
-                    <span className="text-[10px] text-slate-500 font-semibold tracking-wide">Projects</span>
-                  </div>
-                  <span className="text-[26px] font-extrabold tabular-nums tracking-tight leading-none text-indigo-300">
-                    {stats.totalProjectIdeas || 0}
-                  </span>
-                </div>
-                
-                {/* Quotes */}
-                <div className="stat-card">
-                  <div className="flex items-center gap-1.5 mb-2.5">
-                    <Quote size={11} className="text-rose-455" />
-                    <span className="text-[10px] text-slate-500 font-semibold tracking-wide">Quotes</span>
-                  </div>
-                  <span className="text-[26px] font-extrabold tabular-nums tracking-tight leading-none text-rose-400">
-                    {stats.totalQuotes || 0}
-                  </span>
+                <div className="flex items-end justify-between">
+                  {stats.pendingTasks > 0 ? (
+                    <>
+                      <span className="text-[26px] font-extrabold tabular-nums tracking-tight leading-none text-sky-300">
+                        {stats.pendingTasks}
+                      </span>
+                      <span className="text-[9px] text-slate-655 font-bold mb-0.5 select-none">remaining</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-[24px] font-black tracking-tight leading-none text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.35)]">
+                        ✓
+                      </span>
+                      <span className="text-[9px] text-emerald-400 font-bold mb-0.5 select-none bg-emerald-500/10 border border-emerald-500/25 px-1.5 py-0.5 rounded-lg">
+                        All Done
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
