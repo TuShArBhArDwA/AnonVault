@@ -233,8 +233,11 @@ export default function Sidebar({ activeTab, setActiveTab, stats, mobileOpen, se
               <div className="mt-8 px-3.5 animate-in fade-in duration-300">
                 <div 
                   onClick={() => setActiveTab('tasks')}
-                  className="group/taskwidget cursor-pointer relative rounded-2xl p-4 transition-all duration-300 select-none
-                             bg-gradient-to-b from-white/[0.01] to-transparent border border-white/[0.04] hover:bg-white/[0.02] hover:border-sky-500/20"
+                  className={`group/taskwidget cursor-pointer relative rounded-2xl p-4 transition-all duration-300 select-none border ${
+                    pending > 0 
+                      ? 'bg-sky-500/[0.01] border-sky-500/15 shadow-[0_0_15px_-3px_rgba(56,189,248,0.08)] hover:border-sky-500/35 hover:shadow-[0_0_20px_rgba(56,189,248,0.18)]' 
+                      : 'bg-emerald-500/[0.01] border-emerald-500/15 shadow-[0_0_15px_-3px_rgba(52,211,153,0.08)] hover:border-emerald-500/35 hover:shadow-[0_0_20px_rgba(52,211,153,0.18)]'
+                  }`}
                   style={{
                     boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.02)',
                   }}
