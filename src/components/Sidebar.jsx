@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { CalendarRange, Lightbulb, TrendingUp, CheckSquare, X, Zap, ChevronLeft, ChevronRight, Rocket, Quote } from 'lucide-react';
+import { CalendarRange, Lightbulb, TrendingUp, CheckSquare, X, Zap, ChevronLeft, ChevronRight, Rocket, Quote, LayoutDashboard } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab, stats, mobileOpen, setMobileOpen }) {
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -13,6 +13,13 @@ export default function Sidebar({ activeTab, setActiveTab, stats, mobileOpen, se
   };
 
   const navItems = [
+    {
+      id: 'dashboard',
+      label: 'Dashboard',
+      icon: LayoutDashboard,
+      desc: 'Summary Workspace',
+      accent: '#0ea5e9',
+    },
     {
       id: 'tasks',
       label: 'Daily Checklist',

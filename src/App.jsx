@@ -5,6 +5,7 @@ import IdeaVaultView from './components/IdeaVaultView';
 import TasksView from './components/TasksView';
 import ProjectIdeasView from './components/ProjectIdeasView';
 import QuotesView from './components/QuotesView';
+import DashboardView from './components/DashboardView';
 import { ToastProvider, useToast } from './components/Toast';
 import { Lock, ShieldAlert, Cpu, Delete } from 'lucide-react';
 import { 
@@ -1080,7 +1081,7 @@ function AppInner() {
     return sessionStorage.getItem('minianon_authorized') !== 'true';
   });
   const [lockFadeOut, setLockFadeOut] = useState(false);
-  const [activeTab, setActiveTab] = useState('tasks'); // daily checklist as default
+  const [activeTab, setActiveTab] = useState('dashboard'); // dashboard as default
   const didSyncRef = useRef(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -1485,6 +1486,23 @@ function AppInner() {
 
           <ErrorBoundary>
             <div className="relative flex-1 h-full w-full overflow-hidden">
+              {/* Summary Dashboard Workspace */}
+              <div className={`absolute inset-0 transition-all duration-300 ease-out ${
+                activeTab === 'dashboard'
+                  ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto'
+                  : 'opacity-0 translate-y-4 scale-[0.985] pointer-events-none'
+              }`}>
+                <DashboardView 
+                  applications={applications}
+                  ideas={ideas}
+                  projectIdeas={projectIdeas}
+                  quotes={quotes}
+                  onTasksChange={refreshPendingTasks}
+                  setActiveTab={setActiveTab}
+                  onMenuToggle={() => setMobileMenuOpen(true)}
+                />
+              </div>
+
               {/* Hackathon Timeline Workspace */}
               <div className={`absolute inset-0 transition-all duration-300 ease-out ${
                 activeTab === 'timeline'
