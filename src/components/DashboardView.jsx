@@ -2,9 +2,195 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   LayoutDashboard, CheckSquare, Star, Quote, Calendar, AlertTriangle, 
   MapPin, Clock, ExternalLink, ChevronRight, Tag, Lightbulb, Code2, LinkIcon,
-  Circle, CheckCircle2
+  Circle, CheckCircle2, ChevronDown, Repeat2
 } from 'lucide-react';
 import { getTasksForDate, toggleTaskCompletion, toggleSubtaskCompletion } from '../services/tasks';
+import { formatDate, getStatusStyles } from '../utils/helpers';
+
+const PRIORITY_META = {
+  high:   { label: 'High',   color: 'text-rose-400',   bg: 'bg-rose-500/10',   border: 'border-rose-500/25',  dot: 'bg-rose-450',   cardBorder: 'border-rose-500/35', glowClass: 'glow-high'   },
+  medium: { label: 'Medium', color: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/25', dot: 'bg-amber-450',  cardBorder: 'border-amber-500/30', glowClass: 'glow-medium' },
+  low:    { label: 'Low',    color: 'text-slate-450',  bg: 'bg-white/[0.04]',  border: 'border-white/[0.08]', dot: 'bg-slate-500',  cardBorder: 'border-white/[0.08]', glowClass: ''  },
+};
+
+const getDaysRemaining = (deadline) => {
+  if (!deadline) return 999;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(deadline);
+  target.setHours(0, 0, 0, 0);
+  const diffTime = target - today;
+  return Math.round(diffTime / (1000 * 60 * 60 * 24));
+};
+
+const getDaysRemainingText = (days) => {
+  if (days === 999) return 'No Deadline';
+  if (days < 0) return 'Deadline Passed';
+  if (days === 0) return 'Due today';
+  if (days === 1) return 'Due tomorrow';
+  return `${days} ${days === 1 ? 'day' : 'days'} left`;
+};
+
+function Checkbox({ checked, onChange, size = 'md', disabled = false }) {
+  const sz = size === 'sm' ? 'w-[16px] h-[16px]' : 'w-[20px] h-[20px]';
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={e => { e.stopPropagation(); if (!disabled) onChange(); }}
+      className={`${sz} rounded-lg flex items-center justify-center flex-shrink-0
+        transition-all duration-300 select-none focus:outline-none relative overflow-hidden
+        ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
+        ${checked
+          ? 'text-emerald-400'
+          : disabled ? '' : 'hover:border-violet-500/50 hover:bg-violet-500/[0.05]'
+        }`}
+      style={{
+        background: checked
+          ? 'linear-gradient(135deg, rgba(16,185,129,0.18) 0%, rgba(16,185,129,0.1) 100%)'
+          : 'rgba(255,255,255,0.025)',
+        border: checked
+          ? '1px solid rgba(16,185,129,0.5)'
+          : '1px solid rgba(100,116,139,0.35)',
+        boxShadow: checked ? '0 0 14px rgba(16,185,129,0.25), inset 0 1px 0 rgba(255,255,255,0.06)' : 'none',
+      }}
+    >
+      {checked && (
+        <span className="absolute inset-0 pointer-events-none"
+          style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 60%)' }}
+        />
+      )}
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="w-[58%] h-[58%]"
+        style={{
+          opacity: checked ? 1 : 0,
+          transform: checked ? 'scale(1)' : 'scale(0.5)',
+          transition: 'opacity 0.25s ease, transform 0.3s cubic-bezier(0.34,1.56,0.64,1)',
+          filter: checked ? 'drop-shadow(0 0 3px rgba(16,185,129,0.6))' : 'none',
+        }}
+      >
+        <polyline
+          points="20 6 9 17 4 12"
+          className="checkbox-draw-path"
+          style={{ strokeDashoffset: checked ? 0 : 20 }}
+        />
+      </svg>
+    </button>
+  );
+}
+
+function DashboardTaskCard({ task, onToggle, onToggleSub, index = 0 }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const hasSubtasks  = task.subtasks && task.subtasks.length > 0;
+  const completedSubs = hasSubtasks ? task.subtasks.filter(s => s.completed).length : 0;
+  const allSubsDone  = hasSubtasks && completedSubs === task.subtasks.length;
+  const p            = PRIORITY_META[task.priority] || PRIORITY_META.low;
+  const showThread   = hasSubtasks && !collapsed;
+
+  return (
+    <div
+      className={`relative rounded-xl overflow-hidden group
+        glass-card border ${p.cardBorder} ${
+          task.completed ? 'opacity-50 scale-[0.99] border-white/[0.04]' : (
+            task.priority === 'high' ? p.glowClass : ''
+          )
+        } transition-all duration-300`}
+      style={{ animationDelay: `${index * 55}ms` }}
+    >
+      {/* Main task row */}
+      <div className="flex items-start gap-0 p-3 pb-0">
+        {/* Left: checkbox */}
+        <div className="mr-2.5 shrink-0 mt-0.5">
+          <Checkbox
+            checked={task.completed}
+            onChange={() => onToggle(task)}
+          />
+        </div>
+
+        {/* Right: title + metadata */}
+        <div className="flex-1 min-w-0 pb-3">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <span className={`inline-block text-[12.5px] font-semibold leading-snug strikethrough-draw transition-all ${
+                task.completed ? 'strikethrough-completed text-slate-500' : 'text-white'
+              }`}>
+                {task.title}
+              </span>
+              {/* Subtask progress summary */}
+              {hasSubtasks && (
+                <div className="flex items-center gap-2 mt-1.5">
+                  <div className="w-16 h-[3px] bg-white/[0.06] rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        allSubsDone ? 'bg-emerald-500' : p.dot
+                      }`}
+                      style={{ width: `${(completedSubs / task.subtasks.length) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-[9px] text-slate-650 font-medium tabular-nums">
+                    {completedSubs}/{task.subtasks.length} subtasks
+                  </span>
+                  <button
+                    onClick={e => { e.stopPropagation(); setCollapsed(c => !c); }}
+                    className="text-slate-600 hover:text-slate-400 transition-colors cursor-pointer"
+                    title={collapsed ? 'Expand' : 'Collapse'}
+                  >
+                    <ChevronDown size={10} className={`transition-transform ${collapsed ? '-rotate-90' : ''}`} />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Badges */}
+            <div className="flex items-center gap-1 shrink-0 mt-0.5">
+              {task.priority !== 'low' && (
+                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full
+                  text-[8px] font-bold border ${p.bg} ${p.border} ${p.color}`}>
+                  {p.label}
+                </span>
+              )}
+              {task.is_recurring && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full
+                  text-[8px] font-bold bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                  <Repeat2 size={8} />
+                  {task.recurrence === 'daily'    ? 'Daily'    :
+                   task.recurrence === 'weekdays' ? 'Weekdays' :
+                   task.recurrence === 'weekends' ? 'Weekends' : 'Weekly'}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Subtask list */}
+      {showThread && (
+        <div className="pb-3 pl-8.5 pr-3 space-y-1.5">
+          {task.subtasks.map(st => (
+            <div key={st.id} className="flex items-center gap-2">
+              <Checkbox
+                checked={st.completed}
+                onChange={() => onToggleSub(task, st)}
+                size="sm"
+              />
+              <span className={`inline-block text-[11.5px] leading-snug strikethrough-draw transition-all ${
+                st.completed ? 'strikethrough-completed text-slate-500' : 'text-slate-350'
+              }`}>
+                {st.title}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function DashboardView({ 
   applications, 
@@ -13,7 +199,10 @@ export default function DashboardView({
   quotes,
   onTasksChange,
   setActiveTab,
-  onMenuToggle 
+  onMenuToggle,
+  onSelectIdea,
+  onSelectProject,
+  onSelectHackathon
 }) {
   const [tasks, setTasks] = useState([]);
   const [tasksLoading, setTasksLoading] = useState(false);
@@ -67,7 +256,7 @@ export default function DashboardView({
 
   const handleToggleSubtask = async (task, subtask) => {
     try {
-      const nextVal = await toggleSubtaskCompletion(task.id, subtask.id, todayStr);
+      const nextVal = await toggleSubtaskCompletion(task, subtask.id, todayStr);
       setTasks(prev => prev.map(t => {
         if (t.id !== task.id) return t;
         const nextSubs = (t.subtasks || []).map(st => st.id === subtask.id ? { ...st, completed: nextVal } : st);
@@ -95,10 +284,11 @@ export default function DashboardView({
     const pinned = active.filter(app => app.priority === 'high');
     if (pinned.length > 0) return pinned.slice(0, 2);
     
-    // Fallback: Closest upcoming deadline
-    const sorted = [...active].sort((a, b) => {
-      const daysA = parseInt(a.days_left, 10) || 999;
-      const daysB = parseInt(b.days_left, 10) || 999;
+    // Fallback: Closest upcoming deadline (non-expired)
+    const upcoming = active.filter(app => getDaysRemaining(app.deadline) >= 0);
+    const sorted = [...upcoming].sort((a, b) => {
+      const daysA = getDaysRemaining(a.deadline);
+      const daysB = getDaysRemaining(b.deadline);
       return daysA - daysB;
     });
     return sorted.slice(0, 1);
@@ -179,41 +369,41 @@ export default function DashboardView({
       {/* Main Grid View */}
       <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
         
-        {/* Welcome Block + Daily Quote */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          <div className="xl:col-span-2 p-6 rounded-2xl bg-gradient-to-br from-slate-900/60 to-slate-950/80 border border-white/[0.05] flex flex-col justify-between min-h-[160px] relative overflow-hidden group">
-            {/* Background glowing gradient */}
-            <div className="absolute -right-20 -bottom-20 w-64 h-64 bg-sky-500/5 rounded-full blur-3xl group-hover:bg-sky-500/10 transition-all duration-700" />
-            <div>
-              <h2 className="text-xl font-extrabold text-white tracking-tight">Welcome back to AnonVault</h2>
-              <p className="text-xs text-slate-400 mt-2 max-w-lg leading-relaxed">
-                Your private dashboard summarizes your workspace. Pin items in the Timeline, Idea Vault, and Project Ideas tabs to highlight them here.
-              </p>
-            </div>
-            <div className="flex gap-4 mt-6">
-              <button onClick={() => setActiveTab('tasks')} className="btn-primary px-4 py-2 text-[12px] font-bold rounded-xl cursor-pointer flex items-center gap-1.5">
-                <CheckSquare size={13} /> Manage Tasks
-              </button>
-              <button onClick={() => setActiveTab('ideas')} className="btn-ghost px-4 py-2 text-[12px] font-semibold rounded-xl cursor-pointer flex items-center gap-1.5 border border-white/[0.06] hover:bg-white/[0.04]">
-                <Lightbulb size={13} /> Brainstorm Ideas
-              </button>
-            </div>
-          </div>
+        {/* Daily Quote Card */}
+        <div 
+          className="group/quoteview relative rounded-2xl p-[1px] transition-all duration-300 select-none overflow-hidden"
+          style={{
+            boxShadow: '0 0 20px -3px rgba(244, 63, 94, 0.12)'
+          }}
+        >
+          {/* Rotating background light beam (moving border light) */}
+          <div 
+            className="absolute inset-[-150%] opacity-20 group-hover/quoteview:opacity-40 transition-opacity duration-300 pointer-events-none"
+            style={{
+              background: 'conic-gradient(from 0deg at 50% 50%, transparent 40%, #f43f5e 50%, transparent 60%)',
+              animation: 'rotateGlow 6s linear infinite',
+            }}
+          />
 
-          {/* Daily Quote Card */}
-          <div className="p-6 rounded-2xl bg-gradient-to-br from-rose-950/15 via-slate-900/50 to-slate-950/70 border border-rose-500/10 flex flex-col justify-between relative overflow-hidden group">
-            <Quote className="absolute -top-4 -left-4 w-16 h-16 text-rose-500/[0.02] rotate-180" />
+          {/* Inner Content Card */}
+          <div className="relative rounded-[15px] p-6 bg-gradient-to-br from-rose-955/15 via-slate-950/50 to-slate-950/92 backdrop-blur-xl transition-all duration-300 overflow-hidden flex flex-col justify-between h-full">
+            <Quote className="absolute -top-4 -left-4 w-16 h-16 text-rose-500/[0.02] rotate-180 pointer-events-none" />
             <div>
-              <div className="flex items-center gap-1.5 text-rose-400 font-bold text-[10.5px] uppercase tracking-wider mb-3">
-                <Quote size={11} />
-                <span>Quote of the Day</span>
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-rose-500/10">
+                <h3 className="text-sm font-extrabold text-white flex items-center gap-2">
+                  <Quote size={14} className="text-rose-400" />
+                  <span>Quote of the Day</span>
+                </h3>
+                <button onClick={() => setActiveTab('quotes')} className="text-[11px] text-rose-450 hover:text-rose-350 font-semibold hover:underline flex items-center gap-0.5 cursor-pointer relative z-10">
+                  Manage <ChevronRight size={11} />
+                </button>
               </div>
               {dailyQuote ? (
                 <div>
                   <p className="text-[13px] font-medium text-slate-100 italic leading-relaxed whitespace-pre-wrap break-words Lora">
                     "{dailyQuote.text}"
                   </p>
-                  {dailyQuote.author && (
+                  {dailyQuote.author && dailyQuote.author.trim() !== '' && dailyQuote.author !== 'Unknown' && dailyQuote.author.toLowerCase() !== 'unknown' && (
                     <p className="text-[10px] font-extrabold text-rose-350 mt-2.5">— {dailyQuote.author}</p>
                   )}
                 </div>
@@ -221,11 +411,6 @@ export default function DashboardView({
                 <p className="text-xs text-slate-500 italic">Add quotes in the Quotes Vault section to see them rotate here daily.</p>
               )}
             </div>
-            {dailyQuote && (
-              <button onClick={() => setActiveTab('quotes')} className="text-[9.5px] text-rose-400/70 hover:text-rose-455 font-bold uppercase tracking-wider mt-4 flex items-center gap-0.5 hover:underline cursor-pointer">
-                Quotes Vault <ChevronRight size={10} />
-              </button>
-            )}
           </div>
         </div>
 
@@ -233,7 +418,23 @@ export default function DashboardView({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
           {/* Left Side: Daily Checklist */}
-          <div className="p-6 rounded-2xl bg-slate-900/30 border border-white/[0.05] flex flex-col h-[480px]">
+          <div 
+            className="group/checklistwidget relative rounded-2xl p-[1px] transition-all duration-300 select-none overflow-hidden flex flex-col h-[480px]"
+            style={{
+              boxShadow: '0 0 20px -3px rgba(56, 189, 248, 0.12)'
+            }}
+          >
+            {/* Rotating background light beam (moving border light) */}
+            <div 
+              className="absolute inset-[-150%] opacity-20 group-hover/checklistwidget:opacity-40 transition-opacity duration-300 pointer-events-none"
+              style={{
+                background: 'conic-gradient(from 0deg at 50% 50%, transparent 40%, #38bdf8 50%, transparent 60%)',
+                animation: 'rotateGlow 5s linear infinite',
+              }}
+            />
+
+            {/* Inner Content Card */}
+            <div className="relative rounded-[15px] p-5 bg-slate-950/94 backdrop-blur-xl transition-all duration-300 flex-1 flex flex-col h-full overflow-hidden">
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/[0.04]">
               <h3 className="text-sm font-extrabold text-white flex items-center gap-2">
                 <CheckSquare size={14} className="text-sky-400" />
@@ -284,185 +485,224 @@ export default function DashboardView({
                     if (!a.completed && b.completed) return -1;
                     return 0;
                   })
-                  .map(task => (
-                    <div key={task.id} className="p-3 bg-white/[0.02] border border-white/[0.04] rounded-xl hover:border-white/[0.08] transition-all">
-                      <div className="flex items-start gap-3">
-                        <button 
-                          onClick={() => handleToggleTask(task)}
-                          className="mt-0.5 text-slate-500 hover:text-sky-400 transition-colors cursor-pointer shrink-0"
-                        >
-                          {task.completed ? (
-                            <CheckCircle2 size={16} className="text-sky-400 fill-sky-500/10" />
-                          ) : (
-                            <Circle size={16} className="text-slate-600 hover:text-slate-500" />
-                          )}
-                        </button>
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-[12.5px] font-semibold break-words leading-tight ${task.completed ? 'text-slate-600 line-through' : 'text-slate-200'}`}>
-                            {task.title}
-                          </p>
-                          {task.priority && (
-                            <span className={`inline-block text-[8.5px] font-extrabold uppercase mt-1 px-1.5 py-0.5 rounded ${
-                              task.priority === 'high' 
-                                ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' 
-                                : task.priority === 'medium'
-                                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                                : 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
-                            }`}>
-                              {task.priority}
-                            </span>
-                          )}
-
-                        {/* Subtasks */}
-                        {task.subtasks && task.subtasks.length > 0 && (
-                          <div className="mt-3.5 space-y-2 pl-1.5 border-l border-white/[0.06]">
-                            {task.subtasks.map(st => (
-                              <div key={st.id} className="flex items-center gap-2.5">
-                                <button 
-                                  onClick={() => handleToggleSubtask(task, st)}
-                                  className="text-slate-600 hover:text-sky-400 transition-colors cursor-pointer shrink-0"
-                                >
-                                  {st.completed ? (
-                                    <CheckCircle2 size={13} className="text-sky-400/80" />
-                                  ) : (
-                                    <Circle size={13} className="text-slate-700 hover:text-slate-600" />
-                                  )}
-                                </button>
-                                <span className={`text-[11.5px] truncate font-medium ${st.completed ? 'text-slate-600 line-through' : 'text-slate-400'}`}>
-                                  {st.title}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))
+                  .map((task, index) => (
+                    <DashboardTaskCard
+                      key={task.id}
+                      task={task}
+                      onToggle={handleToggleTask}
+                      onToggleSub={handleToggleSubtask}
+                      index={index}
+                    />
+                  ))
               )}
             </div>
           </div>
+        </div>
 
           {/* Right Side: Hackathons, Ideas, and Projects */}
           <div className="space-y-6 flex flex-col h-[480px] overflow-y-auto pr-1">
             
             {/* Hackathons Panel */}
-            <div className="p-5 rounded-2xl bg-slate-900/30 border border-white/[0.05]">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-[12px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Calendar size={13} className="text-indigo-400" />
-                  <span>Starred / Closest Hackathon</span>
-                </h4>
-                <button onClick={() => setActiveTab('timeline')} className="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold uppercase tracking-wider hover:underline flex items-center gap-0.5 cursor-pointer">
-                  Timeline <ChevronRight size={10} />
-                </button>
-              </div>
+            <div 
+              className="group/hackathonwidget relative rounded-2xl p-[1px] transition-all duration-300 select-none overflow-hidden"
+              style={{
+                boxShadow: '0 0 15px -3px rgba(129, 140, 248, 0.08)'
+              }}
+            >
+              {/* Rotating background light beam (moving border light) */}
+              <div 
+                className="absolute inset-[-150%] opacity-20 group-hover/hackathonwidget:opacity-45 transition-opacity duration-300 pointer-events-none"
+                style={{
+                  background: 'conic-gradient(from 0deg at 50% 50%, transparent 40%, #818cf8 50%, transparent 60%)',
+                  animation: 'rotateGlow 6s linear infinite',
+                }}
+              />
 
-              {summaryHackathons.length === 0 ? (
-                <p className="text-xs text-slate-500 italic py-2">No active hackathons tracked.</p>
-              ) : (
-                <div className="space-y-3">
-                  {summaryHackathons.map(app => {
-                    const days = parseInt(app.days_left, 10);
-                    const isOverdue = days < 0;
-                    return (
-                      <div key={app.id} className="p-3.5 bg-white/[0.02] border border-white/[0.05] rounded-xl hover:border-white/[0.08] transition-all relative group/hcard">
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <h5 className="text-[13px] font-bold text-white tracking-tight leading-tight">{app.name}</h5>
-                            {app.company && <p className="text-[10px] text-slate-500 font-semibold mt-0.5">{app.company}</p>}
-                          </div>
-                          {app.priority === 'high' && (
-                            <Star size={12} className="fill-amber-400 text-amber-400 shrink-0" />
-                          )}
-                        </div>
-
-                        <div className="flex flex-wrap gap-4 mt-3 pt-3 border-t border-white/[0.03] text-[10px] font-bold text-slate-400">
-                          <span className="flex items-center gap-1">
-                            <Clock size={11} className="text-indigo-400" />
-                            <span className={isOverdue ? 'text-rose-400' : days <= 3 ? 'text-amber-400' : 'text-slate-400'}>
-                              {isOverdue ? 'Deadline Passed' : `${days} ${days === 1 ? 'day' : 'days'} left`}
-                            </span>
-                          </span>
-                          {app.status && (
-                            <span className="capitalize">{app.status}</span>
-                          )}
-                        </div>
-
-                        {app.link && (
-                          <a href={app.link} target="_blank" rel="noreferrer" className="absolute top-3.5 right-3.5 opacity-0 group-hover/hcard:opacity-100 p-1 text-slate-500 hover:text-white rounded transition-all">
-                            <ExternalLink size={12} />
-                          </a>
-                        )}
-                      </div>
-                    );
-                  })}
+              {/* Inner Content Card */}
+              <div className="relative rounded-[15px] p-5 bg-slate-950/94 backdrop-blur-xl transition-all duration-300 flex flex-col">
+                <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/[0.04]">
+                  <h4 className="text-sm font-extrabold text-white flex items-center gap-2">
+                    <Calendar size={14} className="text-indigo-400" />
+                    <span>Starred / Closest Hackathon</span>
+                  </h4>
+                  <button onClick={() => setActiveTab('timeline')} className="text-[11px] text-indigo-400 hover:text-indigo-300 font-semibold hover:underline flex items-center gap-0.5 cursor-pointer">
+                    Manage <ChevronRight size={11} />
+                  </button>
                 </div>
-              )}
+
+                {summaryHackathons.length === 0 ? (
+                  <p className="text-xs text-slate-500 italic py-2">No active hackathons tracked.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {summaryHackathons.map(app => {
+                      const days = getDaysRemaining(app.deadline);
+                      const isExpired = days < 0;
+                      const isUrgent = days >= 0 && days <= 4;
+                      const remainingText = getDaysRemainingText(days);
+                      const isStarred = app.priority === 'high';
+                      const status = getStatusStyles(app.status);
+                      
+                      return (
+                        <div 
+                          key={app.id} 
+                          onClick={() => onSelectHackathon?.(app.id)}
+                          className="glass-card rounded-2xl cursor-pointer select-none group transition-all duration-300 tactile-item p-4 border border-white/[0.05] hover:border-white/[0.08] hover:bg-white/[0.03]"
+                        >
+                          {/* Top Date & Days Left Strip */}
+                          <div className="flex items-center justify-between text-[11px] mb-3 pb-2.5 border-b border-white/[0.04]">
+                            <span className="flex items-center gap-1.5 text-slate-400 font-medium">
+                              <Calendar size={11} className="text-indigo-400/80" />
+                              {formatDate(app.deadline)}
+                            </span>
+                            <span className={`flex items-center gap-1 font-semibold tabular-nums ${
+                              isExpired ? 'text-slate-600' :
+                              isUrgent ? 'text-amber-400' : 'text-emerald-400'
+                            }`}>
+                              <Clock size={11} />
+                              {remainingText}
+                            </span>
+                          </div>
+
+                          {/* Title row */}
+                          <div className="flex items-start justify-between gap-3 mb-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                {isStarred && <span className="beacon-amber" />}
+                                <h4 className="text-[14px] font-bold text-white leading-tight truncate group-hover:text-indigo-300 transition-colors">{app.name}</h4>
+                              </div>
+                              {app.company && (
+                                <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">
+                                  {app.company}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Status Badge */}
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            <span className={`inline-flex px-2 py-0.5 text-[9px] font-bold rounded-full border ${status.bg} ${status.text} ${status.border}`}>
+                              {status.label}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Pinned Ideas Panel */}
-            <div className="p-5 rounded-2xl bg-slate-900/30 border border-white/[0.05]">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-[12px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Lightbulb size={13} className="text-amber-400" />
-                  <span>Pinned Concepts (Vault)</span>
-                </h4>
-                <button onClick={() => setActiveTab('ideas')} className="text-[10px] text-amber-400 hover:text-amber-300 font-bold uppercase tracking-wider hover:underline flex items-center gap-0.5 cursor-pointer">
-                  Ideas <ChevronRight size={10} />
-                </button>
-              </div>
+            <div 
+              className="group/ideaswidget relative rounded-2xl p-[1px] transition-all duration-300 select-none overflow-hidden"
+              style={{
+                boxShadow: '0 0 15px -3px rgba(251, 191, 36, 0.08)'
+              }}
+            >
+              {/* Rotating background light beam (moving border light) */}
+              <div 
+                className="absolute inset-[-150%] opacity-20 group-hover/ideaswidget:opacity-45 transition-opacity duration-300 pointer-events-none"
+                style={{
+                  background: 'conic-gradient(from 0deg at 50% 50%, transparent 40%, #fbbf24 50%, transparent 60%)',
+                  animation: 'rotateGlow 6s linear infinite',
+                }}
+              />
 
-              {pinnedIdeas.length === 0 ? (
-                <p className="text-[11.5px] text-slate-600 italic py-1">Pin important thoughts in the Idea Vault to display them here.</p>
-              ) : (
-                <div className="divide-y divide-white/[0.03] -my-1">
-                  {pinnedIdeas.map(idea => (
-                    <div key={idea.id} className="py-2.5 flex items-center justify-between gap-4 group/item">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[12px] font-semibold text-slate-200 truncate">{idea.title}</p>
-                        {idea.category && <p className="text-[9.5px] text-slate-500 font-medium mt-0.5">#{idea.category}</p>}
-                      </div>
-                      <ChevronRight size={12} className="text-slate-600 group-hover/item:text-slate-400 transition-colors" />
-                    </div>
-                  ))}
+              {/* Inner Content Card */}
+              <div className="relative rounded-[15px] p-5 bg-slate-950/94 backdrop-blur-xl transition-all duration-300 flex flex-col">
+                <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/[0.04]">
+                  <h4 className="text-sm font-extrabold text-white flex items-center gap-2">
+                    <Lightbulb size={14} className="text-amber-400" />
+                    <span>Pinned Concepts (Vault)</span>
+                  </h4>
+                  <button onClick={() => setActiveTab('ideas')} className="text-[11px] text-amber-400 hover:text-amber-300 font-semibold hover:underline flex items-center gap-0.5 cursor-pointer">
+                    Manage <ChevronRight size={11} />
+                  </button>
                 </div>
-              )}
+
+                {pinnedIdeas.length === 0 ? (
+                  <p className="text-[11.5px] text-slate-600 italic py-1">Pin important thoughts in the Idea Vault to display them here.</p>
+                ) : (
+                  <div className="divide-y divide-white/[0.03] -my-1">
+                    {pinnedIdeas.map(idea => (
+                      <div 
+                        key={idea.id} 
+                        onClick={() => onSelectIdea?.(idea.id)}
+                        className="py-2.5 flex items-center justify-between gap-4 group/item cursor-pointer hover:bg-white/[0.02] px-2 -mx-2 rounded-xl transition-all"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[12px] font-semibold text-slate-200 truncate group-hover/item:text-white transition-colors">{idea.title}</p>
+                          {idea.category && <p className="text-[9.5px] text-slate-500 font-medium mt-0.5">#{idea.category}</p>}
+                        </div>
+                        <ChevronRight size={12} className="text-slate-655 group-hover/item:text-amber-400 transition-colors" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Pinned Projects Panel */}
-            <div className="p-5 rounded-2xl bg-slate-900/30 border border-white/[0.05]">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-[12px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Code2 size={13} className="text-sky-400" />
-                  <span>Pinned Project Drafts</span>
-                </h4>
-                <button onClick={() => setActiveTab('project-ideas')} className="text-[10px] text-sky-400 hover:text-sky-300 font-bold uppercase tracking-wider hover:underline flex items-center gap-0.5 cursor-pointer">
-                  Projects <ChevronRight size={10} />
-                </button>
-              </div>
+            <div 
+              className="group/projectswidget relative rounded-2xl p-[1px] transition-all duration-300 select-none overflow-hidden"
+              style={{
+                boxShadow: '0 0 15px -3px rgba(129, 140, 248, 0.08)'
+              }}
+            >
+              {/* Rotating background light beam (moving border light) */}
+              <div 
+                className="absolute inset-[-150%] opacity-20 group-hover/projectswidget:opacity-45 transition-opacity duration-300 pointer-events-none"
+                style={{
+                  background: 'conic-gradient(from 0deg at 50% 50%, transparent 40%, #818cf8 50%, transparent 60%)',
+                  animation: 'rotateGlow 6s linear infinite',
+                }}
+              />
 
-              {pinnedProjects.length === 0 ? (
-                <p className="text-[11.5px] text-slate-600 italic py-1">Pin your active project blueprints to feature them here.</p>
-              ) : (
-                <div className="divide-y divide-white/[0.03] -my-1">
-                  {pinnedProjects.map(proj => (
-                    <div key={proj.id} className="py-2.5 flex items-center justify-between gap-4 group/item">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[12px] font-semibold text-slate-200 truncate">{proj.title}</p>
-                        {proj.category && <p className="text-[9.5px] text-slate-500 font-medium mt-0.5">#{proj.category}</p>}
-                      </div>
-                      <ChevronRight size={12} className="text-slate-600 group-hover/item:text-slate-400 transition-colors" />
-                    </div>
-                  ))}
+              {/* Inner Content Card */}
+              <div className="relative rounded-[15px] p-5 bg-slate-950/94 backdrop-blur-xl transition-all duration-300 flex flex-col">
+                <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/[0.04]">
+                  <h4 className="text-sm font-extrabold text-white flex items-center gap-2">
+                    <Code2 size={14} className="text-sky-400" />
+                    <span>Pinned Project Drafts</span>
+                  </h4>
+                  <button onClick={() => setActiveTab('project-ideas')} className="text-[11px] text-sky-400 hover:text-sky-300 font-semibold hover:underline flex items-center gap-0.5 cursor-pointer">
+                    Manage <ChevronRight size={11} />
+                  </button>
                 </div>
-              )}
+
+                {pinnedProjects.length === 0 ? (
+                  <p className="text-[11.5px] text-slate-600 italic py-1">Pin your active project blueprints to feature them here.</p>
+                ) : (
+                  <div className="divide-y divide-white/[0.03] -my-1">
+                    {pinnedProjects.map(proj => (
+                      <div 
+                        key={proj.id} 
+                        onClick={() => onSelectProject?.(proj.id)}
+                        className="py-2.5 flex items-center justify-between gap-4 group/item cursor-pointer hover:bg-white/[0.02] px-2 -mx-2 rounded-xl transition-all"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[12px] font-semibold text-slate-200 truncate group-hover/item:text-white transition-colors">{proj.title}</p>
+                          {proj.category && <p className="text-[9.5px] text-slate-500 font-medium mt-0.5">#{proj.category}</p>}
+                        </div>
+                        <ChevronRight size={12} className="text-slate-655 group-hover/item:text-sky-400 transition-colors" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
           </div>
         </div>
 
       </div>
+      
+      <style>{`
+        @keyframes rotateGlow {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }

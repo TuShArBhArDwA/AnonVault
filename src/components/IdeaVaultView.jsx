@@ -231,7 +231,7 @@ function CustomDropdown({ value, onChange, options, icon, placeholder }) {
    MAIN COMPONENT
 ═══════════════════════════════════════════════════════ */
 export default function IdeaVaultView({
-  ideas, onAdd, onUpdate, onDelete, loading, theme, onLock, showToast, onMenuToggle
+  ideas, onAdd, onUpdate, onDelete, loading, theme, onLock, showToast, onMenuToggle, initialSelectedIdeaId, onClearInitialSelectedIdea
 }) {
   const [searchTerm, setSearchTerm]     = useState('');
   const [selectedTag, setSelectedTag]   = useState('');
@@ -316,6 +316,16 @@ export default function IdeaVaultView({
 
     setOrderedIdeas(sorted);
   }, [ideas]);
+
+  useEffect(() => {
+    if (initialSelectedIdeaId && ideas) {
+      const found = ideas.find(i => String(i.id) === String(initialSelectedIdeaId));
+      if (found) {
+        setSelectedIdea(found);
+        onClearInitialSelectedIdea?.();
+      }
+    }
+  }, [initialSelectedIdeaId, ideas, onClearInitialSelectedIdea]);
 
   /* ── helpers ── */
   const resetForm = () => {

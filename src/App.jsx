@@ -1082,6 +1082,9 @@ function AppInner() {
   });
   const [lockFadeOut, setLockFadeOut] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard'); // dashboard as default
+  const [initIdeaId, setInitIdeaId] = useState(null);
+  const [initProjectId, setInitProjectId] = useState(null);
+  const [initHackathonId, setInitHackathonId] = useState(null);
   const didSyncRef = useRef(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -1500,6 +1503,9 @@ function AppInner() {
                   onTasksChange={refreshPendingTasks}
                   setActiveTab={setActiveTab}
                   onMenuToggle={() => setMobileMenuOpen(true)}
+                  onSelectIdea={(id) => { setInitIdeaId(id); setActiveTab('ideas'); }}
+                  onSelectProject={(id) => { setInitProjectId(id); setActiveTab('project-ideas'); }}
+                  onSelectHackathon={(id) => { setInitHackathonId(id); setActiveTab('timeline'); }}
                 />
               </div>
 
@@ -1519,6 +1525,8 @@ function AppInner() {
                   onLock={handleLock}
                   showToast={showToast}
                   onMenuToggle={() => setMobileMenuOpen(true)}
+                  initialSelectedAppId={initHackathonId}
+                  onClearInitialSelectedApp={() => setInitHackathonId(null)}
                 />
               </div>
 
@@ -1538,6 +1546,8 @@ function AppInner() {
                   onLock={handleLock}
                   showToast={showToast}
                   onMenuToggle={() => setMobileMenuOpen(true)}
+                  initialSelectedIdeaId={initIdeaId}
+                  onClearInitialSelectedIdea={() => setInitIdeaId(null)}
                 />
               </div>
 
@@ -1572,6 +1582,8 @@ function AppInner() {
                   onLock={handleLock}
                   showToast={showToast}
                   onMenuToggle={() => setMobileMenuOpen(true)}
+                  initialSelectedIdeaId={initProjectId}
+                  onClearInitialSelectedIdea={() => setInitProjectId(null)}
                 />
               </div>
 

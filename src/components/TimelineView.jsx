@@ -76,7 +76,9 @@ export default function TimelineView({
   theme,
   onLock,
   showToast,
-  onMenuToggle
+  onMenuToggle,
+  initialSelectedAppId,
+  onClearInitialSelectedApp
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState('asc');
@@ -102,6 +104,16 @@ export default function TimelineView({
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [selectedAppDetails, setSelectedAppDetails] = useState(null);
   const [expandedMonths, setExpandedMonths] = useState({});
+
+  useEffect(() => {
+    if (initialSelectedAppId && applications) {
+      const found = applications.find(a => String(a.id) === String(initialSelectedAppId));
+      if (found) {
+        setSelectedAppDetails(found);
+        onClearInitialSelectedApp?.();
+      }
+    }
+  }, [initialSelectedAppId, applications, onClearInitialSelectedApp]);
 
   const resetForm = () => {
     setFormName(''); setFormLink('');
