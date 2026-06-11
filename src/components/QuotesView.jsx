@@ -638,49 +638,50 @@ function QuoteCard({ quote, onEdit, onDelete, onSelectTag, onViewDetails, isPinn
   return (
     <article
       onClick={() => onViewDetails && onViewDetails(quote)}
-      className={`glass-card rounded-2xl !overflow-visible cursor-pointer select-none group tactile-item ${
+      className={`glass-card rounded-2xl !overflow-visible cursor-pointer select-none group tactile-item relative ${
         isPinned ? 'premium-starred-card' : ''
       }`}
     >
+      {/* Absolute hover actions strip */}
+      <div className="absolute top-3.5 right-3.5 flex items-center gap-0.5 bg-slate-950/80 backdrop-blur border border-white/[0.07] rounded-xl p-0.5 shrink-0 select-none
+                      opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100
+                      transition-all duration-200 ease-out z-10"
+           onClick={e => e.stopPropagation()}>
+        {/* pin toggle button */}
+        <button onClick={(e) => { e.stopPropagation(); onTogglePin(quote.id); }}
+          className={`p-1.5 rounded-lg transition-all cursor-pointer flex items-center justify-center border border-transparent ${
+            isPinned 
+              ? 'text-amber-400 hover:text-amber-300 hover:bg-amber-400/[0.08] hover:border-amber-400/20' 
+              : 'text-slate-400 hover:text-amber-400 hover:bg-amber-400/[0.08] hover:border-amber-400/20'
+          }`}
+          title={isPinned ? "Unpin quote" : "Pin quote"}>
+          <Star size={11} className={isPinned ? 'fill-amber-400' : ''} />
+        </button>
+        
+        <div className="w-[1px] h-3 bg-white/[0.08] self-center" />
+
+        <button onClick={(e) => { e.stopPropagation(); onEdit(quote); }}
+          className="p-1.5 text-slate-400 hover:text-indigo-400 rounded-lg hover:bg-indigo-500/[0.08] transition-all cursor-pointer flex items-center justify-center border border-transparent hover:border-indigo-500/20"
+          title="Edit quote">
+          <Edit3 size={11} />
+        </button>
+        
+        <button onClick={(e) => { e.stopPropagation(); onDelete(quote.id); }}
+          className="p-1.5 text-slate-455 hover:text-rose-455 rounded-lg hover:bg-rose-500/[0.08] transition-all cursor-pointer flex items-center justify-center border border-transparent hover:border-rose-500/20"
+          title="Delete quote">
+          <Trash2 size={11} />
+        </button>
+      </div>
+
       <div className="p-5 space-y-4">
-        {/* Quote category and Star actions strip */}
-        <div className="flex items-start justify-between gap-4">
-          {quote.category && quote.category !== 'Inspiration' ? (
+        {/* Quote category */}
+        {quote.category && quote.category !== 'Inspiration' && (
+          <div className="flex items-start">
             <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 bg-white/[0.03] border border-white/[0.05] rounded-lg px-2 py-0.5">
               {quote.category}
             </span>
-          ) : <div />}
-
-          <div className="flex items-center gap-0.5 bg-white/[0.02] border border-white/[0.07] rounded-xl p-0.5 shrink-0 select-none
-                          opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100
-                          transition-all duration-200 ease-out"
-               onClick={e => e.stopPropagation()}>
-            {/* pin toggle button */}
-            <button onClick={(e) => { e.stopPropagation(); onTogglePin(quote.id); }}
-              className={`p-1.5 rounded-lg transition-all cursor-pointer flex items-center justify-center border border-transparent ${
-                isPinned 
-                  ? 'text-amber-400 hover:text-amber-300 hover:bg-amber-400/[0.08] hover:border-amber-400/20' 
-                  : 'text-slate-400 hover:text-amber-400 hover:bg-amber-400/[0.08] hover:border-amber-400/20'
-              }`}
-              title={isPinned ? "Unpin quote" : "Pin quote"}>
-              <Star size={11} className={isPinned ? 'fill-amber-400' : ''} />
-            </button>
-            
-            <div className="w-[1px] h-3 bg-white/[0.08] self-center" />
-
-            <button onClick={(e) => { e.stopPropagation(); onEdit(quote); }}
-              className="p-1.5 text-slate-400 hover:text-indigo-400 rounded-lg hover:bg-indigo-500/[0.08] transition-all cursor-pointer flex items-center justify-center border border-transparent hover:border-indigo-500/20"
-              title="Edit quote">
-              <Edit3 size={11} />
-            </button>
-            
-            <button onClick={(e) => { e.stopPropagation(); onDelete(quote.id); }}
-              className="p-1.5 text-slate-455 hover:text-rose-455 rounded-lg hover:bg-rose-500/[0.08] transition-all cursor-pointer flex items-center justify-center border border-transparent hover:border-rose-500/20"
-              title="Delete quote">
-              <Trash2 size={11} />
-            </button>
           </div>
-        </div>
+        )}
 
         {/* Quote Text */}
         <div className="relative">
