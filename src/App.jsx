@@ -4,6 +4,7 @@ import TimelineView from './components/TimelineView';
 import IdeaVaultView from './components/IdeaVaultView';
 import TasksView from './components/TasksView';
 import ProjectIdeasView from './components/ProjectIdeasView';
+import QuotesView from './components/QuotesView';
 import { ToastProvider, useToast } from './components/Toast';
 import { Lock, ShieldAlert, Cpu, Delete } from 'lucide-react';
 import { 
@@ -20,6 +21,7 @@ import {
   updateProjectIdea,
   deleteProjectIdea 
 } from './services/supabase';
+import { fetchQuotes, addQuote, updateQuote, deleteQuote } from './services/quotes';
 import { getTasksForDateSync, loadAllTasks } from './services/tasks';
 
 class ErrorBoundary extends React.Component {
@@ -1116,6 +1118,7 @@ function AppInner() {
   const [applications, setApplications] = useState([]);
   const [ideas, setIdeas] = useState([]);
   const [projectIdeas, setProjectIdeas] = useState([]);
+  const [quotes, setQuotes] = useState([]);
   const [usingLocalProjectIdeas, setUsingLocalProjectIdeas] = useState(false);
   const [projectIdeasCount, setProjectIdeasCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -1132,13 +1135,17 @@ function AppInner() {
     setLoading(true);
     setErrorMsg('');
     try {
-      const [appsData, ideasData] = await Promise.all([
+      const [appsData, ideasData, quotesData] = await Promise.all([
         fetchApplications().catch(err => {
           console.error('Error fetching applications:', err);
           return [];
         }),
         fetchIdeas().catch(err => {
           console.error('Error fetching ideas:', err);
+          return [];
+        }),
+        fetchQuotes().catch(err => {
+          console.error('Error fetching quotes:', err);
           return [];
         }),
         // Eagerly populate the tasks cache so the sidebar count is correct immediately
@@ -1149,6 +1156,7 @@ function AppInner() {
 
       setApplications(appsData);
       setIdeas(ideasData);
+      setQuotes(quotesData);
 
       // Fetch project ideas from Supabase with localStorage fallback
       try {
@@ -1379,6 +1387,43 @@ function AppInner() {
     }
   };
 
+  // --- Quote Handlers ---
+
+  const handleAddQuote = async (newQuote) => {
+    try {
+      const added = await addQuote(newQuote);
+      setQuotes(prev => [added, ...prev]);
+      return added;
+    } catch (err) {
+      console.error('Failed to add quote:', err);
+      showToast('error', 'Add Failed', 'Could not save the quote.');
+      throw err;
+    }
+  };
+
+  const handleUpdateQuote = async (id, updates) => {
+    try {
+      const updated = await updateQuote(id, updates);
+      setQuotes(prev => prev.map(q => q.id === id ? updated : q));
+      return updated;
+    } catch (err) {
+      console.error('Failed to update quote:', err);
+      showToast('error', 'Update Failed', 'Could not update the quote.');
+      throw err;
+    }
+  };
+
+  const handleDeleteQuote = async (id) => {
+    try {
+      await deleteQuote(id);
+      setQuotes(prev => prev.filter(q => q.id !== id));
+      showToast('warning', 'Quote Removed', 'Quote has been deleted.');
+    } catch (err) {
+      console.error('Failed to delete quote:', err);
+      showToast('error', 'Delete Failed', 'Could not delete the quote.');
+    }
+  };
+
   // --- Dynamic Stats calculation ---
   const [pendingTasks, setPendingTasks] = useState(computePendingTasks);
 
@@ -1392,6 +1437,7 @@ function AppInner() {
     totalIdeas: (ideas || []).length,
     pendingTasks,
     totalProjectIdeas: projectIdeasCount,
+    totalQuotes: (quotes || []).length,
   };
 
 
@@ -1496,6 +1542,25 @@ function AppInner() {
                   onUpdate={handleUpdateProjectIdea}
                   onDelete={handleDeleteProjectIdea}
                   onReorder={handleReorderProjectIdeas}
+                  loading={loading}
+                  theme={theme}
+                  onLock={handleLock}
+                  showToast={showToast}
+                  onMenuToggle={() => setMobileMenuOpen(true)}
+                />
+              </div>
+
+              {/* Quotes Vault Workspace */}
+              <div className={`absolute inset-0 transition-all duration-300 ease-out ${
+                activeTab === 'quotes'
+                  ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto'
+                  : 'opacity-0 translate-y-4 scale-[0.985] pointer-events-none'
+              }`}>
+                <QuotesView
+                  ideas={quotes}
+                  onAdd={handleAddQuote}
+                  onUpdate={handleUpdateQuote}
+                  onDelete={handleDeleteQuote}
                   loading={loading}
                   theme={theme}
                   onLock={handleLock}

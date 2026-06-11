@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { CalendarRange, Lightbulb, TrendingUp, CheckSquare, X, Zap, ChevronLeft, ChevronRight, Rocket } from 'lucide-react';
+import { CalendarRange, Lightbulb, TrendingUp, CheckSquare, X, Zap, ChevronLeft, ChevronRight, Rocket, Quote } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab, stats, mobileOpen, setMobileOpen }) {
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -44,6 +44,14 @@ export default function Sidebar({ activeTab, setActiveTab, stats, mobileOpen, se
       count: stats.totalProjectIdeas,
       desc: 'Brainstorm concepts',
       accent: '#818cf8',
+    },
+    {
+      id: 'quotes',
+      label: 'Quotes Vault',
+      icon: Quote,
+      count: stats.totalQuotes,
+      desc: 'Inspirational wisdom',
+      accent: '#f43f5e',
     },
   ];
 
@@ -289,6 +297,17 @@ export default function Sidebar({ activeTab, setActiveTab, stats, mobileOpen, se
                   </div>
                   <span className="text-[26px] font-extrabold tabular-nums tracking-tight leading-none text-indigo-300">
                     {stats.totalProjectIdeas || 0}
+                  </span>
+                </div>
+                
+                {/* Quotes */}
+                <div className="stat-card">
+                  <div className="flex items-center gap-1.5 mb-2.5">
+                    <Quote size={11} className="text-rose-455" />
+                    <span className="text-[10px] text-slate-500 font-semibold tracking-wide">Quotes</span>
+                  </div>
+                  <span className="text-[26px] font-extrabold tabular-nums tracking-tight leading-none text-rose-400">
+                    {stats.totalQuotes || 0}
                   </span>
                 </div>
               </div>
