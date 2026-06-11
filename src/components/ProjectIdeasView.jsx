@@ -80,7 +80,7 @@ function ImageRow({ img, index, onRemove, onChangeUrl, onFileUpload, uploadingIn
         onChange={e => {
           onChangeUrl(index, img.url, e.target.value);
         }}
-        className="input-premium w-full px-3 py-1.5 text-[11px] rounded-lg"
+        className="input-premium w-full px-3.5 py-2 text-[11.5px] rounded-lg font-medium placeholder:text-slate-700"
       />
 
       {uploadError && uploadingIndex === index && (
@@ -129,14 +129,14 @@ function LinkRow({ link, index, total, onRemove, onChange, onMoveUp, onMoveDown 
           placeholder="https://…"
           value={link.url}
           onChange={e => onChange(index, { ...link, url: e.target.value })}
-          className="input-premium px-3 py-2 text-[12px] rounded-lg w-full"
+          className="input-premium px-3.5 py-2 text-[12px] rounded-lg w-full font-medium placeholder:text-slate-700"
         />
         <input
           type="text"
           placeholder="Label (e.g. GitHub)"
           value={link.label}
           onChange={e => onChange(index, { ...link, label: e.target.value })}
-          className="input-premium px-3 py-2 text-[12px] rounded-lg w-full"
+          className="input-premium px-3.5 py-2 text-[12px] rounded-lg w-full font-medium placeholder:text-slate-700"
         />
       </div>
       <button type="button" onClick={() => onRemove(index)}
@@ -668,7 +668,7 @@ export default function ProjectIdeasView({
             placeholder="Search concepts…"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            className="input-premium w-full pl-9 pr-4 py-2 text-[13px] rounded-xl"
+            className="input-premium w-full pl-9 pr-4 py-2.5 text-[13px] rounded-xl font-medium placeholder:text-slate-700"
           />
         </div>
 
@@ -832,14 +832,14 @@ export default function ProjectIdeasView({
               <FormField label="Title" required>
                 <input type="text" required placeholder="e.g. AI-driven portfolio tracker"
                   value={formTitle} onChange={e => setFormTitle(e.target.value)}
-                  className="input-premium w-full px-3.5 py-2.5 text-[13px] rounded-xl" />
+                  className="input-premium w-full px-4 py-2.5 text-[13px] rounded-xl font-semibold placeholder:text-slate-700" />
               </FormField>
 
               {/* Description */}
               <FormField label="Description">
                 <textarea rows={4} placeholder="Elaborate on your project concept…"
                   value={formContent} onChange={e => setFormContent(e.target.value)}
-                  className="input-premium w-full px-3.5 py-2.5 text-[13px] rounded-xl resize-none leading-relaxed" />
+                  className="input-premium w-full px-4 py-3 text-[13px] rounded-xl resize-none leading-relaxed font-medium placeholder:text-slate-700" />
               </FormField>
 
               {/* Images Section */}
@@ -923,7 +923,7 @@ export default function ProjectIdeasView({
                       value={tagInputVal}
                       onChange={e => setTagInputVal(e.target.value)}
                       onKeyDown={handleTagKeyDown}
-                      className="bg-transparent border-none outline-none focus:outline-none w-full text-[13px] text-slate-200 placeholder-slate-650"
+                      className="bg-transparent border-none outline-none focus:outline-none w-full text-[13px] text-slate-200 placeholder-slate-700 font-medium"
                     />
                   </div>
                 </div>

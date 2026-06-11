@@ -291,7 +291,7 @@ export default function TimelineView({
             placeholder="Search hackathons…"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            className="input-premium w-full pl-9 pr-4 py-2 text-[13px] rounded-xl"
+            className="input-premium w-full pl-9 pr-4 py-2.5 text-[13px] rounded-xl font-medium placeholder:text-slate-700"
           />
         </div>
 
@@ -486,13 +486,13 @@ export default function TimelineView({
               <Field label="Event Name" required>
                 <input type="text" required placeholder="e.g. HackMIT 2025" value={formName}
                   onChange={e => setFormName(e.target.value)}
-                  className="input-premium w-full px-3.5 py-2.5 text-[13px] rounded-xl" />
+                  className="input-premium w-full px-4 py-2.5 text-[13px] rounded-xl font-semibold placeholder:text-slate-700" />
               </Field>
 
               <Field label="Company / Host Organization">
                 <input type="text" placeholder="e.g. Google, Major League Hacking" value={formCompany}
                   onChange={e => setFormCompany(e.target.value)}
-                  className="input-premium w-full px-3.5 py-2.5 text-[13px] rounded-xl" />
+                  className="input-premium w-full px-4 py-2.5 text-[13px] rounded-xl font-semibold placeholder:text-slate-700" />
               </Field>
 
               <Field label="Event Link">
@@ -500,7 +500,7 @@ export default function TimelineView({
                   <LinkIcon size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                   <input type="url" placeholder="https://…" value={formLink}
                     onChange={e => setFormLink(e.target.value)}
-                    className="input-premium w-full pl-9 pr-3.5 py-2.5 text-[13px] rounded-xl" />
+                    className="input-premium w-full pl-9 pr-4 py-2.5 text-[13px] rounded-xl font-medium placeholder:text-slate-700" />
                 </div>
               </Field>
 
@@ -579,7 +579,7 @@ export default function TimelineView({
               <div className="grid grid-cols-1 gap-4">
                 <Field label="Status">
                   <select value={formStatus} onChange={e => setFormStatus(e.target.value)}
-                    className="input-premium w-full px-3.5 py-2.5 text-[13px] rounded-xl cursor-pointer">
+                    className="input-premium w-full px-4 py-2.5 text-[13px] rounded-xl cursor-pointer font-semibold">
                     <option value="pending">Pending</option>
                     <option value="applied">Registered</option>
                     <option value="interviewing">Building</option>
@@ -661,7 +661,7 @@ export default function TimelineView({
               <Field label="Notes">
                 <textarea rows={4} placeholder="Project ideas, team, requirements…" value={formNotes}
                   onChange={e => setFormNotes(e.target.value)}
-                  className="input-premium w-full px-3.5 py-2.5 text-[13px] rounded-xl resize-none leading-relaxed" />
+                  className="input-premium w-full px-4 py-3 text-[13px] rounded-xl resize-none leading-relaxed font-medium placeholder:text-slate-700" />
               </Field>
 
               {/* Links Section */}
@@ -1091,14 +1091,14 @@ function LinkRow({ link, index, total, onRemove, onChange, onMoveUp, onMoveDown 
           placeholder="https://…"
           value={link.url}
           onChange={e => onChange(index, { ...link, url: e.target.value })}
-          className="input-premium px-3 py-2 text-[12px] rounded-lg w-full"
+          className="input-premium px-3.5 py-2 text-[12px] rounded-lg w-full font-medium placeholder:text-slate-700"
         />
         <input
           type="text"
           placeholder="Label (e.g. GitHub)"
           value={link.label}
           onChange={e => onChange(index, { ...link, label: e.target.value })}
-          className="input-premium px-3 py-2 text-[12px] rounded-lg w-full"
+          className="input-premium px-3.5 py-2 text-[12px] rounded-lg w-full font-medium placeholder:text-slate-700"
         />
       </div>
       <button

@@ -345,7 +345,7 @@ function TaskFormModal({ isOpen, onClose, onSave, editingTask, defaultDate, show
             <input autoFocus type="text" placeholder="e.g. Review pull requests"
               value={title} onChange={e => setTitle(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSave()}
-              className="input-premium w-full px-3.5 py-2.5 text-[13px] rounded-xl" />
+              className="input-premium w-full px-4 py-2.5 text-[13px] rounded-xl font-semibold placeholder:text-slate-700" />
           </div>
 
           {/* Priority */}
@@ -409,7 +409,7 @@ function TaskFormModal({ isOpen, onClose, onSave, editingTask, defaultDate, show
                 Date <span className="text-rose-400">*</span>
               </label>
               <input type="date" value={taskDate} onChange={e => setTaskDate(e.target.value)}
-                className="input-premium w-full px-3.5 py-2.5 text-[13px] rounded-xl" />
+                className="input-premium w-full px-4 py-2.5 text-[13px] rounded-xl font-semibold placeholder:text-slate-700 cursor-pointer" />
             </div>
           )}
 
@@ -436,7 +436,7 @@ function TaskFormModal({ isOpen, onClose, onSave, editingTask, defaultDate, show
               <input ref={stInputRef} type="text" placeholder="Add subtask… (press Enter)"
                 value={stInput} onChange={e => setStInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSubtask())}
-                className="input-premium flex-1 px-3 py-2 text-[12.5px] rounded-xl" />
+                className="input-premium flex-1 px-4 py-2.5 text-[13px] rounded-xl font-medium placeholder:text-slate-700" />
               <button type="button" onClick={addSubtask}
                 className="btn-ghost px-3 py-2 rounded-xl text-[12px] font-semibold cursor-pointer shrink-0">
                 Add
