@@ -502,22 +502,24 @@ export default function QuotesView({
           <div className="modal-surface w-full max-w-lg rounded-2xl overflow-hidden flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
             {/* modal header */}
             <div className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2.5">
+              <div>
+                <h3 className="text-[15px] font-bold text-white">{editingQuote ? 'Edit Quote' : 'New Quote'}</h3>
+              </div>
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setFormStarred(!formStarred)}
-                  className={`p-2 rounded-xl transition-all cursor-pointer border border-transparent ${
-                    formStarred 
-                      ? 'text-amber-400 bg-amber-400/10 border-amber-400/20' 
-                      : 'text-slate-500 hover:text-amber-400 hover:bg-amber-400/[0.05]'
+                  onClick={() => setFormStarred(s => !s)}
+                  className={`p-2 rounded-xl cursor-pointer transition-all duration-200 ${
+                    formStarred
+                      ? 'bg-amber-400/10 border border-amber-400/35 text-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.06)]'
+                      : 'btn-ghost text-slate-550 hover:text-amber-400'
                   }`}
                   title={formStarred ? 'Pinned' : 'Pin to top'}
                 >
-                  <Star size={15} className={formStarred ? 'fill-amber-400' : ''} />
+                  <Star size={15} className={formStarred ? 'fill-amber-300' : ''} />
                 </button>
-                <h3 className="text-[15px] font-bold text-white">{editingQuote ? 'Edit Quote' : 'New Quote'}</h3>
+                <button onClick={() => setIsFormOpen(false)} className="btn-ghost p-2 rounded-xl cursor-pointer"><X size={15} /></button>
               </div>
-              <button onClick={() => setIsFormOpen(false)} className="btn-ghost p-2 rounded-xl cursor-pointer"><X size={15} /></button>
             </div>
 
             {/* modal body */}
@@ -754,23 +756,25 @@ function QuoteDetailModal({ quote, onClose, onEdit, isPinned, onTogglePin }) {
       <div className={`modal-surface w-full max-w-lg rounded-2xl overflow-hidden flex flex-col max-h-[90vh] ${isClosing ? 'closing' : ''}`} onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2.5">
-            <button
-              onClick={() => onTogglePin(quote.id)}
-              className={`p-2 rounded-xl transition-all cursor-pointer border border-transparent ${
-                isPinned 
-                  ? 'text-amber-400 bg-amber-400/10 border-amber-400/20' 
-                  : 'text-slate-550 hover:text-amber-400 hover:bg-amber-400/[0.05]'
-              }`}
-              title={isPinned ? 'Starred / Pinned' : 'Star / Pin to top'}
-            >
-              <Star size={15} className={isPinned ? 'fill-amber-400' : ''} />
-            </button>
+          <div>
             <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 bg-white/[0.03] border border-white/[0.05] rounded-lg px-2 py-0.5">
               {quote.category || 'Inspiration'}
             </span>
           </div>
-          <button onClick={handleClose} className="btn-ghost p-2 rounded-xl cursor-pointer"><X size={15} /></button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onTogglePin(quote.id)}
+              className={`p-2 rounded-xl cursor-pointer transition-all duration-200 ${
+                isPinned 
+                  ? 'bg-amber-400/10 border border-amber-400/35 text-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.06)]' 
+                  : 'btn-ghost text-slate-550 hover:text-amber-400'
+              }`}
+              title={isPinned ? 'Starred / Pinned' : 'Star / Pin to top'}
+            >
+              <Star size={15} className={isPinned ? 'fill-amber-300' : ''} />
+            </button>
+            <button onClick={handleClose} className="btn-ghost p-2 rounded-xl cursor-pointer"><X size={15} /></button>
+          </div>
         </div>
 
         {/* Body */}
