@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { 
   Search, Star, Plus, Edit3, Trash2, X, Lock, Menu, 
-  Tag, Quote, Filter, Hash, ChevronDown, ChevronRight, ExternalLink 
+  Tag, Quote, Filter, Hash, ChevronDown, ChevronRight, ExternalLink, Calendar
 } from 'lucide-react';
 
 /* ─── Helpers ─── */
