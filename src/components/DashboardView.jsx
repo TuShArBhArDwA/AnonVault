@@ -369,68 +369,6 @@ export default function DashboardView({
       {/* Main Grid View */}
       <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
         
-        {/* Summary Metrics Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Card 1: Checklist Progress */}
-          <div className="glass-card rounded-2xl border border-white/[0.04] p-4 bg-slate-950/45 backdrop-blur-xl relative overflow-hidden transition-all duration-300 hover:border-white/[0.08] hover:bg-slate-950/60 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-sky-500/10 border border-sky-500/15 text-sky-400">
-                <CheckSquare size={16} />
-              </div>
-              <div className="min-w-0">
-                <span className="block text-[9.5px] font-bold text-slate-500 uppercase tracking-wider">Checklist Progress</span>
-                <span className="block text-[14px] font-extrabold text-white mt-0.5 font-mono">
-                  {tasks.length > 0 ? `${tasks.filter(t => t.completed).length}/${tasks.length}` : '0/0'} Tasks Done
-                </span>
-              </div>
-            </div>
-            {tasks.length > 0 && (() => {
-              const total = tasks.length;
-              const completed = tasks.filter(t => t.completed).length;
-              const pct = Math.round((completed / total) * 100);
-              return (
-                <div className="relative w-10 h-10 shrink-0 flex items-center justify-center">
-                  <svg className="w-full h-full transform -rotate-90">
-                    <circle cx="20" cy="20" r="16" className="stroke-white/[0.04]" strokeWidth="3" fill="transparent" />
-                    <circle cx="20" cy="20" r="16" className="stroke-sky-400" strokeWidth="3" fill="transparent"
-                      strokeDasharray={2 * Math.PI * 16}
-                      strokeDashoffset={2 * Math.PI * 16 * (1 - pct / 100)}
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  <span className="absolute text-[9px] font-bold font-mono text-sky-400">{pct}%</span>
-                </div>
-              );
-            })()}
-          </div>
-
-          {/* Card 2: Concept Vault */}
-          <div className="glass-card rounded-2xl border border-white/[0.04] p-4 bg-slate-950/45 backdrop-blur-xl transition-all duration-300 hover:border-white/[0.08] hover:bg-slate-950/60 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-amber-500/10 border border-amber-500/15 text-amber-400">
-              <Lightbulb size={16} />
-            </div>
-            <div>
-              <span className="block text-[9.5px] font-bold text-slate-500 uppercase tracking-wider">Concept Vault</span>
-              <span className="block text-[14px] font-extrabold text-white mt-0.5 font-mono">
-                {(ideas || []).length} Ideas / {(projectIdeas || []).length} Drafts
-              </span>
-            </div>
-          </div>
-
-          {/* Card 3: Hackathons Hub */}
-          <div className="glass-card rounded-2xl border border-white/[0.04] p-4 bg-slate-950/45 backdrop-blur-xl transition-all duration-300 hover:border-white/[0.08] hover:bg-slate-950/60 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-indigo-500/10 border border-indigo-500/15 text-indigo-400">
-              <Calendar size={16} />
-            </div>
-            <div>
-              <span className="block text-[9.5px] font-bold text-slate-500 uppercase tracking-wider">Hackathons Hub</span>
-              <span className="block text-[14px] font-extrabold text-white mt-0.5 font-mono">
-                {(applications || []).filter(app => app.status !== 'rejected').length} Active Tracked
-              </span>
-            </div>
-          </div>
-        </div>
-
         {/* Daily Quote Card */}
         <div 
           className="group/quoteview relative rounded-2xl p-[1px] transition-all duration-300 select-none overflow-hidden"
