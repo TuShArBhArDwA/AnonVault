@@ -12,6 +12,11 @@ export default function Sidebar({ activeTab, setActiveTab, stats, mobileOpen, se
     localStorage.setItem('anonvault_sidebar_collapsed', String(nextState));
   };
 
+  const pending = stats.pendingTasks || 0;
+  const total = stats.totalTasks || 0;
+  const completed = stats.completedTasks || 0;
+  const progressPercent = total > 0 ? Math.round((completed / total) * 100) : 0;
+
   const navItems = [
     {
       id: 'dashboard',
@@ -168,6 +173,79 @@ export default function Sidebar({ activeTab, setActiveTab, stats, mobileOpen, se
 
         {/* ── Navigation ── */}
         <div className={`pt-5 flex-1 overflow-y-auto min-h-0 ${isCollapsed ? 'px-1.5' : 'px-3'}`}>
+          
+          {/* ── Remaining Tasks stat panel (Focus Progress) ── */}
+          {!isCollapsed && (
+            <div 
+              onClick={() => setActiveTab('tasks')}
+              className="group/taskwidget cursor-pointer relative rounded-2xl p-[1px] transition-all duration-300 select-none overflow-hidden mb-6"
+              style={{
+                boxShadow: pending > 0 
+                  ? '0 0 15px -3px rgba(56, 189, 248, 0.08)' 
+                  : '0 0 15px -3px rgba(52, 211, 153, 0.08)'
+              }}
+            >
+              {/* Rotating background light beam (moving border light) */}
+              <div 
+                className="absolute inset-[-150%] opacity-20 group-hover/taskwidget:opacity-50 transition-opacity duration-300 pointer-events-none"
+                style={{
+                  background: pending > 0 
+                    ? 'conic-gradient(from 0deg at 50% 50%, transparent 40%, #38bdf8 50%, transparent 60%)'
+                    : 'conic-gradient(from 0deg at 50% 50%, transparent 40%, #34d399 50%, transparent 60%)',
+                  animation: 'rotateGlow 4s linear infinite',
+                }}
+              />
+
+              {/* Inner Content Card */}
+              <div className="relative rounded-[15px] p-3.5 bg-slate-950/92 backdrop-blur-xl transition-all duration-300 group-hover/taskwidget:bg-slate-900/80">
+                {/* Header Row */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-1.5">
+                    <span className={`w-1.5 h-1.5 rounded-full ${
+                      pending > 0 
+                        ? 'bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.7)] animate-pulse' 
+                        : 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.7)]'
+                    }`} />
+                    <span className="text-[9px] font-bold text-slate-550 tracking-[0.2em] uppercase">Focus Progress</span>
+                  </div>
+                  <span className={`text-[10px] font-extrabold font-mono tracking-tight ${
+                    pending > 0 ? 'text-sky-400' : 'text-emerald-400'
+                  }`}>
+                    {progressPercent}%
+                  </span>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="w-full h-[3px] bg-white/[0.04] rounded-full overflow-hidden mb-3.5">
+                  <div 
+                    className={`h-full rounded-full transition-all duration-550 cubic-bezier(0.16, 1, 0.3, 1) ${
+                      pending > 0 
+                        ? 'bg-gradient-to-r from-sky-500 to-sky-400' 
+                        : 'bg-gradient-to-r from-emerald-500 to-teal-400'
+                    }`}
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+
+                {/* Status Detail Row */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CheckSquare size={12} className={pending > 0 ? 'text-sky-400' : 'text-emerald-400'} />
+                    <span className="text-[11px] font-semibold text-slate-300">
+                      {pending > 0 
+                        ? `${pending} task${pending > 1 ? 's' : ''} left` 
+                        : 'All tasks clear'
+                      }
+                    </span>
+                  </div>
+                  <span className="text-[9.5px] text-slate-655 font-bold group-hover/taskwidget:text-slate-400 transition-colors">
+                    Checklist →
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {!isCollapsed && (
             <p className="text-[10px] font-bold text-slate-600 uppercase tracking-[0.18em] px-3 mb-3 animate-in fade-in duration-200">
               Workspace
@@ -229,86 +307,6 @@ export default function Sidebar({ activeTab, setActiveTab, stats, mobileOpen, se
               );
             })}
           </nav>
-          {/* ── Remaining Tasks stat panel ── */}
-          {!isCollapsed && (() => {
-            const pending = stats.pendingTasks || 0;
-            const total = stats.totalTasks || 0;
-            const completed = stats.completedTasks || 0;
-            const progressPercent = total > 0 ? Math.round((completed / total) * 100) : 0;
-
-            return (
-              <div className="mt-8 px-3.5 animate-in fade-in duration-300">
-                <div 
-                  onClick={() => setActiveTab('tasks')}
-                  className="group/taskwidget cursor-pointer relative rounded-2xl p-[1px] transition-all duration-300 select-none overflow-hidden"
-                  style={{
-                    boxShadow: pending > 0 
-                      ? '0 0 15px -3px rgba(56, 189, 248, 0.08)' 
-                      : '0 0 15px -3px rgba(52, 211, 153, 0.08)'
-                  }}
-                >
-                  {/* Rotating background light beam (moving border light) */}
-                  <div 
-                    className="absolute inset-[-150%] opacity-20 group-hover/taskwidget:opacity-50 transition-opacity duration-300 pointer-events-none"
-                    style={{
-                      background: pending > 0 
-                        ? 'conic-gradient(from 0deg at 50% 50%, transparent 40%, #38bdf8 50%, transparent 60%)'
-                        : 'conic-gradient(from 0deg at 50% 50%, transparent 40%, #34d399 50%, transparent 60%)',
-                      animation: 'rotateGlow 4s linear infinite',
-                    }}
-                  />
-
-                  {/* Inner Content Card */}
-                  <div className="relative rounded-[15px] p-3.5 bg-slate-950/92 backdrop-blur-xl transition-all duration-300 group-hover/taskwidget:bg-slate-900/80">
-                    {/* Header Row */}
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-1.5">
-                        <span className={`w-1.5 h-1.5 rounded-full ${
-                          pending > 0 
-                            ? 'bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.7)] animate-pulse' 
-                            : 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.7)]'
-                        }`} />
-                        <span className="text-[9px] font-bold text-slate-550 tracking-[0.2em] uppercase">Focus Progress</span>
-                      </div>
-                      <span className={`text-[10px] font-extrabold font-mono tracking-tight ${
-                        pending > 0 ? 'text-sky-400' : 'text-emerald-400'
-                      }`}>
-                        {progressPercent}%
-                      </span>
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div className="w-full h-[3px] bg-white/[0.04] rounded-full overflow-hidden mb-3.5">
-                      <div 
-                        className={`h-full rounded-full transition-all duration-550 cubic-bezier(0.16, 1, 0.3, 1) ${
-                          pending > 0 
-                            ? 'bg-gradient-to-r from-sky-500 to-sky-400' 
-                            : 'bg-gradient-to-r from-emerald-500 to-teal-400'
-                        }`}
-                        style={{ width: `${progressPercent}%` }}
-                      />
-                    </div>
-
-                    {/* Status Detail Row */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <CheckSquare size={12} className={pending > 0 ? 'text-sky-400' : 'text-emerald-400'} />
-                        <span className="text-[11px] font-semibold text-slate-300">
-                          {pending > 0 
-                            ? `${pending} task${pending > 1 ? 's' : ''} left` 
-                            : 'All tasks clear'
-                          }
-                        </span>
-                      </div>
-                      <span className="text-[9.5px] text-slate-655 font-bold group-hover/taskwidget:text-slate-400 transition-colors">
-                        Checklist →
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
         </div>
 
         {/* ── Footer ── */}
