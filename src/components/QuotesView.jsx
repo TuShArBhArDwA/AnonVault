@@ -178,10 +178,10 @@ export default function QuotesView({
 
     const quotePayload = {
       text: formText.trim(),
-      author: formAuthor.trim() || 'Unknown',
-      category: formCategory.trim() || 'Inspiration',
+      author: formAuthor.trim(),
+      category: editingQuote ? (editingQuote.category || '') : '',
       tags: formTags,
-      source: formSource.trim()
+      source: editingQuote ? (editingQuote.source || '') : ''
     };
 
     try {
@@ -645,7 +645,7 @@ function QuoteCard({ quote, onEdit, onDelete, onSelectTag, onViewDetails, isPinn
       <div className="p-5 space-y-4">
         {/* Quote category and Star actions strip */}
         <div className="flex items-start justify-between gap-4">
-          {quote.category ? (
+          {quote.category && quote.category !== 'Inspiration' ? (
             <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 bg-white/[0.03] border border-white/[0.05] rounded-lg px-2 py-0.5">
               {quote.category}
             </span>
@@ -691,9 +691,9 @@ function QuoteCard({ quote, onEdit, onDelete, onSelectTag, onViewDetails, isPinn
         </div>
 
         {/* Author & Source */}
-        {(quote.author || quote.source) && (
+        {((quote.author && quote.author !== 'Unknown') || quote.source) && (
           <div className="pt-2 border-t border-white/[0.04] flex items-center justify-between text-[11px]">
-            {quote.author ? (
+            {quote.author && quote.author !== 'Unknown' ? (
               <span className="font-bold text-rose-350 truncate pr-2">— {quote.author}</span>
             ) : <div />}
             {quote.source && (
@@ -739,7 +739,7 @@ function QuoteDetailModal({ quote, onClose, onEdit, isPinned, onTogglePin }) {
         {/* Header */}
         <div className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between shrink-0">
           <div>
-            {quote.category && (
+            {quote.category && quote.category !== 'Inspiration' && (
               <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 bg-white/[0.03] border border-white/[0.05] rounded-lg px-2 py-0.5">
                 {quote.category}
               </span>
@@ -770,9 +770,9 @@ function QuoteDetailModal({ quote, onClose, onEdit, isPinned, onTogglePin }) {
             </p>
           </div>
 
-          {(quote.author || quote.source) && (
+          {((quote.author && quote.author !== 'Unknown') || quote.source) && (
             <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/[0.04] text-[12px]">
-              {quote.author && (
+              {quote.author && quote.author !== 'Unknown' && (
                 <div className="space-y-1">
                   <span className="text-[10px] text-slate-600 uppercase font-bold tracking-wider">Author</span>
                   <p className="font-extrabold text-rose-350">{quote.author}</p>
