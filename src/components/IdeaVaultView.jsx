@@ -966,7 +966,7 @@ export default function IdeaVaultView({
 function FormField({ label, required, children }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
         {label}{required && <span className="text-rose-400 ml-0.5">*</span>}
       </label>
       {children}

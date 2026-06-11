@@ -505,7 +505,7 @@ export default function TimelineView({
               </Field>
 
               <div>
-                <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
                   Days Remaining until Deadline <span className="text-rose-400">*</span>
                 </label>
                 <div className="flex items-center gap-3">
@@ -590,7 +590,7 @@ export default function TimelineView({
               </div>
 
               <div>
-                <p className="text-[11px] font-semibold text-slate-400 mb-2 uppercase tracking-wider">Event details / Perks</p>
+                <p className="text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-wider">Event details / Perks</p>
                 <div className="grid grid-cols-2 gap-2.5">
                   <button
                     type="button"
@@ -743,7 +743,7 @@ export default function TimelineView({
 function Field({ label, required, children }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
         {label}{required && <span className="text-rose-400 ml-0.5">*</span>}
       </label>
       {children}

@@ -339,7 +339,7 @@ function TaskFormModal({ isOpen, onClose, onSave, editingTask, defaultDate, show
 
           {/* Title */}
           <div className="space-y-1.5">
-            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
               Task Title <span className="text-rose-400">*</span>
             </label>
             <input autoFocus type="text" placeholder="e.g. Review pull requests"
@@ -350,7 +350,7 @@ function TaskFormModal({ isOpen, onClose, onSave, editingTask, defaultDate, show
 
           {/* Priority */}
           <div className="space-y-1.5">
-            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Priority</label>
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Priority</label>
             <PrioritySelector value={priority} onChange={setPriority} />
           </div>
 
@@ -374,7 +374,7 @@ function TaskFormModal({ isOpen, onClose, onSave, editingTask, defaultDate, show
           {/* Recurring / date options */}
           {isRecurring ? (
             <div className="space-y-3">
-              <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Frequency</label>
+              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Frequency</label>
               <div className="grid grid-cols-2 gap-2">
                 {RECUR_OPTS.map(opt => (
                   <button key={opt.value} type="button" onClick={() => setRecurrence(opt.value)}
@@ -388,7 +388,7 @@ function TaskFormModal({ isOpen, onClose, onSave, editingTask, defaultDate, show
               </div>
               {recurrence === 'weekly' && (
                 <div className="space-y-2">
-                  <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">On these days</label>
+                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">On these days</label>
                   <div className="flex gap-1.5 flex-wrap">
                     {DAY_LABELS.map((label, i) => (
                       <button key={i} type="button" onClick={() => toggleDay(i)}
@@ -405,7 +405,7 @@ function TaskFormModal({ isOpen, onClose, onSave, editingTask, defaultDate, show
             </div>
           ) : (
             <div className="space-y-1.5">
-              <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                 Date <span className="text-rose-400">*</span>
               </label>
               <input type="date" value={taskDate} onChange={e => setTaskDate(e.target.value)}
@@ -415,7 +415,7 @@ function TaskFormModal({ isOpen, onClose, onSave, editingTask, defaultDate, show
 
           {/* Subtasks */}
           <div className="space-y-2">
-            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Subtasks</label>
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Subtasks</label>
             <div className="space-y-1.5">
               {subtasks.map((st, i) => (
                 <div key={st.id || i} className="flex items-center gap-2 px-3 py-2 bg-white/[0.025]
