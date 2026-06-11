@@ -251,11 +251,12 @@ export default function Sidebar({ activeTab, setActiveTab, stats, mobileOpen, se
                 target="_blank"
                 rel="noopener noreferrer"
                 title="X (formerly Twitter)"
-                className="w-8 h-8 rounded-xl flex items-center justify-center bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.08] hover:border-white/[0.12] text-slate-400 hover:text-white transition-all duration-200"
+                className="w-8 h-8 rounded-xl flex items-center justify-center bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.08] hover:border-white/[0.12] text-slate-400 hover:text-white transition-all duration-200 relative group/x"
               >
                 <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
                   <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                 </svg>
+                <span className="absolute -top-7 px-2 py-0.5 bg-slate-900 border border-white/10 text-[9px] text-slate-350 rounded-md opacity-0 group-hover/x:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">X / Twitter</span>
               </a>
               <a
                 href="https://github.com/TuShArBhArDwA"
