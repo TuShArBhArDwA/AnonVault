@@ -244,6 +244,27 @@ export default function DashboardView({
               </button>
             </div>
 
+            {/* Checklist Progress Bar */}
+            {tasks.length > 0 && (() => {
+              const totalChecklist = tasks.length;
+              const completedChecklist = tasks.filter(t => t.completed).length;
+              const checklistPercent = totalChecklist > 0 ? Math.round((completedChecklist / totalChecklist) * 100) : 0;
+              return (
+                <div className="mb-4 bg-white/[0.01] border border-white/[0.03] p-3 rounded-xl">
+                  <div className="flex items-center justify-between text-[10.5px] font-bold text-slate-500 mb-1.5">
+                    <span>Today's Progress</span>
+                    <span className="text-sky-400 font-mono">{checklistPercent}%</span>
+                  </div>
+                  <div className="w-full h-1 bg-white/[0.04] rounded-full overflow-hidden">
+                    <div 
+                      className="h-full rounded-full bg-gradient-to-r from-sky-500 to-sky-400 transition-all duration-550 ease-out"
+                      style={{ width: `${checklistPercent}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
+
             <div className="flex-1 overflow-y-auto pr-1 space-y-3">
               {tasksLoading ? (
                 <div className="h-full flex items-center justify-center text-slate-500 text-xs gap-2">
@@ -257,34 +278,40 @@ export default function DashboardView({
                   <p className="text-[10px] text-slate-600 mt-1 max-w-[200px]">Create daily schedules or one-off tasks in Checklist tab.</p>
                 </div>
               ) : (
-                tasks.map(task => (
-                  <div key={task.id} className="p-3 bg-white/[0.02] border border-white/[0.04] rounded-xl hover:border-white/[0.08] transition-all">
-                    <div className="flex items-start gap-3">
-                      <button 
-                        onClick={() => handleToggleTask(task)}
-                        className="mt-0.5 text-slate-500 hover:text-sky-400 transition-colors cursor-pointer shrink-0"
-                      >
-                        {task.completed ? (
-                          <CheckCircle2 size={16} className="text-sky-400 fill-sky-500/10" />
-                        ) : (
-                          <Circle size={16} className="text-slate-600 hover:text-slate-500" />
-                        )}
-                      </button>
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-[12.5px] font-semibold break-words leading-tight ${task.completed ? 'text-slate-600 line-through' : 'text-slate-200'}`}>
-                          {task.title}
-                        </p>
-                        {task.priority && (
-                          <span className={`inline-block text-[8.5px] font-extrabold uppercase mt-1 px-1.5 py-0.5 rounded ${
-                            task.priority === 'high' 
-                              ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' 
-                              : task.priority === 'medium'
-                              ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                              : 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
-                          }`}>
-                            {task.priority}
-                          </span>
-                        )}
+                [...tasks]
+                  .sort((a, b) => {
+                    if (a.completed && !b.completed) return 1;
+                    if (!a.completed && b.completed) return -1;
+                    return 0;
+                  })
+                  .map(task => (
+                    <div key={task.id} className="p-3 bg-white/[0.02] border border-white/[0.04] rounded-xl hover:border-white/[0.08] transition-all">
+                      <div className="flex items-start gap-3">
+                        <button 
+                          onClick={() => handleToggleTask(task)}
+                          className="mt-0.5 text-slate-500 hover:text-sky-400 transition-colors cursor-pointer shrink-0"
+                        >
+                          {task.completed ? (
+                            <CheckCircle2 size={16} className="text-sky-400 fill-sky-500/10" />
+                          ) : (
+                            <Circle size={16} className="text-slate-600 hover:text-slate-500" />
+                          )}
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-[12.5px] font-semibold break-words leading-tight ${task.completed ? 'text-slate-600 line-through' : 'text-slate-200'}`}>
+                            {task.title}
+                          </p>
+                          {task.priority && (
+                            <span className={`inline-block text-[8.5px] font-extrabold uppercase mt-1 px-1.5 py-0.5 rounded ${
+                              task.priority === 'high' 
+                                ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' 
+                                : task.priority === 'medium'
+                                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                : 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
+                            }`}>
+                              {task.priority}
+                            </span>
+                          )}
 
                         {/* Subtasks */}
                         {task.subtasks && task.subtasks.length > 0 && (
