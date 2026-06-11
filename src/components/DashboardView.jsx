@@ -145,27 +145,31 @@ export default function DashboardView({
             <LayoutDashboard size={20} />
           </button>
           <div>
-            <h1 className="text-[17px] font-extrabold text-white tracking-tight flex items-center gap-2">
+            <h1 className="text-[17px] font-extrabold text-white tracking-tight flex items-center gap-2 mb-1.5">
               <LayoutDashboard size={16} className="text-sky-400" />
               <span>Workspace Dashboard</span>
             </h1>
-            <p className="text-[10.5px] text-slate-500 font-semibold mt-0.5">{getFormattedDate()}</p>
+            <div className="flex items-center gap-2">
+              <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-sky-450 bg-sky-500/10 border border-sky-500/15 rounded-md px-2 py-0.5 select-none">
+                {currentTime.toLocaleDateString(undefined, { weekday: 'long' })}
+              </span>
+              <span className="text-[11px] font-bold text-slate-500">
+                {currentTime.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+              </span>
+            </div>
           </div>
         </div>
 
         {/* Premium live time & stats */}
-        <div className="flex items-center gap-4">
-          <div className="flex flex-col items-end px-4 py-2 rounded-xl bg-white/[0.02] border border-white/[0.05] min-w-[110px]">
-            <span className="text-[12.5px] font-bold text-white tracking-wider font-mono tabular-nums leading-none">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center px-4 py-2.5 rounded-xl bg-white/[0.02] border border-white/[0.05] min-w-[110px] h-[36px]">
+            <span className="text-[13px] font-bold text-white tracking-wider font-mono tabular-nums leading-none">
               {getFormattedTime()}
-            </span>
-            <span className="text-[8.5px] font-extrabold text-slate-500 uppercase tracking-widest mt-1 leading-none">
-              Live Time
             </span>
           </div>
 
           {tasks.length > 0 && (
-            <div className="px-3.5 py-2 rounded-xl text-[10px] font-extrabold uppercase bg-sky-500/10 border border-sky-500/20 text-sky-400 tracking-wider">
+            <div className="px-3.5 py-2 rounded-xl text-[10px] font-extrabold uppercase bg-sky-500/10 border border-sky-500/20 text-sky-400 tracking-wider h-[36px] flex items-center">
               {pendingCount === 0 ? 'All Tasks Completed' : `${pendingCount} Tasks Remaining`}
             </div>
           )}
