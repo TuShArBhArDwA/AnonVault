@@ -537,39 +537,15 @@ export default function QuotesView({
                 />
               </div>
 
-              {/* Author & Category */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Author</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Marcus Aurelius"
-                    value={formAuthor}
-                    onChange={e => setFormAuthor(e.target.value)}
-                    className="input-premium w-full px-4 py-2.5 text-[13px] rounded-xl placeholder:text-slate-700 font-semibold"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Category</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Wisdom, Tech, Life"
-                    value={formCategory}
-                    onChange={e => setFormCategory(e.target.value)}
-                    className="input-premium w-full px-4 py-2.5 text-[13px] rounded-xl placeholder:text-slate-700 font-semibold"
-                  />
-                </div>
-              </div>
-
-              {/* Source/Reference */}
+              {/* Author */}
               <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Source URL or book reference</label>
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Author</label>
                 <input
                   type="text"
-                  placeholder="e.g. Meditations, Book IV or https://example.com"
-                  value={formSource}
-                  onChange={e => setFormSource(e.target.value)}
-                  className="input-premium w-full px-4 py-2.5 text-[13px] rounded-xl placeholder:text-slate-700 font-medium"
+                  placeholder="e.g. Marcus Aurelius"
+                  value={formAuthor}
+                  onChange={e => setFormAuthor(e.target.value)}
+                  className="input-premium w-full px-4 py-2.5 text-[13px] rounded-xl placeholder:text-slate-700 font-semibold"
                 />
               </div>
 
@@ -669,9 +645,11 @@ function QuoteCard({ quote, onEdit, onDelete, onSelectTag, onViewDetails, isPinn
       <div className="p-5 space-y-4">
         {/* Quote category and Star actions strip */}
         <div className="flex items-start justify-between gap-4">
-          <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 bg-white/[0.03] border border-white/[0.05] rounded-lg px-2 py-0.5">
-            {quote.category || 'Inspiration'}
-          </span>
+          {quote.category ? (
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 bg-white/[0.03] border border-white/[0.05] rounded-lg px-2 py-0.5">
+              {quote.category}
+            </span>
+          ) : <div />}
 
           <div className="flex items-center gap-0.5 bg-white/[0.02] border border-white/[0.07] rounded-xl p-0.5 shrink-0 select-none
                           opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100
@@ -713,19 +691,23 @@ function QuoteCard({ quote, onEdit, onDelete, onSelectTag, onViewDetails, isPinn
         </div>
 
         {/* Author & Source */}
-        <div className="pt-2 border-t border-white/[0.04] flex items-center justify-between text-[11px]">
-          <span className="font-bold text-rose-350 truncate pr-2">— {quote.author || 'Unknown'}</span>
-          {quote.source && (
-            isValidUrl(quote.source) ? (
-              <a href={quote.source} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
-                 className="flex items-center gap-1 text-[10px] font-semibold text-slate-500 hover:text-indigo-400 transition-colors">
-                <span>Link</span> <ExternalLink size={9} />
-              </a>
-            ) : (
-              <span className="text-[10px] text-slate-600 truncate max-w-[120px] font-medium italic">{quote.source}</span>
-            )
-          )}
-        </div>
+        {(quote.author || quote.source) && (
+          <div className="pt-2 border-t border-white/[0.04] flex items-center justify-between text-[11px]">
+            {quote.author ? (
+              <span className="font-bold text-rose-350 truncate pr-2">— {quote.author}</span>
+            ) : <div />}
+            {quote.source && (
+              isValidUrl(quote.source) ? (
+                <a href={quote.source} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
+                   className="flex items-center gap-1 text-[10px] font-semibold text-slate-500 hover:text-indigo-400 transition-colors">
+                  <span>Link</span> <ExternalLink size={9} />
+                </a>
+              ) : (
+                <span className="text-[10px] text-slate-600 truncate max-w-[120px] font-medium italic">{quote.source}</span>
+              )
+            )}
+          </div>
+        )}
 
         {/* Tags */}
         {tags.length > 0 && (
@@ -757,9 +739,11 @@ function QuoteDetailModal({ quote, onClose, onEdit, isPinned, onTogglePin }) {
         {/* Header */}
         <div className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between shrink-0">
           <div>
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 bg-white/[0.03] border border-white/[0.05] rounded-lg px-2 py-0.5">
-              {quote.category || 'Inspiration'}
-            </span>
+            {quote.category && (
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 bg-white/[0.03] border border-white/[0.05] rounded-lg px-2 py-0.5">
+                {quote.category}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -786,28 +770,32 @@ function QuoteDetailModal({ quote, onClose, onEdit, isPinned, onTogglePin }) {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/[0.04] text-[12px]">
-            <div className="space-y-1">
-              <span className="text-[10px] text-slate-600 uppercase font-bold tracking-wider">Author</span>
-              <p className="font-extrabold text-rose-350">{quote.author || 'Unknown'}</p>
-            </div>
-
-            {quote.source && (
-              <div className="space-y-1">
-                <span className="text-[10px] text-slate-600 uppercase font-bold tracking-wider">Source / Reference</span>
-                <div>
-                  {isValidUrl(quote.source) ? (
-                    <a href={quote.source} target="_blank" rel="noreferrer"
-                       className="inline-flex items-center gap-1 text-indigo-400 hover:text-indigo-300 font-bold hover:underline">
-                      <span>External Link</span> <ExternalLink size={10} />
-                    </a>
-                  ) : (
-                    <p className="font-semibold text-slate-300 italic">{quote.source}</p>
-                  )}
+          {(quote.author || quote.source) && (
+            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/[0.04] text-[12px]">
+              {quote.author && (
+                <div className="space-y-1">
+                  <span className="text-[10px] text-slate-600 uppercase font-bold tracking-wider">Author</span>
+                  <p className="font-extrabold text-rose-350">{quote.author}</p>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+
+              {quote.source && (
+                <div className="space-y-1">
+                  <span className="text-[10px] text-slate-600 uppercase font-bold tracking-wider">Source / Reference</span>
+                  <div>
+                    {isValidUrl(quote.source) ? (
+                      <a href={quote.source} target="_blank" rel="noreferrer"
+                         className="inline-flex items-center gap-1 text-indigo-400 hover:text-indigo-300 font-bold hover:underline">
+                        <span>External Link</span> <ExternalLink size={10} />
+                      </a>
+                    ) : (
+                      <p className="font-semibold text-slate-300 italic">{quote.source}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Tags */}
           {tags.length > 0 && (
