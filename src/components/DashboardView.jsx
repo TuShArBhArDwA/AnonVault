@@ -18,12 +18,18 @@ export default function DashboardView({
   const [tasks, setTasks] = useState([]);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [todayStr, setTodayStr] = useState('');
+  const [currentTime, setCurrentTime] = useState(new Date());
 
-  // 1. Get today's date string
+  // 1. Get today's date string & start clock timer
   useEffect(() => {
     const d = new Date();
     const formatted = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     setTodayStr(formatted);
+
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
   }, []);
 
   // 2. Load today's tasks
@@ -116,7 +122,16 @@ export default function DashboardView({
   // Helper date text formatter
   const getFormattedDate = () => {
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date().toLocaleDateString(undefined, options);
+    return currentTime.toLocaleDateString(undefined, options);
+  };
+
+  const getFormattedTime = () => {
+    return currentTime.toLocaleTimeString(undefined, { 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      second: '2-digit',
+      hour12: true 
+    });
   };
 
   const pendingCount = tasks.filter(t => !t.completed).length;
@@ -138,11 +153,23 @@ export default function DashboardView({
           </div>
         </div>
 
-        {tasks.length > 0 && (
-          <div className="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase bg-sky-500/10 border border-sky-500/20 text-sky-400 tracking-wider">
-            {pendingCount === 0 ? 'All Tasks Completed' : `${pendingCount} Tasks Remaining`}
+        {/* Premium live time & stats */}
+        <div className="flex items-center gap-4">
+          <div className="flex flex-col items-end px-4 py-2 rounded-xl bg-white/[0.02] border border-white/[0.05] min-w-[110px]">
+            <span className="text-[12.5px] font-bold text-white tracking-wider font-mono tabular-nums leading-none">
+              {getFormattedTime()}
+            </span>
+            <span className="text-[8.5px] font-extrabold text-slate-500 uppercase tracking-widest mt-1 leading-none">
+              Live Time
+            </span>
           </div>
-        )}
+
+          {tasks.length > 0 && (
+            <div className="px-3.5 py-2 rounded-xl text-[10px] font-extrabold uppercase bg-sky-500/10 border border-sky-500/20 text-sky-400 tracking-wider">
+              {pendingCount === 0 ? 'All Tasks Completed' : `${pendingCount} Tasks Remaining`}
+            </div>
+          )}
+        </div>
       </header>
 
       {/* Main Grid View */}
