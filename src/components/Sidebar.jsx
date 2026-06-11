@@ -222,50 +222,78 @@ export default function Sidebar({ activeTab, setActiveTab, stats, mobileOpen, se
               );
             })}
           </nav>
-           {/* ── Remaining Tasks stat panel ── */}
-          {!isCollapsed && (
-            <div className="mt-7 animate-in fade-in duration-200 px-3">
-              <div 
-                className={`stat-card transition-all duration-300 group/taskcard cursor-pointer border ${
-                  stats.pendingTasks > 0 
-                    ? 'stat-card-pending border-sky-500/15' 
-                    : 'stat-card-completed border-emerald-500/15'
-                }`}
-                onClick={() => setActiveTab('tasks')}
-              >
-                <div className="flex items-center gap-1.5 mb-2.5">
-                  <CheckSquare 
-                    size={11} 
-                    className={`${
-                      stats.pendingTasks > 0 
-                        ? 'text-sky-400 group-hover/taskcard:animate-pulse' 
-                        : 'text-emerald-400 group-hover/taskcard:scale-110 transition-transform'
-                    }`} 
-                  />
-                  <span className="text-[10px] text-slate-500 font-semibold tracking-wide select-none">Tasks Remaining</span>
-                </div>
-                <div className="flex items-end justify-between">
-                  {stats.pendingTasks > 0 ? (
-                    <>
-                      <span className="text-[26px] font-extrabold tabular-nums tracking-tight leading-none text-sky-300">
-                        {stats.pendingTasks}
+          {/* ── Remaining Tasks stat panel ── */}
+          {!isCollapsed && (() => {
+            const pending = stats.pendingTasks || 0;
+            const total = stats.totalTasks || 0;
+            const completed = stats.completedTasks || 0;
+            const progressPercent = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+            return (
+              <div className="mt-8 px-3.5 animate-in fade-in duration-300">
+                <div 
+                  onClick={() => setActiveTab('tasks')}
+                  className="group/taskwidget cursor-pointer relative rounded-2xl p-4 transition-all duration-300 select-none
+                             bg-gradient-to-b from-white/[0.01] to-transparent border border-white/[0.04] hover:bg-white/[0.02] hover:border-sky-500/20"
+                  style={{
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.02)',
+                  }}
+                >
+                  {/* Subtle top indicator line */}
+                  <div className={`absolute top-0 left-0 right-0 h-[1.5px] transition-all duration-500 ${
+                    pending > 0 
+                      ? 'bg-gradient-to-r from-sky-500/10 via-sky-500/40 to-sky-500/10' 
+                      : 'bg-gradient-to-r from-emerald-500/10 via-emerald-500/50 to-emerald-500/10'
+                  }`} />
+
+                  {/* Header Row */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-1.5">
+                      <span className={`w-1.5 h-1.5 rounded-full ${
+                        pending > 0 
+                          ? 'bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.7)] animate-pulse' 
+                          : 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.7)]'
+                      }`} />
+                      <span className="text-[9px] font-bold text-slate-550 tracking-[0.2em] uppercase">Focus Progress</span>
+                    </div>
+                    <span className={`text-[10px] font-extrabold font-mono tracking-tight ${
+                      pending > 0 ? 'text-sky-400' : 'text-emerald-400'
+                    }`}>
+                      {progressPercent}%
+                    </span>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="w-full h-[3px] bg-white/[0.04] rounded-full overflow-hidden mb-3.5">
+                    <div 
+                      className={`h-full rounded-full transition-all duration-550 cubic-bezier(0.16, 1, 0.3, 1) ${
+                        pending > 0 
+                          ? 'bg-gradient-to-r from-sky-500 to-sky-400' 
+                          : 'bg-gradient-to-r from-emerald-500 to-teal-400'
+                      }`}
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
+
+                  {/* Status Detail Row */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CheckSquare size={12} className={pending > 0 ? 'text-sky-400' : 'text-emerald-400'} />
+                      <span className="text-[11px] font-semibold text-slate-300">
+                        {pending > 0 
+                          ? `${pending} task${pending > 1 ? 's' : ''} left` 
+                          : 'All tasks clear'
+                        }
                       </span>
-                      <span className="text-[9px] text-slate-655 font-bold mb-0.5 select-none">remaining</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-[24px] font-black tracking-tight leading-none text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.35)]">
-                        ✓
-                      </span>
-                      <span className="text-[9px] text-emerald-400 font-bold mb-0.5 select-none bg-emerald-500/10 border border-emerald-500/25 px-1.5 py-0.5 rounded-lg">
-                        All Done
-                      </span>
-                    </>
-                  )}
+                    </div>
+                    <span className="text-[9.5px] text-slate-600 font-bold group-hover/taskwidget:text-slate-400 transition-colors">
+                      Checklist →
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
 
         {/* ── Footer ── */}

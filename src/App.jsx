@@ -1058,13 +1058,18 @@ function LockScreen({ onAuthorize }) {
 
 
 /* ── Compute pending task count (reads from localStorage cache) ── */
-function computePendingTasks() {
+function computeTaskStats() {
   try {
-    // Use local date (not UTC) to match how tasks store their dates
     const d = new Date();
     const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    return getTasksForDateSync(today).filter(t => !t.completed).length;
-  } catch { return 0; }
+    const allTasks = getTasksForDateSync(today);
+    const total = allTasks.length;
+    const completed = allTasks.filter(t => t.completed).length;
+    const pending = total - completed;
+    return { total, completed, pending };
+  } catch {
+    return { total: 0, completed: 0, pending: 0 };
+  }
 }
 
 /* ================= main app dashboard component ================= */
@@ -1211,7 +1216,7 @@ function AppInner() {
       }
 
       // Refresh pending task count now that the cache is warm
-      setPendingTasks(computePendingTasks());
+      setTaskStats(computeTaskStats());
       
       if (!didSyncRef.current) {
         showToast('success', 'Vault Synced', 'All data loaded successfully.');
@@ -1425,17 +1430,19 @@ function AppInner() {
   };
 
   // --- Dynamic Stats calculation ---
-  const [pendingTasks, setPendingTasks] = useState(computePendingTasks);
+  const [taskStats, setTaskStats] = useState(computeTaskStats);
 
   const refreshPendingTasks = useCallback(() => {
-    setPendingTasks(computePendingTasks());
+    setTaskStats(computeTaskStats());
   }, []);
 
   const stats = {
     totalApplications: (applications || []).length,
     highPriorityCount: (applications || []).filter(app => app && app.priority === 'high' && app.status !== 'rejected').length,
     totalIdeas: (ideas || []).length,
-    pendingTasks,
+    pendingTasks: taskStats.pending,
+    totalTasks: taskStats.total,
+    completedTasks: taskStats.completed,
     totalProjectIdeas: projectIdeasCount,
     totalQuotes: (quotes || []).length,
   };
