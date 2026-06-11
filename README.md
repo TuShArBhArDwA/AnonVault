@@ -14,50 +14,65 @@
 
 ---
 
-## English Specification
+## Overview
 
-AnonVault is a highly secure, privacy-first personal workspace engineered to centralize hackathon event tracking, manage daily milestone checklists, brainstorm comprehensive project ideas, and store creative thoughts in an encrypted, aesthetic environment.
+AnonVault is a highly secure, privacy-first personal workspace engineered to centralize hackathon event tracking, manage daily milestone checklists, brainstorm comprehensive project ideas, and store creative thoughts — all behind a 4-digit PIN lock screen.
 
-### Core Modules
-- **Daily Checklist**: A high-fidelity task and subtask manager that handles recurring daily, weekly, or weekday routines, synced directly with Supabase.
-- **Hackathon Timeline**: Track critical registration milestones, onsite/remote statuses, PPI (Placement Interview) perks, travel reimbursements, and multiple reference links in a linear or month-grouped calendar view.
-- **Idea Vault & Project Brainstorming**: Secure visual concept boards with tags, hyperlinks, and simulated image reference uploads.
-- **Passcode Protection**: The workspace is locked behind an optimized 4-digit PIN screen to protect your metrics.
+The workspace features a **glassmorphic dark UI** with per-section color-coded accents, animated rotating glow borders, a live clock widget, and a daily quote system.
 
 ---
 
-### Getting Started
+## Core Modules
 
-#### 1. Database & Storage Configuration
+| Module | Description |
+| :--- | :--- |
+| **Workspace Dashboard** | The pinned home view — shows today's rotating daily quote, a live task checklist snapshot, your starred/closest hackathon, pinned concepts, and pinned project drafts. Includes a live `HH:MM:SS` clock with the current date. |
+| **Daily Checklist** | A high-fidelity task and subtask manager handling recurring daily, weekly, or weekday routines, synced with Supabase. |
+| **Hackathon Timeline** | Track registration deadlines, onsite/remote status, PPI perks, travel reimbursements, and reference links in a calendar view. |
+| **Idea Vault** | Secure visual concept boards with tags, hyperlinks, and image reference uploads. |
+| **Project Ideas** | Sandbox brainstorm cards with manual drag-to-reorder, tags, links, and image attachments. |
+| **Quotes Vault** | Add and manage a personal library of quotes — one rotates daily on the dashboard using a deterministic date-hash algorithm. |
+
+---
+
+## Dashboard UI Highlights
+
+- **Header**: Gradient title on the left. Right side shows a unified pill with date (`Jun 11, 2026`), weekday, a divider, and a live `HH:MM · SS` clock — all same size and weight.
+- **Quote Card**: Serif font (`Georgia`) quote with a large decorative `"` watermark. Changes every day automatically.
+- **Checklist Widget**: Progress bar turns green at 100%. Scrollable task list with sky-blue accent.
+- **Right Panel**: Hackathons (indigo), Pinned Concepts (amber), Pinned Projects (sky) — each with their own colored border and glow.
+- **Sidebar**: Dashboard nav item has a glowing sky-blue **pin badge** to mark it as the primary view. Footer includes X, GitHub, and LinkedIn links with hover tooltips.
+
+---
+
+## Getting Started
+
+### 1. Database & Storage Configuration
 This application is powered by Supabase. Create a free Supabase project and execute the following:
-1. Open the **SQL Editor** in your Supabase dashboard and run the database creation query found in [supabase/schema.sql](supabase/schema.sql) (or [scripts/supabase_setup.sql](scripts/supabase_setup.sql)).
-2. Go to the **Storage** panel, create a new public bucket, and name it exactly `idea-images` to enable uploading visual design attachments.
+1. Open the **SQL Editor** in your Supabase dashboard and run the schema found in [supabase/schema.sql](supabase/schema.sql) (or [scripts/supabase_setup.sql](scripts/supabase_setup.sql)).
+2. Go to the **Storage** panel, create a new public bucket named exactly `idea-images`.
 
-#### 2. Environment Configuration
-Create a `.env` file in the root of the project and populate it with your credentials:
+### 2. Environment Configuration
+Create a `.env` file in the project root:
 ```env
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_public_anon_api_key
 VITE_APP_PIN=your_four_digit_pin_here
 ```
 
-#### 3. Launching Locally
-Navigate to the project folder in your terminal and run:
+### 3. Run Locally
 ```bash
-# Install package dependencies
 npm install
-
-# Run local development server
 npm run dev
 ```
-Open http://localhost:5173 in your browser.
+Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ---
 
 ## Design Documentation & Links
 
 | Document | Description | Link |
-| --- | --- | --- |
-| High-Level Design (HLD) | System architecture overview, navigation panels, and data flow. | [View HLD](docs/hld.md) |
-| Low-Level Design (LLD) | Database schema models, component models, API calls, and logic routines. | [View LLD](docs/lld.md) |
-| Project License | Standard MIT License terms of use and ownership. | [View License](LICENSE) |
+| :--- | :--- | :--- |
+| High-Level Design (HLD) | System architecture, navigation panels, and data flow. | [View HLD](docs/hld.md) |
+| Low-Level Design (LLD) | Database schemas, component props, API calls, and logic routines. | [View LLD](docs/lld.md) |
+| Project License | MIT License terms of use. | [View License](LICENSE) |

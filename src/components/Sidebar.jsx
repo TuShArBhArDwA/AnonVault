@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { CalendarRange, Lightbulb, TrendingUp, CheckSquare, X, Zap, ChevronLeft, ChevronRight, Rocket, Quote, LayoutDashboard } from 'lucide-react';
+import { CalendarRange, Lightbulb, TrendingUp, CheckSquare, X, Zap, ChevronLeft, ChevronRight, Rocket, Quote, LayoutDashboard, Pin } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab, stats, mobileOpen, setMobileOpen }) {
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -194,20 +194,34 @@ export default function Sidebar({ activeTab, setActiveTab, stats, mobileOpen, se
                 >
                   <div className="flex items-center gap-3">
                     {/* Icon badge */}
-                    <div
-                      className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300"
-                      style={{
-                        background: isActive
-                          ? `linear-gradient(135deg, ${accent}22 0%, ${accent}14 100%)`
-                          : 'rgba(255,255,255,0.04)',
-                        border: isActive
-                          ? `1px solid ${accent}40`
-                          : '1px solid rgba(255,255,255,0.05)',
-                        color: isActive ? accent : '#64748b',
-                        boxShadow: isActive ? `0 0 12px ${accent}30` : 'none',
-                      }}
-                    >
-                      <Icon size={14} />
+                    <div className="relative shrink-0">
+                      <div
+                        className="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-300"
+                        style={{
+                          background: isActive
+                            ? `linear-gradient(135deg, ${accent}22 0%, ${accent}14 100%)`
+                            : 'rgba(255,255,255,0.04)',
+                          border: isActive
+                            ? `1px solid ${accent}40`
+                            : id === 'dashboard' ? '1px solid rgba(56,189,248,0.15)' : '1px solid rgba(255,255,255,0.05)',
+                          color: isActive ? accent : '#64748b',
+                          boxShadow: isActive ? `0 0 12px ${accent}30` : id === 'dashboard' ? '0 0 8px rgba(56,189,248,0.1)' : 'none',
+                        }}
+                      >
+                        <Icon size={14} />
+                      </div>
+                      {/* Pin badge — only on dashboard */}
+                      {id === 'dashboard' && (
+                        <div
+                          className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full flex items-center justify-center"
+                          style={{
+                            background: 'linear-gradient(135deg, #0ea5e9, #38bdf8)',
+                            boxShadow: '0 0 6px rgba(56,189,248,0.7)',
+                          }}
+                        >
+                          <Pin size={7} className="text-white" style={{ transform: 'rotate(45deg)' }} />
+                        </div>
+                      )}
                     </div>
                     {!isCollapsed && (
                       <div className="text-left animate-in fade-in duration-200">

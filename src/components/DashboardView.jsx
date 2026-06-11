@@ -334,41 +334,30 @@ export default function DashboardView({
           <button onClick={onMenuToggle} className="lg:hidden p-2 text-slate-400 hover:text-white rounded-xl hover:bg-white/[0.05] transition-all">
             <LayoutDashboard size={20} />
           </button>
-          <div>
-            <div className="flex items-center gap-2.5 mb-1">
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(56,189,248,0.15), rgba(14,165,233,0.08))', border: '1px solid rgba(56,189,248,0.2)' }}>
-                <LayoutDashboard size={13} className="text-sky-400" />
-              </div>
-              <h1 className="text-[15px] font-extrabold tracking-tight" style={{ background: 'linear-gradient(135deg, #fff 0%, #bae6fd 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                Workspace Dashboard
-              </h1>
-            </div>
-            <div className="flex items-center gap-2 pl-0.5">
-              <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-sky-500/70">
-                {currentTime.toLocaleDateString(undefined, { weekday: 'long' })}
-              </span>
-              <span className="w-1 h-1 rounded-full bg-white/10" />
-              <span className="text-[10.5px] font-medium text-slate-500">
-                {currentTime.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
-              </span>
-            </div>
-          </div>
+          <h1 className="text-[15px] font-extrabold tracking-tight" style={{ background: 'linear-gradient(135deg, #fff 0%, #bae6fd 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            Workspace Dashboard
+          </h1>
         </div>
 
-        {/* Live time */}
-        <div className="flex items-center justify-center px-5 py-2 rounded-xl h-[42px] gap-3" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+        {/* Date + Live time */}
+        <div className="flex items-center gap-3 px-5 py-2 rounded-xl" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
           <div className="flex flex-col items-end">
-            <span className="text-[16px] font-bold text-white tracking-widest font-mono tabular-nums leading-none">
-              {currentTime.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false })}
+            <span className="text-[11px] font-semibold text-white/70 leading-none">
+              {currentTime.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
             </span>
-            <span className="text-[9px] font-medium text-slate-600 tracking-[0.12em] uppercase mt-0.5">
-              {currentTime.toLocaleTimeString(undefined, { hour12: true }).split(' ')[1]}
+            <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-white/25 mt-0.5">
+              {currentTime.toLocaleDateString(undefined, { weekday: 'long' })}
             </span>
           </div>
           <div className="w-px h-5 bg-white/[0.06]" />
-          <span className="text-[20px] font-light font-mono tabular-nums text-slate-700 leading-none w-[22px] text-center">
-            {String(currentTime.getSeconds()).padStart(2, '0')}
-          </span>
+          <div className="flex items-center gap-2 font-mono tabular-nums">
+            <span className="text-[14px] font-bold text-white tracking-widest leading-none">
+              {currentTime.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false })}
+            </span>
+            <span className="text-[14px] font-bold leading-none" style={{ color: 'rgba(255,255,255,0.2)' }}>
+              {String(currentTime.getSeconds()).padStart(2, '0')}
+            </span>
+          </div>
         </div>
       </header>
 
@@ -388,7 +377,7 @@ export default function DashboardView({
             }}
           />
 
-          <div className="relative rounded-[15px] px-7 py-5 backdrop-blur-2xl overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(15,3,10,0.97) 0%, rgba(10,2,8,0.99) 100%)' }}>
+          <div className="relative rounded-[15px] px-7 py-5 overflow-hidden" style={{ background: 'linear-gradient(160deg, rgba(10,14,30,0.98) 0%, rgba(5,8,20,0.99) 100%)' }}>
             {/* Large decorative quote mark */}
             <div className="absolute top-3 right-5 text-[88px] leading-none font-serif text-rose-500/[0.05] pointer-events-none select-none" style={{ fontFamily: 'Georgia, serif' }}>&ldquo;</div>
             
