@@ -98,6 +98,18 @@ CREATE TABLE IF NOT EXISTS public.project_ideas (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- --- Quotes Vault (Inspiring thoughts & personal lines) ---
+CREATE TABLE IF NOT EXISTS public.quotes (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    text TEXT NOT NULL,
+    author TEXT DEFAULT 'Unknown',
+    category TEXT DEFAULT 'Inspiration',
+    tags TEXT[] DEFAULT '{}',
+    source TEXT DEFAULT '',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
 -- --------------------------------------------------------------------
 -- 3. ROW LEVEL SECURITY (RLS) POLICIES
 -- --------------------------------------------------------------------
@@ -115,6 +127,7 @@ ALTER TABLE public.tasks DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.task_completions DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.subtask_completions DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.project_ideas DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.quotes DISABLE ROW LEVEL SECURITY;
 
 -- ====================================================================
 -- OPTION B: Alternatively, Enable RLS & Configure Public Rules
